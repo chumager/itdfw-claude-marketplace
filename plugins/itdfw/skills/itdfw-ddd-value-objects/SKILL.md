@@ -1,3 +1,8 @@
+---
+name: itdfw-ddd-value-objects
+description: Use when an ITDFW custom type's value has behavior of its own (formatting by locale, arithmetic, derived getters, structure, or depends on another value of the document) — the value becomes a domain class (Value Object) shared by the SchemaType (cast/validate/persistence) and the front. Covers the class, its essence validation, and how back and front use the same class.
+---
+
 # ITDFW DDD — Domain Objects (types con clase)
 
 Un type custom cuyo valor tiene lógica = una **clase de dominio** transversal back↔front: la MISMA clase
