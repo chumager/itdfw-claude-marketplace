@@ -1,0 +1,28 @@
+{
+  "name": "@chumager/itdfw-plugin-<name>",
+  "version": "0.1.0",
+  "description": "<one sentence in the domain: what the plugin lets the site do>",
+  "main": "index.js",
+  "type": "module",
+  "files": [
+    "index.js",
+    "lib/",
+    "mongooseTypes/",
+    "mongoosePlugins/",
+    "mongooseSchema/",
+    "mongooseDB/",
+    "APP/",
+    "vue/",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "private": true,
+  "keywords": ["itdfw"],
+  "author": "Juan Carlos Muñoz <jcmunoz@itdmovil.cl>",
+  "license": "Private"
+}

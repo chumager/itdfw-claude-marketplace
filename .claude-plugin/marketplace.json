@@ -1,0 +1,17 @@
+{
+  "name": "itdfw",
+  "owner": {"name": "Juan Carlos Muñoz", "email": "chumager@gmail.com"},
+  "metadata": {"description": "Skills to build on the ITDFW framework"},
+  "plugins": [
+    {
+      "name": "itdfw",
+      "source": "./plugins/itdfw",
+      "description": "Develop on ITDFW: models, types, endpoints, plugins, front, deploy config, TDD and the definition of done"
+    },
+    {
+      "name": "itdfw-internal",
+      "source": "./plugins/itdfw-internal",
+      "description": "Internal to the framework team: documentation layout and creating new front libraries"
+    }
+  ]
+}
