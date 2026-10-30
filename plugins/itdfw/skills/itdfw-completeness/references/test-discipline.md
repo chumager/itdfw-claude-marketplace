@@ -23,6 +23,28 @@ if (onDev) { /* test/assert/instrumentación que sobrevive sin ensuciar prod */ 
 Aplica al patrón TDD e2e de un FWPlugin (correr su suite en modo `onDev`). Lo efímero de verdad (un log de
 debug ruidoso para cazar UN bug) sí se quita; lo que protege un invariante se queda gateado.
 
+## 🔴 Los DATOS de la prueba sí se borran; lo construido queda a la vista
+
+El código de la prueba queda (arriba); lo que la prueba **siembra** no. Son dos cosas distintas:
+
+| | Las pruebas automáticas | La vitrina |
+|---|---|---|
+| Para qué | certificar el contrato | que el dueño VEA lo construido: el componente operando, sus validaciones, sus bordes |
+| Ciclo | se levanta, se siembra, se prueba y se borra **por la API** (el plugin `delete`) | queda operando en un site conocido, con datos de muestra que no se borran |
+| Dónde | el site que corresponde al módulo | el site del consumidor o una pantalla de banco del módulo |
+
+Cómo se borra lo decide el **MODELO**, no la prueba: es un guard de arquitectura y nadie lo pide desde afuera.
+
+- Un modelo real queda con su soft delete (`deleteMode` por omisión).
+- Un **modelo que existe solo para probar** (onDev) declara **`deleteMode: "hard"`**: lo que la prueba borra
+  desaparece, sin filas `active: false` acumulándose.
+- Una **colección que existe solo para la prueba** se elimina entera (`drop`) al terminar: no quedan colecciones
+  vacías o llenas de borrados.
+- Un fixture que el sistema compila o ejecuta al arrancar y que está roto a propósito se desactiva en el `after`.
+
+**Todo reporte de cierre trae la URL de la vitrina y qué mirar ahí.** Sin vitrina, "verde" es fe: el dueño no tiene
+dónde mirar.
+
 ## 🔴 Prueba de BACK REAL de un custom type (no la clase aislada)
 
 Un VO probado solo con `node:assert` valida la **clase**, NO el custom **type**. Para el back real,

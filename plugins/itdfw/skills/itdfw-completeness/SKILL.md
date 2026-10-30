@@ -35,6 +35,9 @@ verificación real, no "compila y se ve bien".
 - [ ] **Completitud** — el critic: *"¿qué MÁS toqué (herencia, consumers, side-effects) que quedó sin probar?"*
       Ampliá el scope antes de cerrar.
 - [ ] **Tests gateados `onDev`, NO borrados** — viven en el código como red de seguridad. → [test-discipline.md](references/test-discipline.md)
+- [ ] **Los datos de la prueba se borran, la vitrina queda** — el modo de borrado lo decide el modelo (un modelo
+      solo de prueba declara `deleteMode: "hard"`; una colección solo de prueba se elimina entera), y el reporte trae
+      la URL de la vitrina y qué mirar. → [test-discipline.md](references/test-discipline.md)
 - [ ] **Ninguna verificación quedó como RITUAL MANUAL** — si el resultado es un número/conteo (renders por
       tecla, requests, ms, "¿reaccionó alguien más?"), se automatiza EN EL ACTO. Una prueba cara no se
       repite, y su número caduca callado cuando cambia el régimen. → [test-discipline.md](references/test-discipline.md)
