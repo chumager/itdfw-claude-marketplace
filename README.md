@@ -1,11 +1,7 @@
 # ITDFW — Claude Code marketplace
 
-Two plugins with the skills to work on the ITDFW framework.
-
-| Plugin | For |
-|---|---|
-| `itdfw` | developing on the framework: models, types, endpoints, plugins, front, deploy config, TDD, definition of done |
-| `itdfw-internal` | the framework team: documentation layout, new front libraries |
+The `itdfw` plugin: the skills to build on the ITDFW framework (models, types, endpoints, plugins, front, new front
+libraries, deploy config, TDD, definition of done).
 
 ## Install
 
