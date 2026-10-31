@@ -398,6 +398,13 @@ propia no es opcional.
 
 ⚠️ El usuario de la base tiene que tener permiso sobre la BD nueva; eso se resuelve en el motor, no acá.
 
+🔴 **Así se aíslan los tenants de un SaaS: una BD por tenant, no zones** (jcmunoz 31-oct-2026). Misma réplica, una
+base por tenant, cada una con **su propio usuario de Mongo**, con permiso solo sobre su base. Un usuario administrador
+del cluster crea esos usuarios, y ningún site usa el usuario de poder total. Así nadie ve ni entra a otra base, y lo
+que un tenant haga en la suya solo alcanza sus datos. Zones (varios tenants en una misma BD) es para el servicio que
+necesita una vista sobre todos los tenants a la vez; se decide por servicio y va apagado por omisión (`Zones:
+{zoneOptions: false}`, arriba). Superficie de ataque completa: skill `tdd-narrativo` §2g.
+
 ## 7. 🔴 Dónde termina este skill
 
 El FW provee `Hosts`, `Port` y `Protocol`. **Ahí termina su responsabilidad.**
