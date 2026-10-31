@@ -35,6 +35,9 @@ render() { return <span>{this.emptyText.value}</span>; }   // o rt(...) directo 
 - Textos del modelo: `Model-<m>/field-<x>`, `description-<x>`, `placeholder-<x>`. En un campo anidado `<x>` es el path completo (`field-functions.path`); las options van en `options-<x>`.
 - Textos del componente: `<Componente>/rol` (literal, jamás `$options.name`), **una sola coordenada** aunque haya
   modelo alrededor: nadie quiere un "No hay datos" distinto por modelo.
+- Textos genéricos de un **plugin**: `plugin:<nombre>/<Componente>.<rol>`, con `<nombre>` la key con que el plugin
+  registra su front (`plugin:translate`, `plugin:restaurant`). Un texto heredado conserva la coordenada de quien lo
+  declaró; el hijo solo declara los nuevos (detalle en `itdfw-translate` §3).
 - Compuestos: el padre declara `childrenModel` para que los sub-inputs traduzcan bajo el modelo que corresponde;
   pasarle `model` al GI hijo no alcanza porque el wrapper lo crea el form padre (#32).
 - El locale es parte de la coordenada: viaja en el query string, una URL por idioma. `Vary` no existe para nosotros.

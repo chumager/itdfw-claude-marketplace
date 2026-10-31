@@ -43,7 +43,9 @@ Reference only: the plugin treats a coordinate as opaque. The norm for model tex
 | model label · description · placeholder | `Model-<model>` / `field-<x>` · `description-<x>` · `placeholder-<x>` |
 | options of a select / checkbox / radio / enum | `Model-<model>` / `options-<x>`; the text is the value (`translatable: false` shows it translated but not editable there) |
 | a nested field | `<x>` is the full path: `field-functions.path` (root fields keep their name) |
-| component text (empty state, button, title, hint) | `"<Component>"` literal / `<role>` — ONE coordinate, whatever model is around (nobody wants a different "No data" per model) |
+| core component text (empty state, button, title, hint) | `"<Component>"` literal / `<role>` — ONE coordinate, whatever model is around (nobody wants a different "No data" per model) |
+| a PLUGIN's generic text | `"plugin:<name>"` / `"<Component>.<role>"`, where `<name>` is the key the plugin registers its front with (`{vue: {translate: …}}` → `plugin:translate`). "What does this plugin translate?" is a filter on the context, and a `plugin:X` without X installed is a candidate for clean-up |
+| a text inherited from a parent component | the parent's coordinate, untouched: the coordinate belongs to whoever DECLARES the text. The child declares only its new texts, with its own coordinate |
 | validation / server error | `error` / `<type>` |
 | children of a composite input | the parent declares `childrenModel`; passing `model` to the child GI is not enough |
 
