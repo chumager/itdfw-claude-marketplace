@@ -205,8 +205,10 @@ CurrencyTest original tenía min/max en el root y los nested PELADOS). El modelo
 - **nested × restricción** (el sub-schema con `required`/`min`/`max` INTERNOS — embedded Y docArray).
 Qué restricciones aplican depende del type: Currency = min+max+required (aplica FUERTE); Rut/Address =
 solo required. Molde vivo: `plugins/address/mongooseSchema/AddressTest.js` (matriz en el header). La
-batería green/red se corre HEADLESS vía MCP (POST caso válido / sin el required / violando la
-restricción nested) ANTES del e2e de browser — más barato y caza la mitad de los bugs.
+batería green/red se corre HEADLESS como test de back (`node:test` contra las puntas del site: POST
+caso válido / sin el required / violando la restricción nested) ANTES del e2e de browser — más barato
+y caza la mitad de los bugs. Un test que queda, no llamadas sueltas a mano por el MCP: esas no se
+repiten (ver "Verificación LARGA" abajo y la rule de e2e programático).
 
 ## 🔴 INFRA de prueba ≠ SCRIPT e2e (no confundir)
 
