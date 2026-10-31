@@ -498,7 +498,8 @@ aplica. No una anónima con el chequeo adentro: ahí el candado es una línea de
 mirar.
 
 ✅ La forma **función** (`(req)=>bool`) OPERA (back ≥ 7.3.8, `Profile.getAnonymousFunctions`, #189 resuelto):
-las funciones con `isAnonymous` `true`/`"auth"`/función se memoizan una vez y la función se **evalúa por
+la lista de funciones con `isAnonymous` `true`/`"auth"`/función se arma desde `req.API` en **cada llamada**, sin
+memo (cuesta menos de 1 ms; el memo dejaba fuera las puntas registradas después, #235), y la función se **evalúa por
 request** (`await isAnonymous(req)`); si el handler revienta, cierra SOLO su punta y el resto sigue. La rama
 `typeof isAnonymous === "function"` de `hasAccess` es código muerto (solo corre sin modelo `Profile`): no la
 leas como "la vía". 🔴 Una ESCRITURA no se abre así aunque se pueda: `Translation/redefine` fue anónima por una llave
