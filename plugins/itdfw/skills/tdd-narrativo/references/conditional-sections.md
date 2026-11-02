@@ -191,6 +191,13 @@ Consecuencias para el TDD:
   define mal el prefiltro o el `query`).
 - **Zones** no es un nivel: es el caso especial de UN cliente con varios tenants que quiere verlos todos juntos. Se
   decide por servicio y va apagado por omisión.
+- 🔴 **En un SaaS compartido, lo que se define con código o consulta libre es NUESTRO** (jcmunoz 2-nov-2026): KPI, ML,
+  `DBModelRaw`, `DBAPI`, Tools de `ai` y similares los implementamos y activamos nosotros; el tenant usa el resultado
+  (sus KPI, su modelo entrenado) pero no los define. La defensa es el guard de quién puede qué: **esas capacidades nunca
+  se asignan a un perfil de tenant** en un SaaS compartido, y el TDD lo declara con su caso (el perfil del tenant no
+  las tiene). No hay interruptor por nivel ni se recortan los módulos. El que quiere KPI o ML propios necesita infra
+  exclusiva (nivel alto), donde el owner tiene acceso a todo porque es su plataforma. El control fino (restringir y
+  analizar campos para que un tenant defina los suyos sin meter las garras) es un servicio que se cobra, no el default.
 
 Lo que el módulo no puede contener, y es responsabilidad del arquitecto del SaaS:
 
