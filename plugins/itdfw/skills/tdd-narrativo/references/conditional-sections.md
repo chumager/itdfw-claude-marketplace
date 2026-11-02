@@ -166,13 +166,25 @@ En un SaaS aparecen dos actores que el AAA no ordena, y un plugin diseñado para
 | **admin del tenant** | todo SU site: datos, perfiles, Config nivel 2 | **nuestra infraestructura y los otros tenants** | el módulo, en el código: nada de lo que él configura puede alcanzar lo nuestro |
 | **arquitecto del SaaS** | qué capacidades se le dan al tenant | todo, si le da código o salidas libres | la infraestructura (abajo) |
 
-🔴 **SaaS no es "multi-tenant en la misma BD"** (jcmunoz 31-oct-2026). Los tenants se aíslan con **una BD por
-tenant** en la misma réplica (el FW ya lo soporta: `mongoURL` por site), cada una con su propio usuario de Mongo, sin
-privilegios sobre las otras bases y nunca el usuario de poder total del cluster. Con eso, lo que un tenant haga dentro
-de su BD (un pipeline libre, un `$lookup`, un `$out`) solo alcanza sus propios datos, y es decisión de su admin a quién
-se lo da: el módulo **no recorta capacidades** para defender a un tenant de otro. Zones (varios tenants en una BD) es
-solo para el servicio que necesita una vista sobre todos ellos, y se decide por servicio: apagado por omisión. Caso:
-`plugins/kpi`, 30-oct: la lista blanca de etapas se descartó; el hoyo medido era de compartir la BD, no del KPI.
+🔴 **Un SaaS se vende en TRES niveles de aislamiento, y el TDD declara para cuál se diseña** (jcmunoz 2-nov-2026). El
+nivel lo decide lo que el cliente paga, no el gusto del diseño:
+
+| Nivel | Cómo se aísla | Para quién |
+|---|---|---|
+| **alto** | máquinas y motores propios: aislamiento 100 % | el cliente que paga infraestructura dedicada |
+| **medio** | un site y una BD por tenant (`mongoURL` por site), con su propio usuario de Mongo sin privilegios sobre las otras bases; comparten máquina y motor, aislados por worker y por BD. Cuesta ~250 MB × `Procs` por tenant | el cliente que paga su porción de infraestructura |
+| **bajo** | un solo site que crece por cantidad de clientes; el aislamiento es un **prefiltro** (`query` del modelo): los clientes entran por un modelo autenticable propio, y el prefiltro mira qué modelo es el usuario actual: si es cliente, filtra por lo suyo; si es usuario interno, ve todo | el volumen que no paga infraestructura; con un site por cliente saldría muy caro |
+
+Consecuencias para el TDD:
+- **Medio y alto**: lo que un tenant haga dentro de su BD (un pipeline libre, un `$lookup`, un `$out`) solo alcanza sus
+  datos; el módulo **no recorta capacidades** para defender a un tenant de otro (caso `plugins/kpi`, 30-oct: la lista
+  blanca de etapas se descartó porque el hoyo era compartir la BD).
+- **Bajo**: comparten BD, así que el módulo **sí recorta**: nada que el cliente configure o escriba puede saltarse el
+  prefiltro (pipelines libres, `DBModelRaw`, Tools, `$lookup` a otra colección), los índices únicos incluyen al dueño, y
+  cada modelo con datos del cliente declara su prefiltro y su caso de cruce (el cliente A no ve, no edita ni adivina
+  los datos de B).
+- **Zones** no es un nivel: es el caso especial de UN cliente con varios tenants que quiere verlos todos juntos. Se
+  decide por servicio y va apagado por omisión.
 
 Lo que el módulo no puede contener, y es responsabilidad del arquitecto del SaaS:
 
