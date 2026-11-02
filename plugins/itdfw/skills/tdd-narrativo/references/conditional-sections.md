@@ -182,7 +182,13 @@ Consecuencias para el TDD:
 - **Bajo**: comparten BD, así que el módulo **sí recorta**: nada que el cliente configure o escriba puede saltarse el
   prefiltro (pipelines libres, `DBModelRaw`, Tools, `$lookup` a otra colección), los índices únicos incluyen al dueño, y
   cada modelo con datos del cliente declara su prefiltro y su caso de cruce (el cliente A no ve, no edita ni adivina
-  los datos de B).
+  los datos de B). Son dos ramas que no se mezclan: el **prefiltro** del modelo decide qué se muestra (filtro forzado,
+  se suma a lo que pida el front); el **`query` del type** de cada ref decide qué referencias son válidas al asignar,
+  para que un cliente que conoce un id ajeno no lo enchufe a mano. 🔴 El nivel 1 de un SaaS de nivel bajo se prueba con
+  **varios clientes y pruebas cruzadas, headless y e2e**: con la sesión de A se intenta leer, editar, borrar y
+  **asignar como referencia** lo de B en cada par de modelos iguales, y se verifica que `getRef` (por `formOptions`) y el
+  `simpleName` de la ref corran sobre el `query` del type (jcmunoz 2-nov-2026: el riesgo no es el FW, es un dev que
+  define mal el prefiltro o el `query`).
 - **Zones** no es un nivel: es el caso especial de UN cliente con varios tenants que quiere verlos todos juntos. Se
   decide por servicio y va apagado por omisión.
 
