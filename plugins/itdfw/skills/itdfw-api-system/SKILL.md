@@ -299,7 +299,9 @@ throw new HTTPError("sucursal no encontrada", 404, {placeId, code: "PLACE_NOT_FO
    medias) no hay a quién mandar JSON: `Log.error` + `res.end()`.
 3. **Mid de 4-arg** (`server.js`) = terminal único (el mismo de `auth`): lee `err.status` (o lo deriva:
    ValidationError/CastError → 400, JWT → 401, CSRF → mensaje + `deleteAllCookies`, resto 500), borra el stack
-   fuera de dev → `res.status(status).json(SE(err))` (o lo emite por SSE si el request es SSE).
+   fuera de dev → responde el JSON tal cual, sin pasar por `res.json` (o lo emite por SSE si el request es SSE). Un
+   `ValidationError` responde `{name, message, errors: {path: mensaje}}`: `message` son los mensajes de los campos,
+   sin el resumen de mongoose ni el nombre del modelo (back ≥ 7.6.0). El resto, `SE(err)`.
 
 **Logging — 4XX es respuesta, 5XX es error (jcmunoz 17-sep-2026):**
 
