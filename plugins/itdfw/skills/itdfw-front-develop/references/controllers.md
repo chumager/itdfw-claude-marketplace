@@ -57,6 +57,20 @@ directas bindeadas al `this` del componente** mató todo eso.
 | `configValue` | (generalController) el value de Config cambia de COMPONENTE según la definición del name elegido |
 | `getEndpointValue` | Trae el valor desde una punta |
 
+## 🔴 Dentro de una fila de un docArray (NUI) no hay form
+
+`ItdArrayForm` NUI es un wrapper de `ItdGrid`: cada celda es un `renderGI(field, valor, cb, {row, viewType…})`.
+
+| | En una celda |
+|---|---|
+| GF por fila | no hay; el único es el `RowValidator` oculto, que va cambiando de value |
+| `generalController` | no corre por fila: lo corre un GF sobre sus propios inputs |
+| `controller` | corre en el `created` de la celda |
+| `formBus` / `readContext(campo)` | leen el root del form, no la fila |
+| un campo de la misma fila | `this.row?.campo` (en el `RowValidator` no hay `row`: `this.formBus.getValue(campo)`) |
+
+⟹ Si lo que cambia según otra columna es la forma del campo, va en un componente propio de esa columna.
+
 ## Red flags
 
 - Implementar un componente custom pa un comportamiento condicional → probablemente era un controller.
