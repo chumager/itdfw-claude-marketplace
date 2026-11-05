@@ -314,7 +314,7 @@ permiso a nadie y sin tocar el core — es el mismo criterio que las options de 
 | Área | Llaves |
 |---|---|
 | Servidor / HTTP | `Hosts` `devHost` `devPort` (puerto de entrada en dev detrás de un proxy reverso; sin él, `Port`; ver `itdfw-front-app` §La URL de dev) `Port` `Protocol` `fakeHTTPS` `greenLock` `Procs` `env` `trustProxy` `headers` `cors` `alias` `fastResponse` `bodyParser` `csrf` `maxConcurrentRequests` `retryAfterSeconds` `defaultPage` `documentRoot` `apiPath` |
-| Base de datos | `mongoURL` `mongoOptions` `noLock` `mongoosePlugins` · `pubsubChannel: "<nombre>"`: canal propio de `run`, `action`, `actionSelf` y SSE en vez del nombre del site, para que lo que ese back encarga lo ejecute él |
+| Base de datos | `mongoURL` `mongoOptions` `noLock` `mongoosePlugins` · `pubsubChannel: "<nombre>"`: el canal de `run`, `action`, `actionSelf` y SSE, en vez del nombre del site (por ejemplo, dominios distintos de un multitenant que comparten canal para repartir la carga, independiente de la BD) |
 | Sesión / auth | `session` `Expire` `masterPassword` `authorizationZones` |
 | Correo | `emailTransport` `masterEmail` `recoveryEmail` `errorRecipients` `recaptcha` |
 | Licencia | `instanceId` `machineLockedMessage` |
