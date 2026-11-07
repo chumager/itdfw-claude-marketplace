@@ -81,7 +81,7 @@ fieldName: {            // camelCase SIEMPRE; identificadores en inglés
 | Atributo | Qué hace |
 |---|---|
 | `required` | `true` o string (mensaje de error). Back+front. |
-| `filter` | `true` filtrable (FW genera el índice solo) · `"between"` rangos · `"$lte"`/`"$gte"`… operador Mongo · objeto `{...}` query fija · función `(input)=>query` filtro calculado. Ver familia filterXXX abajo. |
+| `filter` | `true` filtrable (FW genera el índice solo) · `"between"` rangos · `"$lte"`/`"$gte"`… operador Mongo · objeto `{...}` query fija · función `(input)=>query` filtro calculado. Ver familia filterXXX abajo. 🔴 Sin `filter` el front no ofrece el filtro, pero la punta lo acepta igual (así funcionan los links). **`filter: false` es imperativo**: el back lo saca de todo filtro, aunque llegue por punta o a través de un ref, en silencio. Va en todo secreto guardado como campo (una llave, un token); los types de secreto (`Password`) ya lo traen por omisión. |
 | `hidden` | `true` global, por contexto (`["view","create","update","register","profile"]`) o **función** del `req`. 🔴 Es una puerta de seguridad que se resuelve en el back: un campo oculto no se entrega ni se acepta al guardar, es como si no existiera para ese scope (solo `send` saca datos). Por eso un `hidden` función de lo contratado da capacidades distintas por cliente sobre el mismo modelo, sin partirlo. `hiddenDetail` lo saca también del detalle. Detalle: `itdfw-mongoose-types` → `toinput-pipeline.md` §C |
 | `readonly` / `disabled` | por contexto igual que hidden (`["profile"]`) |
 | `unique` | índice unique (el FW agrega multitenant + soft-delete partial solo) |
