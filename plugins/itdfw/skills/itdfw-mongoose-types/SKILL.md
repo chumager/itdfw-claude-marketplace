@@ -44,6 +44,7 @@ back/itdfw/src/SITE/mongooseTypes/
 | Set type default | `db.Schema.Types.X.set("key", value)` |
 | Describirlo para máquinas | 🔴 `options: {aiDescription: "..."}` en todo type nuevo: qué valor guarda y cómo se lee (inglés). Es el default de cada campo de ese type, y el campo la pisa con la suya |
 | Type que guarda un SECRETO (clave, token, llave) | 🔴 `options: {send: false, filter: false}`: no viaja, y nunca es condición de un filtro (el back lo saca aunque llegue por punta). Canon: `Password` |
+| Type de OBJETO libre (`Object`) | trae `filter: false` por omisión: un objeto puede guardar cualquier cosa. El campo que se quiera filtrar lo declara (`filter: true`, o `filter: undefined` para filtrable por punta sin salir en el form). El valor del filtro se lee como JSON; lo que no es JSON queda como texto, nunca se evalúa. Casos para liberarlo: logs, payloads de integraciones, `metadata` de `File` |
 | Map type → component | 🔴 type con componente HOMOLOGADO (mismo nombre: Currency→ItdCurrency) NO declara `component` — deriva del type. `options: {component: "X"}` SOLO si la operatoria real es OTRA (ej. Profile.functions docArray → SubsetDoc) |
 | Force attrs to front | `forceAttrs: ["myAttr"]` in options or toInputNative |
 | Add Mongoose validator | 🔴 función `(value, props)` que LANZA (ver regla abajo); un objeto `{validator, …}` se mergea y termina igual |
