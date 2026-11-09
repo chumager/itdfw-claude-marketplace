@@ -410,7 +410,7 @@ Sirve desde cualquier código que tenga un `req` (punta, ref, hook con `setReq`)
 decidir qué ofrecer. Los comparadores de `Profile` leen `req.requestedFunc ?? req.params.func` y
 `req.requestedMethod ?? req.method`. Ejecutor: `tests/back/hasAccess.test.js` (punta onDev `test/hasAccess`).
 
-`isAnonymous: "auth"` = truthy string → passes the anonymous check, but downstream code still reads `req.session`/`req.auth` (the endpoint enforces "must be logged in"). Use for `myProfile`-style endpoints.
+`isAnonymous: "auth"`: cualquier usuario **autenticado** pasa sin asignación; un anónimo no (`Profile.getAnonymousFunctions` la cuenta solo si `req.isAuth`, y sin modelo `Profile` queda cerrada). Úsalo en puntas tipo `myProfile`; la punta puede además leer `req.session`/`req.auth`.
 
 **Getters de identidad**: `req.isAuth` (cualquier vía; lo instala `User.installIdentity` dentro del middleware `auth`)
 y los **consultores inmutables** de `server.js` (`req.setImmutableAttr`, al inicio de la cadena: un getter calcula al
@@ -425,8 +425,8 @@ Ejecutor: `tests/back/reqFlags.test.js`.
 
 🔴 **El `Authorization` NO es siempre del FW** (2026-09-09): web-push firma `vapid t=…, k=…` (RFC 8292) y un
 cliente OIDC o MCP manda su propio `Bearer`. `expressjwt` está montado global y con 3+ partes lanzaba 500
-**ignorando `credentialsRequired: false`**, antes de llegar a la punta. Hoy hay un `getToken(req)` en
-`server.js` (bloque `//START JWTGATE`) que filtra por partes, esquema `Bearer` y **`model` en el payload** —esa
+**ignorando `credentialsRequired: false`**, antes de llegar a la punta. Hoy `readFWToken(req)`, en
+`AAA.js` y usado por el autenticador `FWJWT`, filtra por partes, esquema `Bearer` y **`model` en el payload** —esa
 es la firma de que el token es nuestro, y el headless client lo manda siempre— y devuelve `undefined` para lo
 ajeno, que sigue su camino. ⟹ una punta anónima **sí puede** recibir un webhook firmado de un tercero.
 Detalle: `claude-docs/architecture/back/jwt-gate.md`.

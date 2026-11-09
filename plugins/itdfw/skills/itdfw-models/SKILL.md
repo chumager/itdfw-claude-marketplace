@@ -379,8 +379,8 @@ Regla: **NO declarar "listo" sin verificar vía MCP.**
 ### 🔴 Un modelo recién creado NO es accesible hasta ASIGNARLO A UN PERFIL
 
 Que el modelo cargue **no** lo hace visible ni llamable. Recién creado no es accesible **para nadie**:
-hay que **asignarlo a un perfil** (`Profile.functions`) con los verbos que corresponda. Un **401** al
-llamar sus puntas justo después de crearlo es el sistema de perfiles funcionando, **no un error** —
+hay que **asignarlo a un perfil** (`Profile.functions`) con los verbos que corresponda. Un **403** al
+llamar sus puntas justo después de crearlo (un **401** si quien llama no está autenticado) es el sistema de perfiles funcionando, **no un error** —
 y no hay nada que arreglar en el modelo.
 
 ⟹ Antes de dudar del código: **¿está asignado a un perfil?** Es el paso que más se olvida, porque el
@@ -409,9 +409,9 @@ APP/AAA/<Modelo>.<func>.json ❌   → 404 "endpoint not found"
 
 **La FUNCIÓN ocupa el lugar de la extensión**, no va después. Con `.json` al final recibes
 **404 `endpoint not found`**, que es **indistinguible de "el modelo no existe"** → invita a parchar un
-modelo sano. Quítale el `.json` y el mismo llamado responde **401** (o el dato).
+modelo sano. Quítale el `.json` y el mismo llamado responde **403** (o **401** sin identidad), o el dato.
 
-> Regla de lectura: **404 = la punta no está registrada** · **401 = existe pero tu perfil no la tiene**.
+> Regla de lectura: **404 = la punta no está registrada** · **403 = existe y estás autenticado, pero tu perfil no la tiene** · **401 = existe y no hay identidad**.
 > Si el modelo aparece en `listModels`, el modelo NO es el problema — revisa la URL y el perfil antes
 > de tocar código.
 
