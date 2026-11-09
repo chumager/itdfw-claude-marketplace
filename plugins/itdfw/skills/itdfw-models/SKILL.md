@@ -386,6 +386,20 @@ y no hay nada que arreglar en el modelo.
 ⟹ Antes de dudar del código: **¿está asignado a un perfil?** Es el paso que más se olvida, porque el
 modelo compila, arranca y hasta crea su colección en la BD sin él.
 
+**Cómo se asigna** — dos vías:
+
+| Vía | Cómo | Qué tener presente |
+|---|---|---|
+| Formulario del perfil | En `Profile`, campo `functions`: se arrastra desde "Available Functions" a "Assigned Functions" y se eligen los verbos | La lista sale de `Profile.allFuncs`: toda la API registrada, salvo las puntas `noProfile` |
+| MCP `assignFunction` | `{profile, path, defaultMethods?}`: `profile` es el nombre o el `_id`; `path` es el que entrega `listAPIs` (`AAA/<Modelo>`) | Idempotente: si el perfil ya la tiene responde `exists`. Responde 404 si el perfil no existe o si el `path` no está en `allFuncs` (el back no cargó ese código, o es una punta `noProfile`). Sin `defaultMethods` copia los verbos de la función. La entrada se copia de `allFuncs`, nunca se arma a mano |
+
+El permiso se lee del perfil en la BD en cada petición, así que no hay que reiniciar.
+
+🔴 **Lo que NO existe:** ningún mecanismo agrega funciones a un perfil que ya existe, ni al instalar un plugin
+ni cuando aparece un modelo nuevo. Un plugin solo puede **sembrar perfiles propios nuevos**, y lo hace una vez
+(el plugin `restaurant` siembra `Owner` y no lo toca si ya existe). Si un plugin gana un modelo después, los
+perfiles ya sembrados no lo reciben: se asigna con alguna de las dos vías de arriba.
+
 ### 🔴 La ruta de las puntas (y por qué el 404 miente)
 
 ```
