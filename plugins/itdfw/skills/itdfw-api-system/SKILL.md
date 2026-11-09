@@ -29,8 +29,8 @@ Este skill es una referencia larga y se lee por el lado por el que uno ya sabe e
 
 ITDFW exposes HTTP via four implementation levels that all collapse into a single `pool.API` registry consumed by `execEndpoint`. URL shape is `/APP/<func>.<ext>` where `<func>` is the registered key in `pool.API`.
 
-**Crítico — cómo se construye `<func>` para archivos de `APP/`**: el loader `api.loadAPI` (en `back/itdfw/src/AAA/lib/api.js:128`) hace `path.join(filename_sin_ext, exportedKey)`. **El filename del archivo entra como prefijo automático del path**. Un export `setVersion` en `APP/AAA.js` queda registrado como `pool.API["AAA/setVersion"]` y se accede en `/APP/AAA/setVersion.<ext>`. Si estuviera en `APP/payment/webpay.js` quedaría en `/APP/payment/webpay/<key>.<ext>`. **El filename ES literalmente el scope**, no es solo agrupación lógica — viaja al path.
-🔴 **Dos escapes para acortar** (`api.js:130`, no estaban en este skill hasta 2026-09-09): (a) a nivel de
+**Crítico — cómo se construye `<func>` para archivos de `APP/`**: el loader `api.loadAPI` (`addToTreeGeneric` en `back/itdfw/src/AAA/lib/api.js`) hace `path.join(filename_sin_ext, exportedKey)`. **El filename del archivo entra como prefijo automático del path**. Un export `setVersion` en `APP/AAA.js` queda registrado como `pool.API["AAA/setVersion"]` y se accede en `/APP/AAA/setVersion.<ext>`. Si estuviera en `APP/payment/webpay.js` quedaría en `/APP/payment/webpay/<key>.<ext>`. **El filename ES literalmente el scope**, no es solo agrupación lógica — viaja al path.
+🔴 **Dos escapes para acortar** (`addToTreeGeneric`, no estaban en este skill hasta 2026-09-09): (a) a nivel de
 ARCHIVO, un archivo llamado **`APP.js`** no pone prefijo: sus exports quedan en `/APP/<punta>` en vez de
 `/APP/APP/<punta>`; (b) a nivel de PUNTA, la propiedad **`__name`** en el objeto exportado **reemplaza la KEY
 del export, no el prefijo del archivo**: `api.js:153` hace `path.join(name, funcName)` con `funcName = __name || key`,
@@ -91,13 +91,13 @@ Resultado:
 
 Si el archivo fuera `APP/payment/webpay.js` con export `pay`, el path sería `/APP/payment/webpay/pay.<ext>`. El loader hace `path.join(name, funcName)` donde `name` es la ruta del archivo sin `.js`.
 
-Loaded by `api.loadAPI([localAPI, defaultAPI, siteAPI])` cascade in `AAA.start()` (see `AAA.js:208-215`).
+Loaded by `api.loadAPI([localAPI, defaultAPI, siteAPI])` cascade in `AAA.start()` (`AAA.js`, `const APIfolders`).
 
 Use cases: cross-model RPC, dev tooling (`Slow`, `logLevel`), session lifecycle (`logout`), version negotiation (`setVersion`), anonymous lookups (`getSimpleName`, `getRef`, `getCSRF`).
 
 ## Level 2 — `schema.options.<VERB>` (Model-bound CRUD)
 
-Verbs `GET|POST|PUT|DELETE` declared on the schema's options. AAA's `Schema.on("model")` binds every handler with `value.bind(Model)` so `this === Model` (see `AAA.js:431-446`). Permissions are gated by `Model.canSee(req)` via the AAA model route — same gate as the auto-CRUD.
+Verbs `GET|POST|PUT|DELETE` declared on the schema's options. AAA's `Schema.on("model")` binds every handler with `value.bind(Model)` so `this === Model` (`AAA.js`, `Schema.on("model")`). Permissions are gated by `Model.canSee(req)` via the AAA model route — same gate as the auto-CRUD.
 
 Canonical example: `mongoosePlugins/FrontEnd.js:1196-1412` registers all the model-aware endpoints (`tableForm`, `formFilter`, `tableData`, `formSpecs`, `formCreate`, `formUpdate`, etc.) via `schema.checkAndLoadEndpoint({GET:{...}, POST:{...}, ...})`. Helper `checkAndLoadEndpoint` only sets the extension if not already present — letting later plugins/schemas override.
 
@@ -105,7 +105,7 @@ URL: `/APP/AAA/<ModelName>.<ext>` (e.g. `/APP/AAA/User.json?type=update`).
 
 ## Level 3 — `schema.options.API` (Model-attached, own permissions)
 
-Same `this === Model` binding (see `AAA.js:456-491`), but registered as **free endpoints** in `pool.API` under their own path key. Each endpoint declares its own `isAnonymous`, `auth`, `defaultMethods`. Path key is literal (e.g. `"AAA/myProfile"`, `"AAA/recovery"`).
+Same `this === Model` binding (`AAA.js`, `Schema.on("model")`: `const localAPI = schema.get("API")`), but registered as **free endpoints** in `pool.API` under their own path key. Each endpoint declares its own `isAnonymous`, `auth`, `defaultMethods`. Path key is literal (e.g. `"AAA/myProfile"`, `"AAA/recovery"`).
 
 ```js
 // User.js options.API
@@ -246,7 +246,7 @@ route: {component: "baseModel", props: {model: "PlanExercise"}, children: [
 
 ## Executor: `execEndpoint`
 
-`AAA.js:107-152`. Cascade resolution by `func`, `method`, `ext`:
+`execEndpoint` (`AAA.js`). Cascade resolution by `func`, `method`, `ext`:
 
 ```
 API[func] is function       → call it
@@ -391,7 +391,7 @@ internos (saveRefs).
 
 ## AAA: authentication & permissions
 
-`hasAccess(req)` at `AAA.js:656-710`. Order:
+`hasAccess(req)` en `AAA.js`. Orden (el detalle real, paso a paso, está en la sección siguiente):
 
 1. **`x-itd-access` header** — firma cifrada `${url};${method};${dateString}` (la emite `directRequest` en server.js para llamadas worker→worker, god-access). `hasAccess` valida las **3 partes**: `url` == `req.fullURL`, `method` == `req.method`, y `dateString` < **5 s** (anti-replay). El token queda atado a punta+verbo+tiempo → robarlo no sirve para otra punta, otro verbo, ni pasada la ventana. Migración a JWT pendiente → `claude-docs/TODOs/features/backend/directaccess-jwt.md`.
 2. **`req.auth` (JWT)** — `req.db[auth.model].canSee(req)`.
@@ -430,6 +430,36 @@ cliente OIDC o MCP manda su propio `Bearer`. `expressjwt` está montado global y
 es la firma de que el token es nuestro, y el headless client lo manda siempre— y devuelve `undefined` para lo
 ajeno, que sigue su camino. ⟹ una punta anónima **sí puede** recibir un webhook firmado de un tercero.
 Detalle: `claude-docs/architecture/back/jwt-gate.md`.
+
+### 🔴 El acceso paso a paso — quién decide de verdad (verificado contra el código, 2026-11-09)
+
+El middleware `auth` (`AAA.js`, primero de la ruta `/APP/`) corre en este orden: **(1)** 404 si la punta no existe en
+`pool.API`; **(2)** `runAuthenticators`: recorre `pool.authenticators` (primero la sesión, luego el JWT del FW, luego los
+de los FWPlugins por su key `auth`; `pos` `"^"`/`"$"`/número los reordena, y un `"^"` de plugin queda **antes** de la
+sesión). Cada uno decide con `claims(req)`, síncrono y barato; si reclama, `User.auth(req, authenticate)` resuelve al
+usuario (por `_id` si es hex de 24, si no por `username`; un usuario `blocked` no resuelve) y **es el único que escribe
+`req.auth`**: el primero que lo deja corta, uno que lanza corta la petición con su error, y si ninguno resuelve la
+petición sigue como anónima; **(3)** `User.installIdentity` instala `req.isAuth`, `req.model`, `req.getUser()`
+(memoizado por petición) y `req.actualUser` (sale de la sesión); **(4)** `hasAccess`: sin permiso responde **403 si
+`req.isAuth` y 401 si no**.
+
+`hasAccess` decide así: con `x-itd-access`, solo la firma (url + verbo + 5 s) y sin perfiles; si no, con `req.isAuth`, el
+`canSee` del **modelo con que se autenticó el caller** (`req.model`, no el modelo destino de la punta) junta `profile` +
+`profiles` del usuario y pregunta a `Profile.canSee`; si ninguno concede, **cae a las funciones anónimas**. Un anónimo
+solo tiene estas. Un perfil concede una función cuando `path === <func>` **y** el verbo está en el `defaultMethods`
+**guardado en el perfil** (una copia que se hizo al asignarla: si la punta cambia sus verbos después, el perfil no se
+entera). Las anónimas se leen del `defaultMethods` de la punta: una punta anónima también tiene que declararlo.
+
+**Level** (0 a 10000, menor = más poder, por omisión 10000): a un usuario o perfil de level igual o menor al tuyo no lo
+editas ni lo borras; el 0 edita a todos; nadie se borra a sí mismo, y solo el 0 se edita a sí mismo. Un level solo se
+asigna estrictamente mayor al propio (el 0 asigna cualquiera), y los perfiles que puedes repartir son los de level
+estrictamente mayor al tuyo. Además, un usuario nunca guarda un perfil de level menor al suyo. En el arranque con
+`firstTime` todo esto queda libre y los modelos `User` y `Profile` son anónimos.
+
+**`getRef` y `getSimpleName`** (FWPlugin `names`) son `noProfile` y `hidden`, solo `GET`, con `isAnonymous: "auth"` en
+producción (`true` únicamente en `onDev` o con `firstTime`): los recibe cualquier autenticado, de cualquier modelo
+autenticable, sin asignación. Un modelo marcado `internal` (la opción vale `true` por omisión) responde 403 a un
+autenticado que no sea `User`; `internal: false` lo abre (el plugin `restaurant` lo usa en lo que ve su dueño).
 
 ### 🔴 JWT es headless; el front espera SESIÓN (gap #17)
 
@@ -584,7 +614,7 @@ Capas pendientes del flujo: verificación de correo (doble opt-in, patrón recov
 
 ## CSRF: cómo se salta y cuándo se justifica (`skipCSRF`)
 
-`skipCSRF` NO es una option de la punta: es un **arreglo global de predicados** (`server.js:1061`,
+`skipCSRF` NO es una option de la punta: es un **arreglo global de predicados** (`global.skipCSRF` en `server.js`,
 `global.skipCSRF = []`). Antes del router, si `configGet("csrf")` está activo, el middleware corre
 `skipCSRF.some(fn => fn(req))`: si alguno devuelve true la request pasa sin token; si no, `csrfProtection`.
 Predicados de fábrica: `GET` que no sea `getCSRF` · request autenticada por **JWT** (`req.auth`) · rutas

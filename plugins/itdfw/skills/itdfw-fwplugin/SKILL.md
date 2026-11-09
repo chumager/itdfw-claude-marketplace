@@ -30,6 +30,7 @@ copiar nada a su `DEFAULT`.
 | `plugins` | Mongoose plugins (global/filtered/specific) | leer `mongoosePlugins/` existentes |
 | `db` | Utilidades sobre el objeto `db` | leer `mongooseDB/` existentes |
 | `libs` | Librerías compartidas → `pool.libs` | abajo (§libs) |
+| `auth` | Autenticadores: `{name, claims, authenticate, pos?}` o un arreglo de ellos. `claims(req)` es **síncrono** y barato (corre en cada petición del deploy); `authenticate(req)` devuelve `{model, user}` o `undefined`, o lanza si la credencial es suya y está mala. No escribe `req.auth`: lo escribe `User.auth`. Van después de la sesión y del JWT del FW, en orden de registro; `pos` `"^"` los pone antes de la sesión y `"$"` al final. Uno malformado se loguea y se omite | **`itdfw-api-system`** → "El acceso paso a paso" |
 | `refs` | Fuentes de opciones de un select con nombre (`"plugin/nombre": (req, query) => [{value, text}]`) → `pool.refs`, que leen `getRef`/`getSimpleName`; el campo las pide con `myRef: "plugin/nombre"` | **`itdfw-models`** → `references/special-refs.md` §4 |
 | `vue2`/`vue3`/`react`/`svelte`/`solid`/`lit` | **Frontend** por framework | abajo (§frontend) — lo único exclusivo del FWPlugin |
 | `name` | Nombre para logging | — |

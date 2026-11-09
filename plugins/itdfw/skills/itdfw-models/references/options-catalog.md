@@ -68,6 +68,7 @@ hasFiles]` → **`name`, `title` y `description` son lo que el MENÚ y el admini
 | Option | Qué es |
 |---|---|
 | `query` | `objeto \| función` — PREFILTRO de las consultas del modelo |
+| `internal` | `boolean`, por omisión `true`: el modelo solo lo leen por `getRef`/`getSimpleName` los autenticados de `User`. `false` lo abre a los autenticados de cualquier modelo autenticable (un `Member`, un `Owner`). Solo afecta a esas dos puntas |
 | `aggregate` | Snapshot de aggregate — para modelos de vista/consulta directa |
 | `postData` | Infra para ejecutar lógica DESPUÉS de declarado el modelo |
 | `userData` | SOLO autenticables: campos que viajan en la sesión al front |
