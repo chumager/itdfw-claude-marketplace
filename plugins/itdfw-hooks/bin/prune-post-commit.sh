@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # post-commit git hook (not a Claude hook): runs the comment police over the .js/.jsx/.mjs files of the commit; if one is
 # saturated with comments it says so in the commit output. Does not block: the commit is already done.
-#   poda-post-commit.sh                    run it from post-commit (a copy of this file, or a symlink to it)
-#   poda-post-commit.sh --install <repo>   copies itself as the post-commit hook of that repo (never overwrites an existing one)
+#   prune-post-commit.sh                    run it from post-commit (a copy of this file, or a symlink to it)
+#   prune-post-commit.sh --install <repo>   copies itself as the post-commit hook of that repo (never overwrites an existing one)
 # comment-police.mjs is looked up next to this file (symlinks resolved), or in ITDFW_HOOKS_BIN when set: with an
 # installed COPY, set ITDFW_HOOKS_BIN to the plugin's bin directory.
 if [ "${1:-}" = "--install" ]; then
-  repo=${2:?usage: poda-post-commit.sh --install <path-to-repo>}
+  repo=${2:?usage: prune-post-commit.sh --install <path-to-repo>}
   hooks=$(git -C "$repo" rev-parse --git-common-dir)/hooks
   case "$hooks" in /*) ;; *) hooks="$repo/$hooks" ;; esac
   [ -e "$hooks/post-commit" ] && { echo "✗ $hooks/post-commit already exists: not overwriting it"; exit 1; }

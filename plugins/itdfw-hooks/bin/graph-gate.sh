@@ -76,7 +76,7 @@ touch "$plr_mark"
 cat >&2 <<'EOF'
 Reminder: rg/grep over the monorepo without asking the tools that already know it. First:
   - mcp__itdfw-graph__find "<technical terms>"      -> which piece solves this and which file holds it?
-  - Serena find_symbol / find_referencing_symbols   -> one symbol, a key, who uses it (AST, not text)
+  - Serena find_symbol / find_referencing_symbols   -> one symbol, a key, who uses it (language-server symbols, not text)
   - mcp__qdrant-code-search__qdrant-find            -> semantic search over code and docs
 If none of them finds it: mcp__itdfw-graph__reportGap with what you were looking for, then repeat the rg: it passes now.
 EOF
