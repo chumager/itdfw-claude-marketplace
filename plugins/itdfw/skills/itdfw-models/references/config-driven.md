@@ -4,7 +4,7 @@ El FW tiene un modelo `Config` ("Administración de Configuraciones") que guarda
 tipados** por despliegue: el código declara la FORMA, el admin de cada despliegue llena el VALOR, y
 cualquier modelo/componente lo lee en runtime. Es la pieza que permite que un proceso (etapas de un
 flujo, parámetros de negocio) sea **config, no hardcode** — clave en plataformas multi-cliente
-(cada cooperativa/tenant define lo suyo sin tocar código).
+(cada tenant define lo suyo sin tocar código).
 
 Cuatro pasos: **definir el shape → crear el valor → leerlo → usarlo**.
 
@@ -39,7 +39,7 @@ posterior redefina la misma `name` (por defecto NO: redefinir tira `redefining X
 
 `setConfigDefinition` vive en la **capa db** del plugin `config` (`plugins/config/mongooseDB/config.js`).
 Las capas cargan en orden fijo — `db → types → plugins → schemas → APIs` — así que **desde un Schema o
-desde el `init` de una punta ya existe: se llama directo**, como hace `Member.js` en cooperativa.
+desde el `init` de una punta ya existe: se llama directo**, como hace el modelo de un deploy que lo usa.
 
 El único que necesita esperarlo es quien vive en la **misma capa db** (ej. `unrelatedConfigs.js` o
 `definitions.js` del propio plugin): ahí no hay orden garantizado, y por eso usan

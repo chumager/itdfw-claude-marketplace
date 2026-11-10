@@ -43,7 +43,7 @@ filtrable entrega `path`, `label`, `type`, `filter` (`true` · `"multiple"` · `
 
 🔴 **El filtro de `tableData` viaja como `filter[campo]=valor`** (`?filter[to]=<id>`, `?filter[status]=Pagada`; el MCP
 `query` lo serializa solo). **Un `?campo=valor` pelado se IGNORA en silencio y la grilla responde 200 con TODO** — no
-hay error que lo delate. Caso real (2026-09-04, conviene): un helper de test filtraba `?to=<id>`, recibía la fila de otro
+hay error que lo delate. Caso real (2026-09-04): un helper de test filtraba `?to=<id>`, recibía la fila de otro
 y daba por existente lo que faltaba crear; el rojo apareció tres casos más allá. Otros params de primer nivel:
 `perPage`, `currentPage`, `sortBy`, `sortDesc`, `_id` (uno o arreglo), `count`, `pageCount`.
 

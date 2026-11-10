@@ -49,4 +49,4 @@ export default function restaurantTheme() {
 - **Para activarlo en un navegador que ya tiene el SW:** un cambio en `sw.js` no toma efecto con una recarga; hay que
   activar el SW nuevo.
 
-Caso: site público del plugin `restaurant` (27-oct-2026), `/var/www/dev/restaurant.itdmovil.cl/mongoosePlugins/restaurantTheme.js`.
+Caso: site público del plugin `restaurant` (27-oct-2026), `<documentRoot>/<site>/mongoosePlugins/restaurantTheme.js`.

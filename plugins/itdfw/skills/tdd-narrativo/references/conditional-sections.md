@@ -157,7 +157,7 @@ en cada aviso (así funciona Web Push, RFC 8030); un cliente podía apuntarlo a 
 devolvía lo que esa IP contestaba. Arreglo: `https` y solo los cuatro servicios de push, fijos en el código. El hoyo
 lo cazó una revisión automática, no el TDD: nunca habíamos pensado al atacante desde esa posición.
 
-### Para servicios SaaS (cooperativas, restaurantes, cualquier multi-tenant) — además
+### Para servicios SaaS (cualquier multi-tenant) — además
 
 En un SaaS aparecen dos actores que el AAA no ordena, y un plugin diseñado para SaaS los declara:
 
@@ -204,7 +204,7 @@ Lo que el módulo no puede contener, y es responsabilidad del arquitecto del Saa
 - **Código de tenant** (`DBModelRaw`, `DBAPI`, Tools de IA, plugins): corre con el poder entero del back.
   `module-from-string` usa el `vm` de Node con `useCurrentGlobal: true` (ve `process.env`, `configGet`, `pool`) y
   puede importar `fs`, `child_process` y `net`; Node documenta que `vm` no es un mecanismo de seguridad. Una revisión
-  del código con Jev sirve de alarma, no de muro.
+  del código por un revisor sirve de alarma, no de muro.
 - **Salidas legítimas** (webhooks de salida): no se pueden fijar en una lista, y también pueden apuntar adentro.
 - **El muro**: servicio con usuario sin privilegios y `PATH` mínimo, chroot o contenedor por tenant, permission model
   de Node, y egress filtrado (internet sí; rangos privados, loopback y la metadata de la nube no). Eso deja pasar los

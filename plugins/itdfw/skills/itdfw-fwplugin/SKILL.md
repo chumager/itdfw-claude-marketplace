@@ -10,7 +10,7 @@ description: Use when creating or understanding an ITDFW FWPlugin — the back-t
 Un FWPlugin es una **capa que cruza TODO el stack back→front**. No es "un plugin de backend": es un
 objeto declarativo que puede traer **modelos, mongoose-plugins, types custom, endpoints API, libs
 compartidas Y su propio frontend** (componentes/vistas por framework), sobreescribiendo o creando lo
-que quiera. Un carro de compras completo —o todo el vertical cooperativas— puede ser UN FWPlugin: las
+que quiera. Un carro de compras completo —o todo un vertical de negocio— puede ser UN FWPlugin: las
 apps lo **importan y heredan todo**, y sobreescriben solo lo que necesiten (cascada normal del FW), sin
 copiar nada a su `DEFAULT`.
 
@@ -291,7 +291,7 @@ export default {
 - **(2) inline** — escribir la estructura literal directo en el array. Válido por sí mismo: p.ej. el
   dev necesita algo del scope local del `.itdfw.js`, o una pieza aún no se externalizó como módulo.
 
-🔴 El `{ vue: { currency: <path> } }` de cooperativa es la forma (2) como **parche temporal** (no por
+🔴 El `{ vue: { currency: <path> } }` de un deploy con moneda es la forma (2) como **parche temporal** (no por
 diseño): Currency todavía vive DENTRO del back → Vite no puede descubrir su front → se declara a mano.
 Al externalizar Currency será un import directo como (1). No es "una forma de front" — es inline por
 decisión, que acá resuelve un front no-externalizado.
@@ -340,7 +340,7 @@ en su `package.json`: el site pone solo el hijo y no tiene por qué saber que la
 
 Y la base expone un **guard** (`enabled`, con un interruptor `enabled` en su Config; no `active`, que es nombre
 reservado) para que un hijo apagado o sin configurar responda como flujo (`[]`) y no con un 5XX que termina en correo
-al admin. Medido 27-sep-2026 en el site `jev` con `plugins/typesafe` + `plugins/typesafe-icon`.
+al admin. Medido 27-sep-2026 en un site de prueba con `plugins/typesafe` + `plugins/typesafe-icon`.
 
 ## libs — interconexión runtime
 

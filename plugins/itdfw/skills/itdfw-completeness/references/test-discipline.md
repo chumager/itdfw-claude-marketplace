@@ -98,7 +98,7 @@ contenida en el plugin.
 La regla inversa de la anterior. Lo que prueba el **framework** (AAA, `changeMethod`, `Profile.canSee`, parsers,
 multer, timezone, wellKnown…) va en **`tests/back/`** del monorepo, porque es lo que corre en el release del back.
 Un test del core escrito dentro de un plugin **no corre cuando se publica el back**: es un test que existe y no
-protege nada (jcmunoz 2026-09-16, tras encontrar el espejo `checkUpdate` probado desde `plugins/conviene`: *"un
+protege nada (jcmunoz 2026-09-16, tras encontrar el espejo `checkUpdate` probado desde un plugin de producto: *"un
 plugin que prueba cosas del core es un total sinsentido"*).
 
 Cómo se escriben, para que el gallinero se ordene solo:
@@ -107,7 +107,7 @@ Cómo se escriben, para que el gallinero se ordene solo:
   Nada de scripts que impriman `OK/FALLA`: se afirma con `node:assert/strict`.
 - **El runner es `tests/back/index.js`**: `node index.js -H <URL COMPLETA> -U <user> -T <token> [-P <password>]
   [--reporter junit] [patrón…]`. Deja `ITDFW_HOST/USER/TOKEN/PASSWORD` en el entorno y corre los `*.test.js`.
-  🔴 `-H` es la **URL completa** (`https://conviene.dev.itdmovil.cl:9090`): el test no decide ni deduce nada de
+  🔴 `-H` es la **URL completa** (`https://<host>:<puerto>`): el test no decide ni deduce nada de
   red, así se prueba igual un sitio local, uno por nginx o uno remoto.
 - **`tests/back/lib/site.js`** entrega `admin()`, `as(user, token)`, `url(path)`, `request()`, `json()`. El
   **transporte** (headless client, `fetch`, curl, Playwright) lo elige cada test; el runner no sabe de eso.

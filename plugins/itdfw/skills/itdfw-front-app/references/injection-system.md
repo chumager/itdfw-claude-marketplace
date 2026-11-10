@@ -75,7 +75,7 @@ invites suspecting the injection system itself instead of the path.
 ⟹ Debug rule: put a `console.log` at MODULE scope (not inside a hook) as step one. If it doesn't print,
 the file is not where the FW is looking — stop reading the injection code and check the base.
 
-Caso real (2026-08-18, socios.fraterbaas.cl): la inyección que fija el modo de autenticación del site
+Caso real (2026-08-18, un site de un deploy): la inyección que fija el modo de autenticación del site
 (`auth/setAuthMode` con `modelAuth: "Member"`) se puso en `injections/components/App.js` por analogía con
 los componentes. Cero output, cero error. Media hora sospechando de `localImport` y de `processComponent`,
 cuando el archivo solo estaba una carpeta más adentro.

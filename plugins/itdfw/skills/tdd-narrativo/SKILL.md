@@ -206,7 +206,7 @@ reference, y se leen ANTES de escribir la sección Modelo.
 | **2d · Norma externa** | el nombre de lo que escribes lo eligió alguien de afuera (RFC, `grant_type`, `.well-known`, código de un organismo) | traer la norma **vigente** de la fuente, jerarquizar MUST/SHOULD/MAY/deprecated y mapear el choque con lo que implementan los clientes reales. Nunca de memoria |
 | **2e · Adoptar → adaptar → implementar** | siempre que el módulo vaya a construir algo que podría existir afuera | los MUST/SHOULD/MAY se fijan **antes** de mirar candidatos; queda escrito qué se evaluó y por qué no sirvió; adaptar = mantener el parche para siempre |
 | **2f · El módulo ya opera** | alguna parte ya corre en alguna parte (aunque se vaya a reescribir) | dos secciones: **Diferencial** (qué falta) y **Defectos heredados**, verificados **corriendo**, cada fila con decisión del dueño: arreglar o heredar |
-| **2g · Superficie de ataque** | el módulo recibe de afuera algo que el back usa para actuar (una URL, un host, código, un tamaño, una llave de config), o gasta plata nuestra | tabla de actores y, por cada entrada, SSRF / DoS / DoW / cruce de tenants con su caso. **Si el módulo es para un SaaS** (cooperativas, restaurantes…), además el apartado SaaS: admin del tenant y arquitecto del SaaS, verificado en QA o en la nube, no en local |
+| **2g · Superficie de ataque** | el módulo recibe de afuera algo que el back usa para actuar (una URL, un host, código, un tamaño, una llave de config), o gasta plata nuestra | tabla de actores y, por cada entrada, SSRF / DoS / DoW / cruce de tenants con su caso. **Si el módulo es para un SaaS** (cualquier multi-tenant), además el apartado SaaS: admin del tenant y arquitecto del SaaS, verificado en QA o en la nube, no en local |
 
 ### 3 · Ejecutores
 
@@ -353,7 +353,7 @@ Sin los cuatro, el estado es **"probado"**, no **"operando"**, y el documento NO
 Un TDD **no se manda a implementar** sin una sección "Rebanada 1": el recorrido más chico que un usuario real hace
 esta semana de punta a punta, con lo demás reemplazado por algo tonto. Cada modelo, campo y punta del Modelo nombra
 en qué rebanada se usa; lo que no está en la 1 va a una lista de UNA línea, sin diseñar. Caso canónico:
-`plugins/conviene/TDD.md` (el diseño bottom-up llevaba dos horas creciendo; con la rebanada escrita, la
+el TDD de un plugin propio (el diseño bottom-up llevaba dos horas creciendo; con la rebanada escrita, la
 implementación salió en 44 minutos, 56/56).
 
 ## 🔴 El TDD inicial NO puede ser completo — y no debe intentarlo

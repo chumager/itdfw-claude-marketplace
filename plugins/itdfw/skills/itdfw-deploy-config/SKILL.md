@@ -31,7 +31,7 @@ Hay dos lugares donde vive configuración, y **la pregunta que decide no es de c
   así que `false` se vuelve "sin options" y el plugin (GLOBAL) corre con defaults. La perilla está adentro del
   plugin: `Zones: {zoneOptions: false}` → `zones.js` retorna antes de tocar el schema (verificado 2026-09-03).
 - **`Currency`** → va en el **nivel 2**. Un deploy arranca perfectamente sin saber su moneda; la necesita
-  recién cuando alguien opera plata. Por eso cooperativas tiene su configuración de moneda **y no está en
+  recién cuando alguien opera plata. Por eso un deploy que opera plata tiene su configuración de moneda **y no está en
   el yaml**: subió a nivel 2, con su `configDefinition`.
 
 🔴 **El nivel 2 no es "el otro lugar donde poner cosas"**: es parte del flujo de operación del sistema —
@@ -52,7 +52,7 @@ usuario en level 0 se ve y se edita; con level 100 no aparece en `tableData` ni 
 
 ```sh
 node itdfwd.js                      # /etc/itdfw/config.{yaml,json,json5,js,cjs,mjs}
-node itdfwd.js -C cooperativas      # /etc/itdfw/cooperativas.<ext>  — la extensión se resuelve sola
+node itdfwd.js -C <deploy>          # /etc/itdfw/<deploy>.<ext>  — la extensión se resuelve sola
 node itdfwd.js -c /otra/ruta        # cambia el directorio
 ```
 
@@ -365,8 +365,8 @@ silencio** y el site levanta solo con lo que herede de DEFAULT.
 ```
 <documentRoot>/
   DEFAULT/                        .itdfw.js con lo común (plugins)
-  cooperativa.fraterbaas.cl/      ← el nombre es el host
-  socios.fraterbaas.cl/
+  sitio-a.example.org/            ← el nombre es el host
+  sitio-b.example.org/
 ```
 
 ### Los pasos

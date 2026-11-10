@@ -548,7 +548,7 @@ TODO el aparato de auth del back, gratis y sin una línea nueva:
 - `recovery.json` — recuperación de contraseña.
 - Los paths con `auth: "password"` (username/email/identidad) ya son las opciones de login.
 - Perfil forzado (en `pre("validate")` el modelo asigna su perfil único — buscar por **`profileName`**
-  camelCase, verificado vía MCP `modelFields Profile`, NUNCA copiar `profile_name` snake de Belat).
+  camelCase, verificado vía MCP `modelFields Profile`, NUNCA copiar `profile_name` snake de un corpus viejo).
 
 ### La frontera back↔front (zona gris)
 El **back provee el flujo completo**; el **front solo lo activa con valores de store** (módulo `auth`):
@@ -590,7 +590,7 @@ Para hacer registrable un modelo (que DEBE ser clon de User):
 
 **CSRF normal** (el front manda token como checkLogin) — `skipCSRF` NUNCA para forms de browser.
 **Anti-vestigio**: register como CRUD del modelo (child Register en setRoute, espejos formRegister,
-`case "register"`) fue eliminado 2026-06-09 — si aparece en un corpus viejo (Belat), NO imitarlo.
+`case "register"`) fue eliminado 2026-06-09 — si aparece en un corpus viejo (código legacy), NO imitarlo.
 Capas pendientes del flujo: verificación de correo (doble opt-in, patrón recovery) + captcha (Config).
 
 > Enseñanza completa: `claude-docs/current/principios-modelos.md` §6. Ruta real: `bitacora-register-20260609.md`.
@@ -752,7 +752,7 @@ con 403** `not allowed to upload file to <url>`. No hay subida "por defecto".
 El front manda los archivos como **multipart** con el path del campo como `fieldname` + el JSON en el text field
 `__data` (`Form.jsx`, `ItdRegister.jsx`; ver `architecture/back/multipart-flow.md`); `setData` los lee de `req.files`.
 🔴 Si el front manda JSON con el `Blob` adentro, el archivo llega como OBJETO: `saveRefs` lo toma por "ref con payload",
-llama `File.FWcreate` y revienta con `req.files undefined`. Caso real 2026-08-27: punta `myFolder` de cooperativas.
+llama `File.FWcreate` y revienta con `req.files undefined`. Caso real 2026-08-27: punta `myFolder` de un deploy.
 
 ## Deuda histórica: prefijo `AAA/` vestigial
 

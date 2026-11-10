@@ -69,7 +69,7 @@ Core handles: aliases (@, default, one per plugin level, core), transformIndexHt
 ```sh
 pnpm itdfw dev                      # el site sale del DIRECTORIO PADRE
 pnpm itdfw dev --host <site>        # solo desde DEFAULT
-pnpm itdfw build -C cooperativas    # la extensión la resuelve el config-loader
+pnpm itdfw build -C <deploy>       # la extensión la resuelve el config-loader
 ```
 
 | Flag / env | Qué define |

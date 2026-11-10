@@ -14,7 +14,7 @@ definido en la BD en vez de un archivo — mismo modelado, otra vía de carga).
 ## 1. DÓNDE — ubicación del archivo
 
 La raíz NO es una convención: es **`documentRoot`**, definido en la configuración del deploy
-(`/etc/itdfw/<deploy>.yaml`, p.ej. `documentRoot: /var/www/cooperativa`). De ahí el FW deriva
+(`/etc/itdfw/<deploy>.yaml`, p.ej. `documentRoot: /var/www/<deploy>`). De ahí el FW deriva
 `<documentRoot>/DEFAULT/` y `<documentRoot>/<app>/` (la app/site también viene de la config).
 Primero verifica el `documentRoot` del deploy donde trabajas.
 
@@ -71,7 +71,7 @@ fieldName: {            // camelCase SIEMPRE; identificadores en inglés
                          //   🔴 "Address" (plugin address) persiste un GeoJSON Point pero NO declara
                          //   índice geo: el modelo que pregunte por cercanía declara
                          //   `Schema.index({address: "2dsphere"})` y usa `$geoNear` con `key: "address"`
-                         //   (caso conviene/Place, 2026-09-04). Sin el índice, `$near` revienta.
+                         //   (caso `Place`, 2026-09-04). Sin el índice, `$near` revienta.
   name: "Label visible"  // ← en la práctica siempre: es el label del form/grilla (se traduce)
 }
 ```
@@ -235,7 +235,7 @@ campo **no lleva ninguna option**. Funciona, pero no lo uses como patrón — el
 | `Bitacora` | historial de hechos embebido — ver references |
 | `API` / `route` | puntas y rutas propias del modelo — skill `itdfw-api-system` |
 | `cache` | política de cache de las puntas del modelo: `{maxAge, swr, public, noStore}` (sin `Vary`: el SW indexa por URL; lo que cambia el contenido va en la URL) o `(req) => política` decidiendo por punta con `req.params.ext`; `undefined` cede al default del deploy (`cache:` en la config, un mapa por ext: la estructura fija, los datos SWR) y sin nada es `private, max-age=0` (se guarda, se revalida siempre: 304 barato; back ≥ 7.4.1, gap #44). Un modelo normal no declara nada. Canónico: `cache: req => ({tableData: {maxAge: 0, swr: 60}, tableFields: {maxAge: 300}})[req.params.ext]` (la estructura es fija, los datos son SWR). Valores y reglas: `itdfw-api-system` §atributo `cache` |
-| `group` + `formSpecs: {grouped: true}` | **el formulario en SECCIONES (cards)**: `group: [{name: "identification", title: "Identificación"}, …]` en las options, y en cada campo `group: "identification"`. El front arma un bloque por grupo con sus campos; los campos sin `group` (o con uno inexistente) van a un bloque implícito **primero**, así un campo nuevo aparece arriba y nunca desaparece. Es un card envolvente, no un acordeón: para eso está el sub-schema embebido (`nested`, collapse), que es otra cosa (un sub-documento). Caso vivo: `Member.js` de cooperativas. Solo por modelo en archivo o `DBModelRaw`: el `DBModel` guiado no tiene `group` (gap #25, 17-sep-2026). 🔴 **Requiere back ≥ 7.3.9** (el que manda `groups`/`grouped` en `formSpecs`); el front lo soporta desde `site-vue-core` 7.0.4. Con un back anterior el formulario sale plano sin error |
+| `group` + `formSpecs: {grouped: true}` | **el formulario en SECCIONES (cards)**: `group: [{name: "identification", title: "Identificación"}, …]` en las options, y en cada campo `group: "identification"`. El front arma un bloque por grupo con sus campos; los campos sin `group` (o con uno inexistente) van a un bloque implícito **primero**, así un campo nuevo aparece arriba y nunca desaparece. Es un card envolvente, no un acordeón: para eso está el sub-schema embebido (`nested`, collapse), que es otra cosa (un sub-documento). Caso vivo: el modelo de socios de un deploy financiero. Solo por modelo en archivo o `DBModelRaw`: el `DBModel` guiado no tiene `group` (gap #25, 17-sep-2026). 🔴 **Requiere back ≥ 7.3.9** (el que manda `groups`/`grouped` en `formSpecs`); el front lo soporta desde `site-vue-core` 7.0.4. Con un back anterior el formulario sale plano sin error |
 
 🔴 **El namespace de options es ABIERTO**: las de arriba son el núcleo común, pero el canal lo usan
 TODOS los plugins — cada plugin es una OFERTA dormida que se activa cuando el modelo declara SU
