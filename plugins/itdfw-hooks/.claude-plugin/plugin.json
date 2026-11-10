@@ -1,0 +1,5 @@
+{
+  "name": "itdfw-hooks",
+  "description": "Claude Code hooks for working on ITDFW: skill gates, structured-search reminder, subagent type gate, npm/mv/cp guards and a comment police",
+  "author": {"name": "Juan Carlos Muñoz"}
+}

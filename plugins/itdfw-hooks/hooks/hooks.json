@@ -1,0 +1,74 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/safe-mvcp.sh"}
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/commit-completeness-gate.sh", "timeout": 10}
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/npm-pnpm.sh", "timeout": 5}
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/skill-gate.sh"}
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-type-gate.sh",
+            "statusMessage": "Checking subagent_type/model..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/graph-gate.sh", "timeout": 5}
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__itdfw-graph__find|mcp__plugin_serena_serena__find_symbol|mcp__plugin_serena_serena__find_referencing_symbols|mcp__plugin_serena_serena__search_for_pattern|mcp__plugin_serena_serena__get_symbols_overview|mcp__qdrant-code-search__qdrant-find|mcp__inventory__branch|mcp__inventory__affected|mcp__inventory__callers|mcp__inventory__hasCaller|mcp__inventory__orphans|mcp__inventory__summary",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/search-mark.sh"}
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/comment-police.sh"}
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/skill-mark.sh"}
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/skill-reset.sh"}
+        ]
+      }
+    ]
+  }
+}
