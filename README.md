@@ -18,7 +18,7 @@ the technical claims in those READMEs carry a `file:line` that was checked again
 | **MCP `inventory`** | A server over stdio that answers "who extends this component, who uses it" for the front | [`agent-tools/inventory-mcp/`](agent-tools/inventory-mcp) | Before changing a component, list what the change can break | `node --test test/` (2 cases, self-contained; they cover only the `@spec` reader) |
 | **MCP `itdfw-graph`** | A server over stdio doing semantic search over the knowledge graph that the third-party tool graphify builds | [`agent-tools/graph-rag-mcp/`](agent-tools/graph-rag-mcp) | Find *which piece already solves this* when you do not know its name | No tests. Manual: the `status` and `find` tools |
 | **`room`** | A command-line chat between a person and live Claude Code sessions on the same machine | [`agent-tools/room/`](agent-tools/room) | Lets several sessions and a person talk in one place with history, without a server | `node --test` (27 cases, self-contained, fake sessions) |
-| **Hooks** | Shell and Node scripts that Claude Code runs on lifecycle events to enforce rules (load the skill before editing, no generic subagents, comment hygiene, presence notices) | [`plugins/itdfw-hooks/`](plugins/itdfw-hooks) | Rules written as text get forgotten; a hook makes the harness refuse the action | Not tested. Read the scripts; they are short |
+| **Hooks** | Shell and Node scripts that Claude Code runs on lifecycle events to enforce rules (load the skill before editing, no generic subagents, comment hygiene, presence notices) | [`plugins/itdfw-hooks/`](plugins/itdfw-hooks) | Rules written as text get forgotten; a hook makes the harness refuse the action | No automated tests; each hook was run once by hand with sample input (see its README). The scripts are short |
 
 ## What is a real AST and what is not
 
@@ -31,8 +31,8 @@ the technical claims in those READMEs carry a `file:line` that was checked again
 | **MCP `itdfw-graph`** | Embeds the labels of nodes that graphify already produced. It parses nothing. **Not an AST.** | `agent-tools/graph-rag-mcp/src/index.js:127-133`, `:142` | ours |
 | **graphify** | For source code, tree-sitter parsing (a real AST), no LLM. For documents and images, a model. Only part of the graph is code (about a fifth of the nodes in our graph on 2026-11-09). We run it with a small local patch so that `.jsx` files use the TSX grammar | graphify's own package metadata and `extract.py` | third party (`graphifyy`, Apache-2.0) |
 | **Serena** | A client of language servers (LSP). It has no parser of its own | its installed package (`serena-agent`); in our project it is configured with one language server, `vue` | third party |
-| **`comment-police`** (hook) | Parses the edited JavaScript file with **espree** (ESLint's parser) to extract comments and to tell whether a comment is commented-out code | `claude-hook-comment-police.mjs:5`, `:57-63` | ours, using espree (third party) |
-| **`ast-same.sh`** | Re-prints the file at `HEAD` and the working copy with **esbuild** (`--minify-whitespace`) and compares the two texts. A re-printed text, not a serialized tree | `ast-same.sh:14`, `:20` | ours, using esbuild (third party) |
+| **`comment-police`** (hook) | Parses the edited JavaScript file with **espree** (ESLint's parser) to extract comments and to tell whether a comment is commented-out code | `plugins/itdfw-hooks/bin/comment-police.mjs:12`, `:64-70` | ours, using espree (third party) |
+| **`ast-same.sh`** | Re-prints the file at `HEAD` and the working copy with **esbuild** (`--minify-whitespace`) and compares the two texts. A re-printed text, not a serialized tree | `plugins/itdfw-hooks/bin/ast-same.sh:15`, `:21` | ours, using esbuild (third party) |
 
 So the AST work in this repository is done by espree, esbuild, tree-sitter (inside graphify) and a language server
 (inside Serena). The three MCP servers written here do not parse code.
@@ -55,7 +55,7 @@ So the AST work in this repository is done by espree, esbuild, tree-sitter (insi
 | MCP `inventory` | The scanner is a directory walker and regexes, but its rules (cascade slot, `localImport`, the `Itd` prefix) are the framework's idiom |
 | MCP `itdfw-graph` | Yes, for any repository that has a graphify graph. Defaults and tool texts are ITDFW's |
 | `room` | Yes, it imports nothing from the framework. It depends on **Claude Code's internal session files and socket protocol**, which are not documented |
-| Hooks | They are personal to one machine and one user (absolute paths, session names, a task board). None is installable as is |
+| Hooks | Ten of them are packaged, but they assume an ITDFW repository, an agent type named `base` and a skill that are not shipped, and they run in every project where the plugin is enabled. Read them rather than install them |
 
 ## Honest limits
 
