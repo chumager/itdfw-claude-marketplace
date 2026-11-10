@@ -7,6 +7,11 @@
       "name": "itdfw",
       "source": "./plugins/itdfw",
       "description": "Develop on ITDFW: models, types, endpoints, plugins, front libraries, deploy config, TDD and the definition of done"
+    },
+    {
+      "name": "itdfw-hooks",
+      "source": "./plugins/itdfw-hooks",
+      "description": "Claude Code hooks: skill and search gates, agent-type and commit gates, comment police, and the AST check for comment pruning"
     }
   ]
 }
