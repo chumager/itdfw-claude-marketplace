@@ -27,7 +27,7 @@ the technical claims in those READMEs carry a `file:line` that was checked again
 | Tool | Mechanism | Evidence | Whose code |
 |---|---|---|---|
 | **MCP `inventory`** | Regular expressions over file text, keyed by the file's base name. **Not an AST.** | `agent-tools/inventory-mcp/scan.mjs:19-22` imports only Node built-ins; the matches are `RegExp` (`scan.mjs:125-126`, `scan.mjs:173-174`) | ours |
-| **MCP `itdfw`** | JSON over HTTP to the back end. It does not read or parse code. **Not an AST.** | `agent-tools/itdfw-mcp/src/server.js:2-6`, `libs/headless-client/src/index.js:31-42` | ours |
+| **MCP `itdfw`** | JSON over HTTP to the back end. It does not read or parse code. **Not an AST.** | `agent-tools/itdfw-mcp/src/server.js:2-6`; the HTTP client is the package `@chumager/itdfw-headless-client` (`src/index.js:31-42`), a dependency that is **not included** in this repository | ours |
 | **MCP `itdfw-graph`** | Embeds the labels of nodes that graphify already produced. It parses nothing. **Not an AST.** | `agent-tools/graph-rag-mcp/src/index.js:127-133`, `:142` | ours |
 | **graphify** | For source code, tree-sitter parsing (a real AST), no LLM. For documents and images, a model. Only part of the graph is code (about a fifth of the nodes in our graph on 2026-11-09). We run it with a small local patch so that `.jsx` files use the TSX grammar | graphify's own package metadata and `extract.py` | third party (`graphifyy`, Apache-2.0) |
 | **Serena** | A client of language servers (LSP). It has no parser of its own | its installed package (`serena-agent`); in our project it is configured with one language server, `vue` | third party |
@@ -51,7 +51,7 @@ So the AST work in this repository is done by espree, esbuild, tree-sitter (insi
 | Piece | Runs without ITDFW? |
 |---|---|
 | Skills | No. They describe the framework |
-| MCP `itdfw` | The back-end half is an ITDFW plugin; the stdio half would run against anything that accepts the same JWT, but almost every tool points at an ITDFW route |
+| MCP `itdfw` | It needs the package `@chumager/itdfw-headless-client`, which is not included here. The back-end half is an ITDFW plugin; the stdio half would run against anything that accepts the same JWT, but almost every tool points at an ITDFW route |
 | MCP `inventory` | The scanner is a directory walker and regexes, but its rules (cascade slot, `localImport`, the `Itd` prefix) are the framework's idiom |
 | MCP `itdfw-graph` | Yes, for any repository that has a graphify graph. Defaults and tool texts are ITDFW's |
 | `room` | Yes, it imports nothing from the framework. It depends on **Claude Code's internal session files and socket protocol**, which are not documented |
