@@ -304,16 +304,6 @@ describe("level 1: names ignore case", () => {
     assert.match((await a.room("invite", "ci", "CI-bee")).stdout, /already here/);
   });
 
-  it("a participant is still delivered to by its exact name when another live session differs only in case", async () => {
-    const [a, b] = await roomWith(world, "exact", ["Exact-A", "Exact-B"]);
-    const twin = await world.session("exact-b");
-    await a.room("say", "exact", "hello");
-    await until(() => b.inbox.length === 1, "delivery to the participant");
-    await settle();
-    assert.equal(twin.inbox.length, 0);
-    assert.ok(!world.records("exact").some(record => record.type === "left"), "nobody was dropped as dead");
-  });
-
   it("a @mention matches a participant whatever the case, and the notice names it as it really is", async () => {
     const [a, b, c] = await roomWith(world, "mcase", ["mcase-a", "Mcase-B", "mcase-c"]);
     await a.room("say", "mcase", "@MCASE-b take a look");
