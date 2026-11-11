@@ -157,7 +157,7 @@ const mentionPattern = name =>
 
 /**
  * Finds which participants a text addresses with `@name`, ignoring case. A `@word` that is not a participant is not a
- * mention. Two participants whose names differ only in case can both come back: {@link say} refuses that as ambiguous.
+ * mention.
  * @param {string} text Text of the message.
  * @param {Iterable<string>} names Participants that can be mentioned.
  * @returns {string[]} The mentioned names as the participants really are called, in the order given.
@@ -227,8 +227,7 @@ function liveSessionsWhere(matches) {
 
 /**
  * Finds the live sessions with exactly this name, with what it takes to write to them. Delivery uses this one: a
- * participant is stored under its real name, so it is never matched ignoring case (that would turn two sessions that
- * differ only in case into one ambiguous recipient).
+ * participant is stored under its real name, so it is never matched ignoring case.
  * @param {string} name Session name, as the session has it.
  * @returns {{name: string, socketPath: string, token: string}[]} Live sessions; empty if there is none.
  */
@@ -237,17 +236,14 @@ export function liveSessions(name) {
 }
 
 /**
- * Finds the real name of the live session that a name typed by a person refers to, ignoring case. The room never picks
- * between two live sessions whose names differ only in case.
+ * Finds the real name of the live session that a name typed by a person refers to, ignoring case. Premise: no two
+ * names differ only in case, so the first match is the one.
  * @param {string} typed Name as it was typed.
  * @returns {string|null} The session's real name, or null if no live session matches.
- * @throws {RoomError} If more than one real name matches.
  */
 export function resolveSessionName(typed) {
   const wanted = typed.toLowerCase();
-  const names = [...new Set(liveSessionsWhere(candidate => candidate.toLowerCase() === wanted).map(({name}) => name))];
-  if (names.length > 1) throw new RoomError(`ambiguous session name ${typed}: it matches ${names.join(", ")}`);
-  return names[0] ?? null;
+  return liveSessionsWhere(candidate => candidate.toLowerCase() === wanted)[0]?.name ?? null;
 }
 
 /** Names of the live sessions, for completion; the same sessions {@link resolveSessionName} looks at. */
@@ -326,14 +322,10 @@ export async function broadcast(room, from, line, excluded = [from], mentioned =
  * @param {string} who Author.
  * @param {string} text Text of the message.
  * @returns {Promise<object>} The report of {@link broadcast}.
- * @throws {RoomError} If a mention fits two participants whose names differ only in case; nothing is written.
  */
 export async function say(room, who, text) {
   const present = requireParticipant(room, who);
   const mentioned = mentionsIn(text, [...present.keys()].filter(name => name !== who));
-  if (new Set(mentioned.map(name => name.toLowerCase())).size < mentioned.length) {
-    throw new RoomError(`ambiguous mention: it fits ${mentioned.join(", ")}, which differ only in case`);
-  }
   appendRecord(room, {type: "msg", from: who, text});
   return broadcast(room, who, `[room ${room}] ${escapeText(who)}: ${escapeText(text)}`, [who], mentioned);
 }
@@ -341,8 +333,7 @@ export async function say(room, who, text) {
 /**
  * Brings a live session into the room and sends it a short notice, never the history.
  * Requires being a participant, except in a missing or empty room, where whoever invites comes in first.
- * The session is found ignoring case and joins under its real name; two live sessions that differ only in case are
- * ambiguous and the invitation fails.
+ * The session is found ignoring case and joins under its real name.
  * @param {string} room Room name.
  * @param {string} who Who invites.
  * @param {string} typed Session invited, as it was typed.

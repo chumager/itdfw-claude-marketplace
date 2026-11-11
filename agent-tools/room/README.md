@@ -82,7 +82,7 @@ tables) and wrapped to its width; through a pipe the text goes as it was written
 ## Mentions
 
 `@name` of a participant says who a message is for, ignoring case (`@restaurant` mentions `Restaurant`); everyone still
-gets it. If a mention fits two participants whose names differ only in case, `say` refuses it as ambiguous. In a terminal the mention takes the
+gets it. In a terminal the mention takes the
 colour of the person mentioned. A session mentioned gets the line `Dirigido a ti.` in its notice; the others get
 `Dirigido a <names>: es informativo para ti; no respondas salvo que tengas algo que corregir.` A `@word` that is not a
 participant, or glued to a word (`x@name`), is not a mention. There is no `@all`: a message without mentions is for
@@ -97,8 +97,7 @@ room design                  # open the room in this terminal, creating it if ne
 Inside: `/invite <session>`, `/kick <participant>`, `/who`, `/list`, `/history [n]`, `/leave`, `/help`. Anything else
 is sent to the room.
 
-Session names ignore case: `/invite restaurant` finds the live session `Restaurant` and it joins under its real name. If
-two live sessions differ only in case, the room does not choose: `invite` fails as ambiguous.
+Session names ignore case: `/invite restaurant` finds the live session `Restaurant` and it joins under its real name.
 
 Tab completes, ignoring case: `/` the commands, `/invite ` the live sessions, `@` the participants of the room. With
 several options, press tab twice to list them.

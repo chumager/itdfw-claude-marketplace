@@ -304,21 +304,6 @@ describe("level 1: names ignore case", () => {
     assert.match((await a.room("invite", "ci", "CI-bee")).stdout, /already here/);
   });
 
-  it("two live sessions whose names differ only in case are ambiguous: the room does not choose", async () => {
-    const [a] = await roomWith(world, "dup", ["dup-a"]);
-    const upper = await world.session("Dup-Twin");
-    const lower = await world.session("dup-twin");
-    const lines = world.records("dup").length;
-    const result = await a.room("invite", "dup", "DUP-TWIN");
-    assert.equal(result.code, 1);
-    assert.match(result.stderr, /ambiguous/);
-    assert.match(result.stderr, /Dup-Twin/);
-    assert.match(result.stderr, /dup-twin/);
-    assert.equal(world.records("dup").length, lines, "the room was not touched");
-    await settle();
-    assert.equal(upper.inbox.length + lower.inbox.length, 0, "nobody was told");
-  });
-
   it("a participant is still delivered to by its exact name when another live session differs only in case", async () => {
     const [a, b] = await roomWith(world, "exact", ["Exact-A", "Exact-B"]);
     const twin = await world.session("exact-b");
@@ -335,16 +320,6 @@ describe("level 1: names ignore case", () => {
     await until(() => b.inbox.length === 1 && c.inbox.length === 1, "delivery to both");
     assert.match(received(b), /\nDirigido a ti\.\n/);
     assert.match(received(c), /\nDirigido a Mcase-B: /);
-  });
-
-  it("a @mention that fits two participants differing only in case is refused as ambiguous, with nothing written", async () => {
-    const [a] = await roomWith(world, "mamb", ["mamb-a", "Mamb-X"]);
-    fs.appendFileSync(world.roomFile("mamb"), `${JSON.stringify({ts: new Date().toISOString(), type: "join", who: "mamb-x", kind: "session"})}\n`);
-    const lines = world.records("mamb").length;
-    const result = await a.room("say", "mamb", "@mamb-X please");
-    assert.equal(result.code, 1);
-    assert.match(result.stderr, /ambiguous/);
-    assert.equal(world.records("mamb").length, lines);
   });
 
   it("the terminal view highlights a mention with the participant's real name", () => {

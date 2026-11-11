@@ -62,9 +62,9 @@ sale de subir por los procesos padres hasta su ficha. No hay cron: nada corre si
 | N1 · en TTY real, el markdown sale renderizado y un ANSI dentro del mensaje no llega a la terminal | copiar el texto sin limpiar antes de renderizar | ✅ |
 | N1 · un `@participante` le llega a todos: al mencionado con "Dirigido a ti.", al resto con la línea informativa; un `@` que no es participante no cuenta | entregar solo al mencionado; contar cualquier `@palabra` | ✅ |
 | N1 · un mensaje sin mención (o con `x@nombre`, un `@` pegado a una palabra) deja el aviso igual que antes | agregar la línea siempre; leer un correo como mención | ✅ |
-| N1 · `/invite` encuentra la sesión sin distinguir mayúsculas y entra con su nombre real; dos sesiones vivas que solo difieren en mayúsculas son ambiguas: falla, sin tocar la sala ni avisar a nadie | resolver por igualdad exacta; elegir una de las dos | ✅ |
+| N1 · `/invite` encuentra la sesión sin distinguir mayúsculas y entra con su nombre real | resolver por igualdad exacta | ✅ |
 | N1 · a un participante se le entrega por su nombre exacto aunque otra sesión viva difiera solo en mayúsculas | usar la resolución sin distinguir mayúsculas al entregar: marcaría muerto al participante | ✅ |
-| N1 · `@RESTAURANT` menciona a `Restaurant` y el aviso nombra al real; si calza con dos participantes que difieren solo en mayúsculas, `say` falla como ambiguo y no escribe | comparar con distinción de mayúsculas; mencionar a ambos o escribir igual | ✅ |
+| N1 · `@RESTAURANT` menciona a `Restaurant` y el aviso nombra al real | comparar con distinción de mayúsculas | ✅ |
 | N1 · la vista en terminal resalta la mención con el nombre real | resaltar con el texto tipeado | ✅ |
 | N1 · tab completa `/` (comandos), `/invite ` (sesiones vivas) y `@` (participantes de la sala), sin distinguir mayúsculas; no completa texto común ni argumentos de otros comandos ni un `@` pegado a una palabra | no pasar `completer` a `readline`; comparar con distinción de mayúsculas | ✅ |
 | N1 · con TTY real, tab completa el nombre tras `/invite` y una `@mención` y el resultado llega a la sesión | el `completer` fuera de `readline` | ✅ |
@@ -116,14 +116,12 @@ sale de subir por los procesos padres hasta su ficha. No hay cron: nada corre si
 
 ## Nombres sin distinguir mayúsculas y tab (el dueño, 11-nov-2026; modo incremental: el disco y los comandos no cambian)
 - `/invite Restaurant` y `/invite restaurant` resuelven a la misma sesión viva, y `@restaurant` menciona a `Restaurant`.
-  Se muestra y se guarda el nombre real de la sesión. Si dos sesiones vivas difieren solo en mayúsculas, room no elige:
-  `invite` falla como ambiguo; una mención que calza con dos participantes así también (`say` no escribe nada).
+  Se muestra y se guarda el nombre real de la sesión.
+- **Premisa:** no hay dos nombres que difieran solo en mayúsculas; por eso no se detecta ni se reporta ambigüedad.
 - La entrega a un participante sigue siendo por nombre exacto: solo lo que tipea una persona se resuelve sin distinguir.
 - Tab, con el `completer` de `readline`: `/` completa los comandos de `/help`; `/invite ` las sesiones vivas (las mismas que
   lee `invite`); `@` al inicio de palabra, los participantes de la sala. Se compara el prefijo sin distinguir mayúsculas.
-- **Decidido al implementar, por revisar:** la ambigüedad por mención se evalúa entre participantes (no solo sesiones) y
-  también cuando se tipea el nombre exacto, porque la regla es "room no elige". La completación de `@` incluye a quien
-  escribe y a las personas.
+- **Decidido al implementar, por revisar:** la completación de `@` incluye a quien escribe y a las personas.
 
 ## Puesta en operación
 | Commit | Versión | Deploy | Uso |
