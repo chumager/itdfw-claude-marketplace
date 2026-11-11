@@ -1,0 +1,21 @@
+{
+  "frontDirs": ["front/src", "plugins/*/vue*"],
+  "callerDirs": [
+    {"layer": "back", "path": "back"},
+    {"layer": "plugin:*", "path": "plugins/*"}
+  ],
+  "skip": "node_modules",
+  "rules": {
+    "front": {
+      "extends": "extends:\\s*([A-Za-z_$][\\w$]*)",
+      "mixins": "mixins:\\s*\\[([^\\]]*)\\]",
+      "imports": [
+        "import\\s+(\\w+)\\s+from\\s+[\"']([^\"']+)[\"']",
+        "(?:const|let)\\s+(\\w+)\\s*=\\s*await\\s+localImport\\(\\s*[\"']([^\"']+)[\"']"
+      ],
+      "render": ["resolveTag", "localImport"]
+    },
+    "back": {"keys": ["component", "type"]},
+    "variants": {"stripPrefix": "Itd", "forms": ["pascal", "camel", "kebab"]}
+  }
+}

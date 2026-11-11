@@ -1,0 +1,29 @@
+{
+  "name": "@chumager/itdfw-graph-rag",
+  "version": "0.1.0",
+  "description": "Semantic search over the graphify knowledge graph: indexer and MCP server",
+  "type": "module",
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "itdfw-graph-rag": "./src/mcp.js",
+    "itdfw-graph-rag-index": "./src/reindex.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ollama": "^0.6.3"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

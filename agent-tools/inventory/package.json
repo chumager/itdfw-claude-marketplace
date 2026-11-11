@@ -1,0 +1,19 @@
+{
+  "name": "itdfw-inventory",
+  "version": "0.2.0",
+  "private": true,
+  "description": "MCP server and CLI that answer who extends a front component and who uses it, driven by an inventory.config.json",
+  "type": "module",
+  "bin": {
+    "itdfw-inventory": "mcp.mjs",
+    "itdfw-inventory-scan": "scan.mjs"
+  },
+  "files": [
+    "scan.mjs",
+    "mcp.mjs",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  }
+}
