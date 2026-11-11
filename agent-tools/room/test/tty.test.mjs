@@ -39,6 +39,30 @@ it("in a real terminal a live message keeps what is being typed, and cannot driv
   assert.ok(world.records("tty").some(record => record.who === "ana" && record.reason === "leave"));
 });
 
+it("in a real terminal, tab completes a session name after /invite and a @participant in the text, ignoring case", {skip: process.platform !== "linux"}, async () => {
+  const view = await openTerminal("ttytab", "ttytab-b");
+  const idle = await world.session("TabIdle");
+  // the tab and the Enter go in separate writes: one chunk with both is read by readline as pasted text
+  let mark = view.output.length;
+  view.terminal.stdin.write("/invite tabi\t");
+  await until(() => plain(view.output.slice(mark)).includes("/invite TabIdle"), "the session name completed");
+  view.terminal.stdin.write("\r");
+  await until(() => idle.inbox.length === 1, "the invitation to the completed session");
+  assert.ok(world.records("ttytab").some(record => record.type === "join" && record.who === "TabIdle"));
+
+  view.session.inbox.length = 0;
+  mark = view.output.length;
+  view.terminal.stdin.write("hi @TTYTAB-\t");
+  await until(() => plain(view.output.slice(mark)).includes("hi @ttytab-b"), "the mention completed");
+  view.terminal.stdin.write(" there\r");
+  await until(() => view.session.inbox.length === 1, "the message with the completed mention");
+  assert.match(view.session.inbox[0].received, /hi @ttytab-b there/);
+  assert.match(view.session.inbox[0].received, /\nDirigido a ti\.\n/);
+
+  view.terminal.stdin.write("/leave\r");
+  await view.exited;
+});
+
 it("markdown is rendered in the terminal, but an escape sequence inside it is not", {skip: process.platform !== "linux"}, async () => {
   const view = await openTerminal("ttymd", "ttymd-b");
   const mark = view.output.length;

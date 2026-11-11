@@ -148,18 +148,19 @@ const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /**
  * Builds the pattern that finds `@name` as a whole mention: not glued to a word before it (an e-mail address) nor
  * followed by more name characters (`@core` inside `@core2`). An ANSI code right before it still counts as a boundary,
- * so the same pattern works on rendered text.
+ * so the same pattern works on rendered text. Case is ignored: `@restaurant` mentions `Restaurant`.
  * @param {string} name Participant name.
- * @returns {RegExp} Global, unicode pattern.
+ * @returns {RegExp} Global, case-insensitive, unicode pattern.
  */
 const mentionPattern = name =>
-  new RegExp(`(?:(?<!${NAME_CHAR})|(?<=\\u001b\\[[0-9;]*m))@${escapeRegExp(name)}(?!${NAME_CHAR})`, "gu");
+  new RegExp(`(?:(?<!${NAME_CHAR})|(?<=\\u001b\\[[0-9;]*m))@${escapeRegExp(name)}(?!${NAME_CHAR})`, "giu");
 
 /**
- * Finds which participants a text addresses with `@name`. A `@word` that is not a participant is not a mention.
+ * Finds which participants a text addresses with `@name`, ignoring case. A `@word` that is not a participant is not a
+ * mention. Two participants whose names differ only in case can both come back: {@link say} refuses that as ambiguous.
  * @param {string} text Text of the message.
  * @param {Iterable<string>} names Participants that can be mentioned.
- * @returns {string[]} The mentioned names, in the order given.
+ * @returns {string[]} The mentioned names as the participants really are called, in the order given.
  */
 export function mentionsIn(text, names) {
   const source = String(text);
@@ -212,22 +213,46 @@ function sessionFiles() {
   }
 }
 
-/**
- * Finds the live sessions with a name, with what it takes to write to them.
- * @param {string} name Session name.
- * @returns {{socketPath: string, token: string}[]} Live sessions; empty if there is none.
- */
-export function liveSessions(name) {
+function liveSessionsWhere(matches) {
   const files = sessionFiles();
   return files.filter(file => file.endsWith(".json")).flatMap(file => {
     const meta = readJson(path.join(sessionsDir(), file));
-    if (!meta || meta.name !== name || meta.spare === true) return [];
+    if (!meta || typeof meta.name !== "string" || !matches(meta.name) || meta.spare === true) return [];
     if (!isSocket(meta.messagingSocketPath) || !isAlive(meta.pid)) return [];
     const key = files.find(candidate => candidate.startsWith(`${meta.pid}.`) && candidate.endsWith(".key"));
     const token = key && readJson(path.join(sessionsDir(), key))?.peerToken;
-    return token ? [{socketPath: meta.messagingSocketPath, token}] : [];
+    return token ? [{name: meta.name, socketPath: meta.messagingSocketPath, token}] : [];
   });
 }
+
+/**
+ * Finds the live sessions with exactly this name, with what it takes to write to them. Delivery uses this one: a
+ * participant is stored under its real name, so it is never matched ignoring case (that would turn two sessions that
+ * differ only in case into one ambiguous recipient).
+ * @param {string} name Session name, as the session has it.
+ * @returns {{name: string, socketPath: string, token: string}[]} Live sessions; empty if there is none.
+ */
+export function liveSessions(name) {
+  return liveSessionsWhere(candidate => candidate === name);
+}
+
+/**
+ * Finds the real name of the live session that a name typed by a person refers to, ignoring case. The room never picks
+ * between two live sessions whose names differ only in case.
+ * @param {string} typed Name as it was typed.
+ * @returns {string|null} The session's real name, or null if no live session matches.
+ * @throws {RoomError} If more than one real name matches.
+ */
+export function resolveSessionName(typed) {
+  const wanted = typed.toLowerCase();
+  const names = [...new Set(liveSessionsWhere(candidate => candidate.toLowerCase() === wanted).map(({name}) => name))];
+  if (names.length > 1) throw new RoomError(`ambiguous session name ${typed}: it matches ${names.join(", ")}`);
+  return names[0] ?? null;
+}
+
+/** Names of the live sessions, for completion; the same sessions {@link resolveSessionName} looks at. */
+const liveSessionNames = () =>
+  [...new Set(liveSessionsWhere(() => true).map(({name}) => name))].sort((a, b) => a.localeCompare(b));
 
 function writeToSocket({socketPath, token}, content) {
   return new Promise(resolve => {
@@ -301,31 +326,38 @@ export async function broadcast(room, from, line, excluded = [from], mentioned =
  * @param {string} who Author.
  * @param {string} text Text of the message.
  * @returns {Promise<object>} The report of {@link broadcast}.
+ * @throws {RoomError} If a mention fits two participants whose names differ only in case; nothing is written.
  */
 export async function say(room, who, text) {
   const present = requireParticipant(room, who);
-  appendRecord(room, {type: "msg", from: who, text});
   const mentioned = mentionsIn(text, [...present.keys()].filter(name => name !== who));
+  if (new Set(mentioned.map(name => name.toLowerCase())).size < mentioned.length) {
+    throw new RoomError(`ambiguous mention: it fits ${mentioned.join(", ")}, which differ only in case`);
+  }
+  appendRecord(room, {type: "msg", from: who, text});
   return broadcast(room, who, `[room ${room}] ${escapeText(who)}: ${escapeText(text)}`, [who], mentioned);
 }
 
 /**
  * Brings a live session into the room and sends it a short notice, never the history.
  * Requires being a participant, except in a missing or empty room, where whoever invites comes in first.
+ * The session is found ignoring case and joins under its real name; two live sessions that differ only in case are
+ * ambiguous and the invitation fails.
  * @param {string} room Room name.
  * @param {string} who Who invites.
- * @param {string} target Session invited.
+ * @param {string} typed Session invited, as it was typed.
  * @param {string} kind Kind of `who`, for when it comes in first.
- * @returns {Promise<{already: boolean}>} Whether the target was already in.
+ * @returns {Promise<{already: boolean, name: string}>} Whether the target was already in, and its real name.
  */
-export async function invite(room, who, target, kind = "person") {
+export async function invite(room, who, typed, kind = "person") {
+  const target = typed === who ? typed : resolveSessionName(typed) ?? typed;
   const present = participantsOf(readRecords(room) ?? []);
   const founding = present.size === 0;
   if (!founding && !present.has(who)) throw new RoomError(`${who} is not a participant of ${room}`);
-  if (present.has(target)) return {already: true};
+  if (present.has(target)) return {already: true, name: target};
   if (target !== who && !liveSessions(target).length) throw new RoomError(`no live session named ${target}`);
   if (founding) appendRecord(room, {type: "join", who, kind, by: who});
-  if (target === who) return {already: true};
+  if (target === who) return {already: true, name: target};
 
   appendRecord(room, {type: "join", who: target, kind: "session", by: who});
   const names = [...participantsOf(existingRecords(room)).keys()].map(escapeText).join(", ");
@@ -336,7 +368,7 @@ export async function invite(room, who, target, kind = "person") {
     throw new RoomError(`could not reach session ${target}`);
   }
   await broadcast(room, who, `[room ${room}] ${escapeText(who)} invited ${escapeText(target)}.`, [who, target]);
-  return {already: false};
+  return {already: false, name: target};
 }
 
 /**
@@ -521,9 +553,11 @@ export async function executeCommand(line, {room, who}) {
     if (!typed.startsWith("/")) return {output: replyLines(await say(room, who, line))};
     const [, command, argument = ""] = typed.match(/^\/(\S*)\s*(.*)$/);
     switch (command) {
-      case "invite":
+      case "invite": {
         if (!argument) return {output: ["usage: /invite <session>"]};
-        return {output: (await invite(room, who, argument)).already ? [`${forDisplay(argument)} is already here`] : []};
+        const {already, name} = await invite(room, who, argument);
+        return {output: already ? [`${forDisplay(name)} is already here`] : []};
+      }
       case "kick":
         if (!argument) return {output: ["usage: /kick <participant>"]};
         await kick(room, who, argument);
@@ -550,6 +584,28 @@ export async function executeCommand(line, {room, who}) {
     if (error instanceof RoomError) return {output: [error.message]};
     throw error;
   }
+}
+
+const COMMAND_NAMES = INTERACTIVE_HELP.filter(line => line.startsWith("/")).map(line => line.split(" ")[0]);
+const MENTION_AT_END = new RegExp(`(?:^|\\s)(@${NAME_CHAR}*)$`, "u");
+const startingWith = (candidates, prefix) => candidates.filter(name => name.toLowerCase().startsWith(prefix.toLowerCase()));
+
+/**
+ * Completion for the typed line, in the shape `readline` expects from its `completer` (tab; with several candidates it
+ * lists them as usual). `/` completes the room commands, `/invite ` the live sessions (the ones {@link resolveSessionName}
+ * looks at), and a `@` at the start of a word the participants of the room. The prefix is compared ignoring case and the
+ * candidates keep their real case.
+ * @param {string} line The line up to the cursor.
+ * @param {string} room Room name.
+ * @returns {[string[], string]} The candidates, and the part of the line they replace.
+ */
+export function completeInput(line, room) {
+  if (/^\/\S*$/.test(line)) return [startingWith(COMMAND_NAMES, line), line];
+  const invited = line.match(/^\/invite\s+(.*)$/);
+  if (invited) return [startingWith(liveSessionNames(), invited[1]), invited[1]];
+  const mention = !line.startsWith("/") && line.match(MENTION_AT_END);
+  if (mention) return [startingWith([...participantsOf(readRecords(room) ?? []).keys()].map(name => `@${name}`), mention[1]), mention[1]];
+  return [[], line];
 }
 
 const countLines = buffer => buffer.reduce((count, byte) => count + (byte === 10 ? 1 : 0), 0);
@@ -596,7 +652,9 @@ export async function runInteractive(room, who) {
   const terminal = Boolean(output.isTTY);
   const prompt = `[${room}] `;
   // historySize 0: with history on, the up arrow swaps the line being written for an older one and the text is lost
-  const rl = readline.createInterface({input: process.stdin, output, terminal, prompt, historySize: 0});
+  const rl = readline.createInterface({
+    input: process.stdin, output, terminal, prompt, historySize: 0, completer: line => completeInput(line, room)
+  });
   let closing = false;
   let stopFollowing = () => {};
 
@@ -725,8 +783,8 @@ async function main(argv) {
       requireArgs(args, 2);
       const me = whoAmI();
       const target = args.slice(1).join(" ");
-      const {already} = await invite(args[0], me.name, target, me.kind);
-      return console.log(forDisplay(already ? `${target} is already here` : `invited ${target}`));
+      const {already, name} = await invite(args[0], me.name, target, me.kind);
+      return console.log(forDisplay(already ? `${name} is already here` : `invited ${name}`));
     }
     case "kick": {
       requireArgs(args, 2);

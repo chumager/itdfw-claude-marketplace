@@ -3,7 +3,7 @@ import fs from "node:fs";
 import {after, before, describe, it} from "node:test";
 import {createWorld, ROOM_BIN, roomWith, settle, until} from "./harness.mjs";
 
-const {executeCommand} = await import(ROOM_BIN);
+const {completeInput, executeCommand, formatRecord} = await import(ROOM_BIN);
 
 let world;
 before(() => (world = createWorld()));
@@ -289,6 +289,103 @@ describe("level 1: mentions", () => {
     await a.room("say", "nomen", "write to x@nomen-b or @stranger");
     await until(() => b.inbox.length === 1, "delivery");
     assert.doesNotMatch(received(b), /Dirigido/);
+  });
+});
+
+describe("level 1: names ignore case", () => {
+  it("/invite resolves a session whatever the case, and the room keeps its real name", async () => {
+    const [a] = await roomWith(world, "ci", ["ci-a"]);
+    const b = await world.session("Ci-Bee");
+    const result = await a.room("invite", "ci", "ci-BEE");
+    assert.equal(result.code, 0, result.stderr);
+    await until(() => b.inbox.length === 1, "the invitation");
+    assert.ok(world.records("ci").some(record => record.type === "join" && record.who === "Ci-Bee"), "joined under its real name");
+    assert.match((await a.room("who", "ci")).stdout, /Ci-Bee \(session\)/);
+    assert.match((await a.room("invite", "ci", "CI-bee")).stdout, /already here/);
+  });
+
+  it("two live sessions whose names differ only in case are ambiguous: the room does not choose", async () => {
+    const [a] = await roomWith(world, "dup", ["dup-a"]);
+    const upper = await world.session("Dup-Twin");
+    const lower = await world.session("dup-twin");
+    const lines = world.records("dup").length;
+    const result = await a.room("invite", "dup", "DUP-TWIN");
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /ambiguous/);
+    assert.match(result.stderr, /Dup-Twin/);
+    assert.match(result.stderr, /dup-twin/);
+    assert.equal(world.records("dup").length, lines, "the room was not touched");
+    await settle();
+    assert.equal(upper.inbox.length + lower.inbox.length, 0, "nobody was told");
+  });
+
+  it("a participant is still delivered to by its exact name when another live session differs only in case", async () => {
+    const [a, b] = await roomWith(world, "exact", ["Exact-A", "Exact-B"]);
+    const twin = await world.session("exact-b");
+    await a.room("say", "exact", "hello");
+    await until(() => b.inbox.length === 1, "delivery to the participant");
+    await settle();
+    assert.equal(twin.inbox.length, 0);
+    assert.ok(!world.records("exact").some(record => record.type === "left"), "nobody was dropped as dead");
+  });
+
+  it("a @mention matches a participant whatever the case, and the notice names it as it really is", async () => {
+    const [a, b, c] = await roomWith(world, "mcase", ["mcase-a", "Mcase-B", "mcase-c"]);
+    await a.room("say", "mcase", "@MCASE-b take a look");
+    await until(() => b.inbox.length === 1 && c.inbox.length === 1, "delivery to both");
+    assert.match(received(b), /\nDirigido a ti\.\n/);
+    assert.match(received(c), /\nDirigido a Mcase-B: /);
+  });
+
+  it("a @mention that fits two participants differing only in case is refused as ambiguous, with nothing written", async () => {
+    const [a] = await roomWith(world, "mamb", ["mamb-a", "Mamb-X"]);
+    fs.appendFileSync(world.roomFile("mamb"), `${JSON.stringify({ts: new Date().toISOString(), type: "join", who: "mamb-x", kind: "session"})}\n`);
+    const lines = world.records("mamb").length;
+    const result = await a.room("say", "mamb", "@mamb-X please");
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /ambiguous/);
+    assert.equal(world.records("mamb").length, lines);
+  });
+
+  it("the terminal view highlights a mention with the participant's real name", () => {
+    const record = {line: 1, ts: new Date().toISOString(), type: "msg", from: "ana", text: "@view-b hi"};
+    const shown = formatRecord(record, {terminal: true, width: 80, names: ["ana", "View-B"]});
+    assert.match(shown.replace(/\u001b\[[0-9;]*m/g, ""), /@View-B hi/);
+  });
+});
+
+describe("level 1: tab completion", () => {
+  const complete = line => completeInput(line, "tab");
+  before(async () => {
+    process.env.ROOM_DIR = world.env.ROOM_DIR;
+    process.env.ROOM_SESSIONS_DIR = world.env.ROOM_SESSIONS_DIR;
+    await roomWith(world, "tab", ["tab-alice", "Tab-Bob"]);
+    await world.session("tab-idle");
+    await world.session("other-idle");
+  });
+
+  it("/ completes the room commands, with no case distinction", () => {
+    assert.deepEqual(complete("/"), [["/invite", "/kick", "/who", "/list", "/history", "/leave", "/help"], "/"]);
+    assert.deepEqual(complete("/HI"), [["/history"], "/HI"]);
+    assert.deepEqual(complete("/l"), [["/list", "/leave"], "/l"]);
+    assert.deepEqual(complete("/zzz"), [[], "/zzz"]);
+  });
+
+  it("/invite completes with the live sessions, with their real names", () => {
+    assert.deepEqual(complete("/invite TAB"), [["tab-alice", "Tab-Bob", "tab-idle"], "TAB"]);
+    assert.deepEqual(complete("/invite tab-i"), [["tab-idle"], "tab-i"]);
+    assert.deepEqual(complete("/invite nobody"), [[], "nobody"]);
+  });
+
+  it("@ completes with the participants of the room, and only at the start of a word", () => {
+    assert.deepEqual(complete("hello @"), [["@tab-alice", "@Tab-Bob"], "@"]);
+    assert.deepEqual(complete("hello @tab-b"), [["@Tab-Bob"], "@tab-b"]);
+    assert.deepEqual(complete("write to x@tab-b"), [[], "write to x@tab-b"]);
+  });
+
+  it("plain text and arguments of other commands complete nothing", () => {
+    assert.deepEqual(complete("hello wor"), [[], "hello wor"]);
+    assert.deepEqual(complete("/kick tab"), [[], "/kick tab"]);
   });
 });
 
