@@ -8,7 +8,12 @@ framework: the plugin lives in this marketplace because we use them to run our o
 > `<claude-home>/sessions/`, the key files next to them, and the line-JSON protocol on each session's unix socket (read
 > from the binary of Claude Code 2.1.283 on 2026-09-26). A Claude Code update can break the ones that deliver messages.
 > The test suite runs against fake sessions, so it proves the scripts do what they say, not that the current Claude Code
-> still accepts what they send.
+> still accepts what they send. Last checked by hand against a real Claude Code 2.1.322 on 2026-11-12: a message
+> delivered by name, a dead background session woken with `claude --bg --resume`, and six idle sessions compacted
+> through `claude attach`. They are in daily use on the machine where they were written.
+
+A *cajarito* (the name in two of the scripts) is one Claude Code session that owns a piece of the work; the word is
+Chilean slang for an apprentice. "Wake a cajarito" means bring a dead background session back.
 
 ## Install
 
