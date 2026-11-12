@@ -11,6 +11,7 @@
 # Writes:  nothing on disk. One auth line and one user message go to the session socket (needs jq and socat).
 # Env:     CLAUDE_CONFIG_DIR   Claude Code config dir (default: $HOME/.claude)
 # Exit:    0 delivered · 1 no live session with that name accepted it · 2 bad usage
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 usage() { echo "usage: claude-session-msg.sh \"<session name>\" \"<text>\" [from-name]"; }
 case "${1:-}" in -h|--help) usage; awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 name="$1"; text="$2"; from="${3:-cron}"

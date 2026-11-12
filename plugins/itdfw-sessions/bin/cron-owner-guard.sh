@@ -11,6 +11,7 @@
 # Env:     CLAUDE_PID, CLAUDE_CONFIG_DIR (default: $HOME/.claude), CRON_SESSION_NAME (overrides the lookup)
 # Exit/return:   0 this is the owner session · 1 this is another session
 # Run directly with --help to read this text.
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "${BASH_SOURCE[0]}"; return 0 2>/dev/null || exit 0 ;; esac
 cron_owner="$1"; cron_label="$2"
 cron_me=${CRON_SESSION_NAME:-$(jq -r '.name // ""' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/${CLAUDE_PID:-none}.json" 2>/dev/null)}

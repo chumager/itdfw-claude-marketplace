@@ -7,6 +7,7 @@
 # Writes:  the name on stdout; nothing on disk.
 # Env:     CLAUDE_CONFIG_DIR   Claude Code config dir (default: $HOME/.claude)
 # Exit:    0 name printed · 1 not under a named session (prints nothing)
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions"
 pid=$$

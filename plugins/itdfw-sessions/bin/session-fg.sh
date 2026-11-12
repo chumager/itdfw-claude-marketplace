@@ -14,6 +14,7 @@
 #          SESSION_FG_WINDOW     the tmux window to look in, when it is not the second argument
 #                                (default: the current tmux window of the caller)
 # Exit:    0 ACTIVE · 1 VISIBLE · 3 BG · 2 the session, its transcript, a text to look for, or a window to look in was not found
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -u
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 name="${1:?missing session name}"

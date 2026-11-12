@@ -18,6 +18,7 @@
 # Exit:    always 0 (a failed delivery is only reported on stderr)
 # crontab (every 30 min: with one per hour the interval sits right at the 1 h TTL):
 #   20,50 * * * * claude-keepalive.sh
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 
 dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions"

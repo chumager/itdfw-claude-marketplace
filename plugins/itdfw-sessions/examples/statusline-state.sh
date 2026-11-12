@@ -13,6 +13,7 @@
 # Env:     CLAUDE_STATE_DIR   state dir (default: <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or
 #                             $HOME/.claude)
 # Exit:    0 always
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../bin/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 STATE_DIR="${CLAUDE_STATE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/state}"
 mkdir -p "$STATE_DIR"

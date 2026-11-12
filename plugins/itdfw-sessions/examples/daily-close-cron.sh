@@ -19,6 +19,9 @@
 # Env:     CLOSE_MARK_DIR   mark dir (default: $HOME/.cache/claude-daily-close)
 #          CLOSE_OWNER, CLOSE_FALLBACK   the sessions, when they are not arguments
 # Exit:    0 delivered, or nothing to do today · 1 no session alive to receive it
+# (optional local config file: the same one the scripts of bin/ load; see README. A copy of this example has no
+#  ../bin/_env.sh next to it and simply skips it)
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../bin/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 owner="${1:-${CLOSE_OWNER:-daily-close}}"; fallback="${2:-${CLOSE_FALLBACK:-}}"
 day=$(date +%F)

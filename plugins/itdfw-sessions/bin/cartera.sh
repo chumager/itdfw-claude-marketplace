@@ -33,6 +33,7 @@
 #          CLAUDE_STATE_DIR state dir (default: <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or
 #                           $HOME/.claude)
 # Exit:    0 done · 1 the session is unknown, or the block/task does not exist · 2 bad usage (and no arguments)
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -u
 STATE_DIR="${CLAUDE_STATE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/state}"
 SESSIONS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions"

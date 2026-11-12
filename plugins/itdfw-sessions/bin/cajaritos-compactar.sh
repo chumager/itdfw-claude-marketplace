@@ -16,6 +16,7 @@
 # Env:     CLAUDE_STATE_DIR   where the ctx-<sessionId>.json files live (default: <claude-home>/state, with
 #                             <claude-home> = $CLAUDE_CONFIG_DIR or $HOME/.claude)
 # Exit:    0 done · 1 no tmux server (it cannot attach) · 2 bad usage
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -uo pipefail
 STATE_DIR="${CLAUDE_STATE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/state}"
 UMBRAL=50; EXCEPTO=(); SOLO=()

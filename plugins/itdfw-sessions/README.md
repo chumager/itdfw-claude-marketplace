@@ -40,6 +40,30 @@ Nothing is hard-wired to a machine or a person. Every path comes from the enviro
 Session names are always arguments. Every script answers `--help` with its header: what it does, what it reads and
 writes, its environment and its exit codes.
 
+### A local config file, so you do not repeat them in every crontab
+
+Instead of exporting those variables in each crontab line and shell profile, put them once in a file. Every script of
+the plugin (the examples too) loads it first thing, if it exists:
+
+```sh
+# ${XDG_CONFIG_HOME:-$HOME/.config}/claude-sessions/env      (another path: CLAUDE_SESSIONS_ENV)
+CAJARITO_REPO=/home/me/code/main-repo
+SESSION_FG_WINDOW=work:3
+CLAUDE_BROADCAST_FROM=me
+```
+
+| Rule | |
+|---|---|
+| Format | `KEY=value`, one per line; only lines that match `^[A-Z_][A-Z0-9_]*=` count. Comments (`#`), blank lines, lowercase keys and `export KEY=...` are ignored |
+| Value | everything after the first `=`, literally; one pair of surrounding quotes is stripped |
+| Never executed | the file is **read**, not `source`d: `X=$(touch /tmp/x)` sets `X` to that text and runs nothing, so a file that a tool or another user can edit cannot run code through your scripts |
+| The environment wins | a variable that is already set (even empty) is not overwritten by the file, so `CAJARITO_REPO=/other cajarito-despertar.sh x` still works |
+| Absent | no file, no change: the scripts behave exactly as before |
+| Permissions | nothing is checked; `chmod 600` it if it holds anything you would not want read |
+
+The loader is `bin/_env.sh` (a library, not a command). Each script finds it next to its real path (`readlink -f`), so a
+script symlinked from `~/bin` loads the file too. A single script copied away without `_env.sh` simply skips the file.
+
 ## The scripts
 
 | Script | What it does | Exit codes |
@@ -129,6 +153,7 @@ files, a fake unix socket (`node:net`) that records what a session would receive
 | `test/screen-usage.test.mjs` | `session-fg.sh` (ACTIVE / VISIBLE / BG from a fake transcript and fake panes), `claude-usage-watch.sh` (against a stub `claude -p`) and `examples/statusline-state.sh` |
 | `test/cartera.test.mjs` | `cartera.sh`: every subcommand, the state files, the old-format migration |
 | `test/help.test.mjs` | every script answers `--help` with its header, exit 0 |
+| `test/env-file.test.mjs` | the local config file: absent, present, `XDG_CONFIG_HOME` / `CLAUDE_SESSIONS_ENV`, the environment wins, a line that tries to run something is not executed, only `KEY=value` lines count, through a symlink, and that every script loads it on start |
 
 **Not covered**, because it needs the real harness: that a real Claude Code still accepts the messages; what a real
 `claude --bg --resume` and `claude attach` do; the real `/compact` and how long it takes; the real tmux rendering for

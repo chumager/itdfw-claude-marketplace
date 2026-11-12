@@ -9,7 +9,8 @@ beforeEach(() => { env = makeEnv() })
 afterEach(() => env.cleanup())
 
 const scripts = [
-  ...readdirSync(BIN).map(f => join(BIN, f)),
+  // `_env.sh` is the shared library the scripts source (see env-file.test.mjs), not a command
+  ...readdirSync(BIN).filter(f => !f.startsWith("_")).map(f => join(BIN, f)),
   ...readdirSync(EXAMPLES).filter(f => f.endsWith(".sh")).map(f => join(EXAMPLES, f)),
 ]
 

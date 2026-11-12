@@ -17,6 +17,7 @@
 # Env:     CLAUDE_STATE_DIR   state dir (default: <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or
 #                             $HOME/.claude)
 # Exit:    0 normally; 1 when `claude -p` gave no answer (one reading); --loop never returns
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -u
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"   # cron brings a minimal PATH and claude lives in ~/.local/bin

@@ -11,6 +11,7 @@
 # Env:     CLAUDE_CONFIG_DIR       Claude Code config dir (default: $HOME/.claude)
 #          CLAUDE_BROADCAST_FROM   default sender name, shown as from-name in the receiving sessions
 # Exit:    0 it reached every session · 1 it failed for at least one · 2 bad usage
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 usage() { echo "usage: claude-broadcast.sh \"<text>\" [from-name]"; }
 case "${1:-}" in -h|--help) usage; awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 text="$1"; from="${2:-${CLAUDE_BROADCAST_FROM:-user}}"

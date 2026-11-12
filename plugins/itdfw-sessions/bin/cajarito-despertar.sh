@@ -12,6 +12,7 @@
 #                          default: the current directory
 # Exit:    0 alive (it already was, or it woke up) · 1 it did not wake up · 2 no such session, or the name is ambiguous
 #          (a missing argument also exits 1, from the shell's ${1:?})
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -uo pipefail
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 NOMBRE="${1:?usage: cajarito-despertar.sh <session name>}"
