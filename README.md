@@ -2,7 +2,11 @@
 
 This repository holds the working tools built to develop **ITDFW**, a Node.js/MongoDB application framework, with
 Claude Code as the main developer: a set of **skills**, two **MCP servers**, a **chat room** for live sessions,
-**session scripts** to reach background sessions from a cron, and **hooks** that enforce working rules in code.
+**session scripts** to reach background sessions from a cron, an **Agent SDK** service with measured model
+comparisons, **hooks** that enforce working rules in code, and the **operating model** that ties them together.
+
+> Evaluating this repository? Start with [`START-HERE.md`](START-HERE.md): the main claims, each with the place that
+> checks it, and one command that runs every test.
 
 **It is meant to be read, not installed.** Everything here assumes the ITDFW framework and a specific machine. The
 framework itself is not in this repository: the skills describe it. Each piece has its own README with the same
