@@ -12,6 +12,11 @@
       "name": "itdfw-hooks",
       "source": "./plugins/itdfw-hooks",
       "description": "Claude Code hooks: skill and search gates, agent-type and commit gates, comment police, and the AST check for comment pruning"
+    },
+    {
+      "name": "itdfw-sessions",
+      "source": "./plugins/itdfw-sessions",
+      "description": "Talk to Claude Code sessions from outside and between them: message a live session by name, wake a dead background session, broadcast, keep the prompt cache warm, compact idle sessions, read the usage, and a small work board"
     }
   ]
 }

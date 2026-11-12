@@ -1,0 +1,146 @@
+# itdfw-sessions: talk to Claude Code sessions from outside, and between them
+
+Ten small shell scripts for people who run several Claude Code sessions at once (some of them background sessions that
+nobody watches) and want a cron, a script or another session to talk to them. They have nothing to do with the ITDFW
+framework: the plugin lives in this marketplace because we use them to run our own sessions.
+
+> **They depend on Claude Code's internal files and socket protocol**, which are not documented: the session files in
+> `<claude-home>/sessions/`, the key files next to them, and the line-JSON protocol on each session's unix socket (read
+> from the binary of Claude Code 2.1.283 on 2026-09-26). A Claude Code update can break the ones that deliver messages.
+> The test suite runs against fake sessions, so it proves the scripts do what they say, not that the current Claude Code
+> still accepts what they send.
+
+## Install
+
+```sh
+claude plugin marketplace add /path/to/this/repository      # or the repository URL
+claude plugin install itdfw-sessions@itdfw
+```
+
+While the plugin is enabled, Claude Code puts its `bin/` on the `PATH` of the Bash tool, so a session calls the scripts
+by name (`claude-session-msg.sh ...`). For a cron or a shell outside Claude Code, put `bin/` on your `PATH` or call the
+script by its full path.
+
+Requirements: `bash`, `jq`, `socat` (delivery), `tmux` (`cajaritos-compactar.sh`, `session-fg.sh`) and the `claude`
+command (`cajarito-despertar.sh`, `cajaritos-compactar.sh`, `claude-usage-watch.sh`).
+
+## Paths and names
+
+Nothing is hard-wired to a machine or a person. Every path comes from the environment, with a generic default:
+
+| Variable | Default | Used by |
+|---|---|---|
+| `CLAUDE_CONFIG_DIR` | `$HOME/.claude` | all of them (where `sessions/` and `state/` live) |
+| `CLAUDE_STATE_DIR` | `<claude-home>/state` | `cajaritos-compactar.sh`, `claude-usage-watch.sh`, `cartera.sh`, the examples |
+| `CAJARITO_REPO` | the current directory | `cajarito-despertar.sh`: the directory a session is resumed from (`claude --bg` requires a trusted one) |
+| `SESSION_FG_WINDOW` | the current tmux window | `session-fg.sh` |
+| `CLAUDE_BROADCAST_FROM` | `user` | `claude-broadcast.sh`: the sender name the sessions see |
+| `CARTERA_SESION`, `CARTERA_DIR` | deduced; `<state-dir>/cartera` | `cartera.sh` |
+
+Session names are always arguments. Every script answers `--help` with its header: what it does, what it reads and
+writes, its environment and its exit codes.
+
+## The scripts
+
+| Script | What it does | Exit codes |
+|---|---|---|
+| `claude-session-msg.sh "<name>" "<text>" [from]` | Delivers a text to ONE live session, found by its exact name, as a cross-session message | 0 delivered · 1 no live session with that name took it · 2 usage |
+| `cajarito-despertar.sh <name>` | Wakes a dead background session with `claude --bg --resume <sessionId>` | 0 alive · 1 did not wake · 2 no such session or ambiguous |
+| `claude-broadcast.sh "<text>" [from]` | Sends a text to ALL live sessions except the one that runs it; prints `ok <name>` / `failed <name>` per session | 0 reached all · 1 at least one failed · 2 usage |
+| `claude-keepalive.sh` | From a system cron, queues a `ping` in every live session so the prompt cache (1 h TTL) stays warm | always 0 |
+| `claude-session-name.sh` | Prints the name of the session this command runs under (walks up the parent processes) | 0 printed · 1 not under a named session |
+| `cron-owner-guard.sh <owner> <label>` | Sourced by a cron script: only the owner session may run it; any other gets the order to do nothing and drop its cron | return 0 owner · 1 another session |
+| `cajaritos-compactar.sh [--umbral N] [--excepto name]... [--solo name]...` | Compacts the idle background sessions over a context threshold (attach in a tmux window, `/compact`, wait, close the window) | 0 done · 1 no tmux server · 2 usage |
+| `session-fg.sh <name> [window]` | Is the session on screen? `ACTIVE <pane>` / `VISIBLE <pane>` / `BG`, looking for its last text in the panes of a tmux window | 0 / 1 / 3 respectively · 2 not found |
+| `claude-usage-watch.sh [--loop s]` | Reads the Claude Code `/usage` without an open session; one line, plus a log | 0 · 1 no answer from `claude -p` |
+| `cartera.sh` | A work board: each session publishes its blocks and tasks in a JSON file that a panel can merge | 0 · 1 unknown session or block · 2 usage |
+
+`examples/` holds two files that are meant to be copied and changed, not run as they are:
+
+| File | What it shows |
+|---|---|
+| `examples/daily-close-cron.sh` | A cron that gives a live session a once-a-day job with a day mark (`<day>.running` / `<day>.done`), a 3 h dead-job timeout and a fallback session |
+| `examples/statusline-state.sh` | The lines a status line command needs to leave the two state files that `cajaritos-compactar.sh` (`ctx-<sessionId>.json`, field `used`) and `claude-usage-watch.sh` (`usage-week`) read. Claude Code does not write them |
+
+### Things that look odd and are on purpose
+
+- **`cartera.sh` is in Spanish where a program reads it.** Subcommands (`tarea`, `describir`, `archivar`...), states
+  (`en-curso`, `pendiente`, `parqueada`, `terminado`), flags (`--espera`, `--go`, `--pregunta`) and the keys of the JSON
+  files are the contract a panel and the sessions already depend on. Only the text printed for a human is English.
+- **`claude-usage-watch.sh` keeps the labels `semana:` and `fable:`** in its line, because `usage.log` is append-only
+  and older lines use them. `fable:` is the per-model line of the `/usage` text; it shows `?` when the account has none.
+- `cron-owner-guard.sh` is not run, it is sourced: `. cron-owner-guard.sh <owner> <label> || exit 0`.
+
+## Send a message to a live session from outside
+
+A cron or a script that needs the tools of a session (subagents, artifacts, notifications, its context) sends a message
+to the owner session instead of launching a loose `claude -p`.
+
+```sh
+claude-session-msg.sh "<session>" "<text>" <label>     # exit 0 delivered · 1 no live session with that name
+```
+
+| Step | What happens |
+|---|---|
+| deliver | it looks for the session file by exact name in `<claude-home>/sessions/` and delivers over its socket as `from="cron:<label>"` |
+| exit 1 | the message is lost, not queued: run `cajarito-despertar.sh "<session>"`, wait a few seconds and retry ONCE; if it fails again, an error on stderr and nothing else |
+| knowing it finished | there is no acknowledgement: the cron is not a session and receives no replies. The session creates `<dir>/<date>.running` when it starts and renames it to `.done` when it ends (a `.running` older than 3 h is taken as dead). The text of the message asks for it explicitly |
+| telling the person | the session does it when it finishes (a push or a board entry), not the cron |
+
+- The model to copy is `examples/daily-close-cron.sh`: a day mark, and a fallback session if the owner is not alive.
+- The label is not a session: `from="cron:<label>"` (not `uds:<socket>`) means nobody tries to answer it with
+  `SendMessage`. A session that received a `uds:` ping once tried to answer itself.
+- The subagents the session starts run with that session's account.
+- Related: waking a dead session (next section) and `claude-keepalive.sh` (the same protocol, to every session).
+
+### A dead session is woken with one command
+
+If you need something from another session and it is dead (`SendMessage` answers "No agent named '<x>' is reachable",
+or it is not in `ListAgents`), wake it yourself, then send the message:
+
+```sh
+cajarito-despertar.sh "<name>"; echo "exit=$?"     # 0 alive · 1 did not wake · 2 no such session or ambiguous
+```
+
+- Inside, it is `claude --bg --resume <sessionId>`: it brings the session back in the daemon with the same id, name,
+  agent and model, idle, with no interface and no process to close.
+- **A bare `claude --resume` does not work**: it opens the interface in the foreground and dies with its terminal.
+- Waking is not assigning work: the session wakes up with nothing to do. Send it the message separately, with what you
+  need.
+- On exit 1 or 2, tell the person in one line, with the name and the output of the script.
+- Putting a session to sleep is a different thing; this does not do it.
+
+In `claude agents`, `✻`/`✽` means alive and `∙` finished; "Pinned" is a mark of the conversation, not of the state.
+
+## How to verify
+
+```sh
+cd plugins/itdfw-sessions && node --test "test/*.test.mjs"
+```
+
+The suite needs no real session and touches no real `~/.claude`: each test makes a throwaway `HOME` with fake session
+files, a fake unix socket (`node:net`) that records what a session would receive, and stubs in the `PATH` for `claude`,
+`tmux` and `sleep`.
+
+| File | What it proves |
+|---|---|
+| `test/messaging.test.mjs` | `claude-session-msg.sh`, `claude-broadcast.sh`, `claude-keepalive.sh`, `claude-session-name.sh`, `cron-owner-guard.sh` and `examples/daily-close-cron.sh`: who receives what, the auth and message lines, the skips (spare, dead, no socket, no key), the ancestor skip in the broadcast, the exit codes |
+| `test/wake-compact.test.mjs` | `cajarito-despertar.sh` and `cajaritos-compactar.sh` against a stub `claude` and a stub `tmux`: the decisions (already alive, ambiguous names, which session is compacted and which is skipped and why, `--solo`, `--excepto`, `--umbral`) |
+| `test/screen-usage.test.mjs` | `session-fg.sh` (ACTIVE / VISIBLE / BG from a fake transcript and fake panes), `claude-usage-watch.sh` (against a stub `claude -p`) and `examples/statusline-state.sh` |
+| `test/cartera.test.mjs` | `cartera.sh`: every subcommand, the state files, the old-format migration |
+| `test/help.test.mjs` | every script answers `--help` with its header, exit 0 |
+
+**Not covered**, because it needs the real harness: that a real Claude Code still accepts the messages; what a real
+`claude --bg --resume` and `claude attach` do; the real `/compact` and how long it takes; the real tmux rendering for
+`session-fg.sh`; `claude-usage-watch.sh --loop` (it never returns); and the real text of `/usage`, which the script
+parses with regular expressions on English wording.
+
+## Limits
+
+- Claude Code internals, as said at the top.
+- `claude-usage-watch.sh` finds the reset time with `grep -io 'resets [^·\n]*'`; inside a bracket `\n` is a backslash and
+  an `n`, so the reset text stops at the first letter `n` ("Mon" is cut to "Mo"). It is kept as it was so that the
+  scripts that replaced it behave the same; the line that comes from `usage-week` is not affected.
+- `cajaritos-compactar.sh` waits up to 5 minutes per session for the percentage to drop below 20 % and then closes the
+  window anyway; it reports the real before and after, so a compaction that did nothing shows as `70% -> 70%`.
+- `cajarito-despertar.sh` with no argument exits 1 (the shell's `${1:?}`), not 2.
