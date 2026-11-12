@@ -110,7 +110,7 @@ is an LLM, and the LLM does know the term; so the leap is made by the query, not
 | `EMBEDDING_MODEL` / `EMBEDDING_SIZE` | `nomic-embed-text` / `768` | the size must match the model |
 | `NODE_TYPES` | `concept,rationale` | the author found that indexing `document` and `code` nodes added noise (a measurement that was not reproduced here) |
 | `QDRANT_START_CMD` | — | its presence means "Qdrant is local and this can start it"; its absence means "remote" |
-| `GAPS_DB` | — | path of the SQLite file of the gaps log. Without it the log and its three tools do not exist (`src/gaps.js:9`) |
+| `GAPS_DB` | — | path of the SQLite file of the gaps log. Without it the log and its three tools do not exist (`src/gaps.js:9`). A relative path resolves against the directory the client starts the server in (the project), so the log stays with the project and not with this package: `graphify-out/.gaps.db` keeps it next to the graph |
 
 Example client entry (placeholders in angle brackets):
 
