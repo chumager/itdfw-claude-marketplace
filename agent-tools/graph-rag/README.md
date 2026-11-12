@@ -99,6 +99,50 @@ The index is semantic but does not translate a problem into its solution: you ha
 embedding model knows that "dog" and "puppy" go together, not that "mutex" solves "two processes at once". The caller
 is an LLM, and the LLM does know the term; so the leap is made by the query, not by the index.
 
+## The gaps loop: skills that improve with use
+
+`find` can only return what the graph already knows. The gaps log turns every miss into work for the next documentation
+pass, so the vocabulary that failed today is covered tomorrow. It needs `GAPS_DB`; without it none of this exists
+(`src/gaps.js:9`, `src/mcp.js:84-111`).
+
+1. **The agent searches and misses.** It calls `find`, and the result is useless: nothing relevant, the wrong scope, or
+   so little that it had to read code blind. The `reportGap` description asks for exactly these cases
+   (`src/mcp.js:56-66`).
+2. **It reports the need, in intent language.** `reportGap` takes `need` (required), `queries` (what it tried) and `got`
+   (what came back) (`src/mcp.js:89-98`). The `need` is written in plain words, not as a technical term, because the
+   vocabulary that finds nothing is what has to be captured (`src/gaps.js:40-43`, `src/mcp.js:58`). A new gap starts
+   with `hits = 1` and status `open` (`src/gaps.js:29`, `src/gaps.js:67-70`).
+3. **A repeat adds up instead of duplicating.** A second report whose `need` text is exactly the same increments `hits`,
+   refreshes `queries` and `got`, and sets the status back to `open` (`src/gaps.js:52-59`). If the gap had been closed
+   (resolved or discarded), the answer says `reabierto` (`src/gaps.js:64`) and the server prints "REABIERTO ... the
+   previous fix did not work" (`src/mcp.js:168-171`); an open one prints "REINCIDENTE" (`src/mcp.js:172`). Rows are
+   never deleted, so history survives and a repeat is always detectable (`src/gaps.js:44-45`). The match is the exact
+   string (`src/gaps.js:52`): a reworded need is a new gap, there is no semantic de-duplication.
+4. **`gaps` lists them, most repeated first.** With no argument it returns the open ones ordered by `hits` and then by
+   last seen (`src/gaps.js:78-82`); `all: true` includes resolved and discarded ones (`src/mcp.js:99`). Each line shows
+   the need, the repeat count, what was tried and what came back, plus the totals by status (`src/mcp.js:178-196`,
+   `src/gaps.js:119-131`). It is meant to be read before updating the graph, so the new pass has focus
+   (`src/mcp.js:70`).
+5. **Someone documents what was missing, then closes it.** The fix is to write the missing knowledge down (in a skill
+   or in the docs), because only a changed file gives the next graph update something to extract; editing the graph
+   does not close a gap (`src/mcp.js:72`). `closeGap` takes the `id` and an optional `resolution` and marks it
+   `resolved` (`src/gaps.js:90-97`), or `wontfix` with `discard: true` (`src/gaps.js:105-112`, `src/mcp.js:198-200`).
+   The row is kept, and a closed gap that comes back is reopened by step 3.
+
+The whole cycle (record, repeat, list, close, reopen) is exercised against the real server process in
+`test/gaps.test.js:67-81`; that nothing is created before first use is checked at `test/gaps.test.js:57-65`.
+
+In practice:
+
+| Who | When | What |
+|---|---|---|
+| any agent that searched | at the moment a search fails | `reportGap` with the need in its own words |
+| a daily close job | once a day, before the graph is updated | reads `gaps`, documents what was missing in the skill or the docs, and closes each with `closeGap` |
+| whoever documents | as part of that pass | closes with a `resolution` that says what was written, or discards with a reason |
+
+The code does not schedule or enforce any of this: the schedule and the roles are a convention of the project that
+uses it (`src/mcp.js:68-72` only says when the list should be read).
+
 ## Configuration
 
 | Variable | Default | Note |
