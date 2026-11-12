@@ -23,8 +23,8 @@ cd agent-tools/room && pnpm install --ignore-workspace
 node --test --test-timeout=30000 "test/*.test.mjs"
 ```
 
-38 cases (`node:test`): 34 in `test/room.test.mjs`, 1 in `test/concurrency.test.mjs`, 3 in `test/tty.test.mjs`. On
-2026-11-11 they gave `tests 38, pass 38, fail 0`. They build a temporary world — a temporary `HOME`, room directory and
+35 cases (`node:test`): 31 in `test/room.test.mjs`, 1 in `test/concurrency.test.mjs`, 3 in `test/tty.test.mjs`. On
+2026-11-12 they gave `tests 35, pass 35, fail 0`. They build a temporary world — a temporary `HOME`, room directory and
 session directory, with **fake sessions that are Unix-socket processes** (`test/harness.mjs`, `test/fake-session.mjs`) —
 so they need no real Claude Code, no network, no database and no tmux. Two cases need Linux and the `script` binary of
 util-linux (`test/tty.test.mjs:14-15`). The design note is `TDD.md` (a one-page contract with a table of 21 test cases, `TDD.md:49-72`).

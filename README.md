@@ -1,8 +1,8 @@
 # ITDFW — what was built around Claude Code
 
 This repository holds the working tools built to develop **ITDFW**, a Node.js/MongoDB application framework, with
-Claude Code as the main developer: a set of **skills**, two **MCP servers**, a **chat room** for live sessions, and
-**hooks** that enforce working rules in code.
+Claude Code as the main developer: a set of **skills**, two **MCP servers**, a **chat room** for live sessions,
+**session scripts** to reach background sessions from a cron, and **hooks** that enforce working rules in code.
 
 **It is meant to be read, not installed.** Everything here assumes the ITDFW framework and a specific machine. The
 framework itself is not in this repository: the skills describe it. Each piece has its own README with the same
@@ -16,8 +16,8 @@ the technical claims in those READMEs carry a `file:line` that was checked again
 | **Skills** (`itdfw` plugin) | 17 skills: Markdown instructions that Claude Code loads on demand, one per area of the framework | [`plugins/itdfw/skills/`](plugins/itdfw/skills) | An agent that does not know the framework re-invents what exists or breaks its conventions. A skill gives it the contract of one area before it edits | Read them; each states its trigger in its front matter. `tdd-narrativo` and `itdfw-completeness` describe how work is specified and when it counts as done |
 | **MCP `inventory`** | A server and CLI over stdio that answer "who extends this component, who uses it" for a front. It needs an `inventory.config.json` of the project that uses it | [`agent-tools/inventory/`](agent-tools/inventory) | Before changing a component, list what the change can break | `pnpm test` (17 cases, self-contained: a small fixture project; they cover the config lookup, the scan and the MCP pipe, not `mixins` or external project roots) |
 | **MCP `itdfw-graph`** | A server over stdio doing semantic search over the knowledge graph that the third-party tool graphify builds | [`agent-tools/graph-rag/`](agent-tools/graph-rag) | Find *which piece already solves this* when you do not know its name | `pnpm test` (13 cases, self-contained: no Ollama, a fake vector-database listener). The embedding path and `find` against a real index are not covered |
-| **`room`** | A command-line chat between a person and live Claude Code sessions on the same machine | [`agent-tools/room/`](agent-tools/room) | Lets several sessions and a person talk in one place with history, without a server | `pnpm test` (27 cases, self-contained, fake sessions) |
-| **Sessions** (`itdfw-sessions` plugin) | Ten shell scripts to talk to Claude Code sessions from a cron or another session: message a live session by name, wake a dead background one, broadcast, keep the prompt cache warm, compact idle sessions, read the usage, a small work board | [`plugins/itdfw-sessions/`](plugins/itdfw-sessions) | A cron or a script that needs the tools of a session has no safe way in; a dead background session has no one-command way back | `node --test "test/*.test.mjs"` in the plugin (fake sessions, fake sockets and stubs; not covered: what a real Claude Code still accepts) |
+| **`room`** | A command-line chat between a person and live Claude Code sessions on the same machine | [`agent-tools/room/`](agent-tools/room) | Lets several sessions and a person talk in one place with history, without a server | `pnpm test` (35 cases, self-contained, fake sessions) |
+| **Sessions** (`itdfw-sessions` plugin) | Ten shell scripts to talk to Claude Code sessions from a cron or another session: message a live session by name, wake a dead background one, broadcast, keep the prompt cache warm, compact idle sessions, read the usage, a small work board | [`plugins/itdfw-sessions/`](plugins/itdfw-sessions) | A cron or a script that needs the tools of a session has no safe way in; a dead background session has no one-command way back | `node --test "test/*.test.mjs"` in the plugin (131 cases: fake sessions, fake sockets and stubs; not covered: what a real Claude Code still accepts) |
 | **Hooks** | Shell and Node scripts that Claude Code runs on lifecycle events to enforce rules (load the skill before editing, no generic subagents, comment hygiene, presence notices) | [`plugins/itdfw-hooks/`](plugins/itdfw-hooks) | Rules written as text get forgotten; a hook makes the harness refuse the action | No automated tests; each hook was run once by hand with sample input (see its README). The scripts are short |
 
 ## What is a real AST and what is not
@@ -44,6 +44,8 @@ So the AST work in this repository is done by espree, esbuild, tree-sitter (insi
 - The **MCP servers** give the agent facts instead of guesses: the component tree (`inventory`) and the knowledge
   graph (`itdfw-graph`).
 - **`room`** is unrelated to the framework: it lets sessions talk to each other and to a person.
+- The **session scripts** are unrelated to the framework too: they let a cron or a script reach a live session, wake a
+  dead one or compact the ones that grew too much.
 
 ## What depends on ITDFW
 
@@ -58,12 +60,12 @@ So the AST work in this repository is done by espree, esbuild, tree-sitter (insi
 
 ## Honest limits
 
-- Few automated tests. `inventory` has 17, `itdfw-graph` 13 and `room` 27 (all run by themselves), and the hooks have
-  none.
+- Few automated tests outside the session scripts. `inventory` has 17, `itdfw-graph` 13, `room` 35 and the session
+  scripts 131 (all run by themselves), and the hooks have none.
 - Each README lists its own open limits, with the line that shows each one. None is hidden.
 - The skills are written in a mix of English and Spanish and were written for an agent reader, not as a manual.
-- Counts such as the number of tools or graph nodes are the result of one reading on 2026-11-10; the code is the
-  authority if it has moved.
+- Counts such as the number of tools, tests or graph nodes are the result of one reading on 2026-11-12; the code is
+  the authority if it has moved.
 
 ## Installing the skills (optional)
 
