@@ -19,6 +19,7 @@ the technical claims in those READMEs carry a `file:line` that was checked again
 | **`room`** | A command-line chat between a person and live Claude Code sessions on the same machine | [`agent-tools/room/`](agent-tools/room) | Lets several sessions and a person talk in one place with history, without a server | `pnpm test` (35 cases, self-contained, fake sessions) |
 | **Sessions** (`itdfw-sessions` plugin) | Ten shell scripts to talk to Claude Code sessions from a cron or another session: message a live session by name, wake a dead background one, broadcast, keep the prompt cache warm, compact idle sessions, read the usage, a small work board | [`plugins/itdfw-sessions/`](plugins/itdfw-sessions) | A cron or a script that needs the tools of a session has no safe way in; a dead background session has no one-command way back | `node --test "test/*.test.mjs"` in the plugin (131 cases: fake sessions, fake sockets and stubs; not covered: what a real Claude Code still accepts) |
 | **Hooks** | Shell and Node scripts that Claude Code runs on lifecycle events to enforce rules (load the skill before editing, no generic subagents, comment hygiene, presence notices) | [`plugins/itdfw-hooks/`](plugins/itdfw-hooks) | Rules written as text get forgotten; a hook makes the harness refuse the action | No automated tests; each hook was run once by hand with sample input (see its README). The scripts are short |
+| **Operating model** | A document, not code: how an office of long-lived sessions with one owner per piece works in parallel, coordinates, reviews and corrects itself, and which of its rules a hook or script enforces versus which rest on the model's discipline | [`docs/operating-model.md`](docs/operating-model.md) | Parallel sessions without a shared practice collide, forget to report, and report success by default | Read section 6 (rule to mechanism table) and check each row against the hooks and session scripts it names |
 
 ## What is a real AST and what is not
 
@@ -46,6 +47,10 @@ So the AST work in this repository is done by espree, esbuild, tree-sitter (insi
 - **`room`** is unrelated to the framework: it lets sessions talk to each other and to a person.
 - The **session scripts** are unrelated to the framework too: they let a cron or a script reach a live session, wake a
   dead one or compact the ones that grew too much.
+
+- The **operating model** ([`docs/operating-model.md`](docs/operating-model.md)) is the practice that ties all of the
+  above together: the roles of the sessions, how work and reports move between them, and a table of which rules the
+  hooks and scripts here enforce and which are text only.
 
 ## What depends on ITDFW
 
