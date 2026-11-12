@@ -1,0 +1,37 @@
+{
+  "menus": [
+    {
+      "name": "Menu",
+      "slug": "menu",
+      "sections": [
+        {
+          "name": "STARTERS",
+          "products": [
+            {"name": "SAMPLE DISH 1", "description": "Invented description of the first sample dish", "prices": [{"label": "", "price": 4500}]},
+            {"name": "SAMPLE DISH 2", "description": "Another invented description", "prices": [{"label": "", "price": 5200}]},
+            {"name": "SAMPLE DISH 3", "description": "Short invented text", "prices": [{"label": "", "price": 3900}]},
+            {"name": "SAMPLE DISH 4", "description": "Fourth made-up starter with a longer line", "prices": [{"label": "", "price": 6100}]}
+          ]
+        },
+        {
+          "name": "MAIN COURSES",
+          "products": [
+            {"name": "SAMPLE DISH 5", "description": "Invented main course number five", "prices": [{"label": "", "price": 9800}]},
+            {"name": "SAMPLE DISH 6", "description": "Invented main course number six", "prices": [{"label": "", "price": 10500}]},
+            {"name": "SAMPLE DISH 7", "description": "Invented main course number seven", "prices": [{"label": "", "price": 8700}]},
+            {"name": "SAMPLE DISH 8", "description": "Sold in two portions", "prices": [{"label": "SMALL", "price": 6500}, {"label": "LARGE", "price": 9500}]},
+            {"name": "SAMPLE DIHS 9", "description": "Printed with a typo on purpose", "prices": [{"label": "", "price": 11200}]}
+          ]
+        },
+        {
+          "name": "DRINKS",
+          "products": [
+            {"name": "SAMPLE DRINK 1", "description": "Invented drink", "prices": [{"label": "", "price": 2500}]},
+            {"name": "SAMPLE DRINK 2", "description": "Another invented drink", "prices": [{"label": "", "price": 3100}]},
+            {"name": "SAMPLE DRINK 3", "description": "Third invented drink", "prices": [{"label": "", "price": 3700}]}
+          ]
+        }
+      ]
+    }
+  ]
+}
