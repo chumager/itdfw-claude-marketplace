@@ -123,6 +123,18 @@ describe("claude-broadcast.sh", () => {
     assert.equal(r.code, 2)
     assert.match(r.stderr, /^usage: claude-broadcast\.sh/)
   })
+
+  it("an option-looking first word (-x, --verbose) is refused with exit 2 and reaches nobody", async () => {
+    const a = await env.session({name: "alpha"})
+    for (const flag of ["-x", "--verbose", "--dry-run"]) {
+      const r = await env.run(SCRIPT, [flag])
+      assert.equal(r.code, 2, flag)
+      assert.match(r.stderr, /^unknown option: /, flag)
+    }
+    assert.equal(a.received.length, 0)
+    const ok = await env.run(SCRIPT, ["-- not an option, a sentence"])
+    assert.equal(ok.code, 0)
+  })
 })
 
 describe("claude-keepalive.sh", () => {

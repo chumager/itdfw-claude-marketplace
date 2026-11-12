@@ -14,6 +14,8 @@
 _cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 usage() { echo "usage: claude-broadcast.sh \"<text>\" [from-name]"; }
 case "${1:-}" in -h|--help) usage; awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
+# a lone option-looking word is a typo or an unknown flag, never a text to send to every session
+[[ "${1:-}" =~ ^-{1,2}[A-Za-z][A-Za-z0-9-]*$ ]] && { echo "unknown option: $1" >&2; usage >&2; exit 2; }
 text="$1"; from="${2:-${CLAUDE_BROADCAST_FROM:-user}}"
 [ -n "$text" ] || { usage >&2; exit 2; }
 dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions"
