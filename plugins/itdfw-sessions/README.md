@@ -73,7 +73,7 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
 
 | Script | What it does | Exit codes |
 |---|---|---|
-| `claude-session-msg.sh "<name>" "<text>" [from]` | Delivers a text to ONE live session, found by its exact name, as a cross-session message | 0 delivered · 1 no live session with that name took it · 2 usage |
+| `claude-session-msg.sh "<name>" "<text>"\|- [from]` | Delivers a text to ONE live session, found by its exact name, as a cross-session message. With no text or `-`, it reads the text from stdin (the way for texts over ~128 KB, the kernel's limit for one argument; a 200 KB text was delivered intact to a real session on 2026-11-13) | 0 delivered · 1 no live session with that name took it · 2 usage |
 | `cajarito-despertar.sh <name>` | Wakes a dead background session with `claude --bg --resume <sessionId>` | 0 alive · 1 did not wake · 2 no such session or ambiguous |
 | `claude-broadcast.sh "<text>" [from]` | Sends a text to ALL live sessions except the one that runs it; prints `ok <name>` / `failed <name>` per session | 0 reached all · 1 at least one failed · 2 usage |
 | `claude-keepalive.sh` | From a system cron, queues a `ping` in every live session so the prompt cache (1 h TTL) stays warm | always 0 |
@@ -107,6 +107,7 @@ to the owner session instead of launching a loose `claude -p`.
 
 ```sh
 claude-session-msg.sh "<session>" "<text>" <label>     # exit 0 delivered · 1 no live session with that name
+claude-session-msg.sh "<session>" - <label> < file     # the same, with the text from stdin (any size)
 ```
 
 | Step | What happens |

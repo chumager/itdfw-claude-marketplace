@@ -70,6 +70,25 @@ describe("claude-session-msg.sh", () => {
     } finally { other.cleanup() }
   })
 
+  it("reads the text from stdin when there is no second argument", async () => {
+    const a = await env.session({name: "alpha"})
+    assert.equal((await env.run(SCRIPT, ["alpha"], {stdin: "from stdin"})).code, 0)
+    assert.ok(messageOf(a).includes("\nfrom stdin\n"))
+  })
+
+  it("'-' reads stdin and still takes the third argument as from-name", async () => {
+    const a = await env.session({name: "alpha"})
+    await env.run(SCRIPT, ["alpha", "-", "hilo"], {stdin: "x"})
+    assert.match(messageOf(a), /from="cron:hilo"[^]*\nx\n/)
+  })
+
+  it("delivers a 200 KB text from stdin intact (over the kernel's 128 KB limit for one argument)", async () => {
+    const a = await env.session({name: "alpha"})
+    const big = "START\n" + "abcdefghij".repeat(20000) + "\nEND"
+    assert.equal((await env.run(SCRIPT, ["alpha"], {stdin: big})).code, 0)
+    assert.ok(messageOf(a).includes(big))
+  })
+
   it("exit 2 and a usage line on stderr when the text is missing", async () => {
     const r = await env.run(SCRIPT, ["alpha"])
     assert.equal(r.code, 2)

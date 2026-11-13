@@ -6,15 +6,21 @@
 # "uds:"), so the receiving session is not a peer and nobody tries to answer it with SendMessage.
 #
 # Usage:   claude-session-msg.sh "<exact session name>" "<text>" [from-name]     (from-name defaults to "cron")
+#          claude-session-msg.sh "<exact session name>" [- [from-name]] < file   (no text, or "-": read it from stdin)
+#          stdin is the way for a text over ~128 KB: Linux refuses a single argument bigger than that.
 # Reads:   <claude-home>/sessions/<pid>.json  (name, spare, pid, messagingSocketPath)
 #          <claude-home>/sessions/<pid>.*.key (peerToken)
 # Writes:  nothing on disk. One auth line and one user message go to the session socket (needs jq and socat).
 # Env:     CLAUDE_CONFIG_DIR   Claude Code config dir (default: $HOME/.claude)
 # Exit:    0 delivered · 1 no live session with that name accepted it · 2 bad usage
 _cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
-usage() { echo "usage: claude-session-msg.sh \"<session name>\" \"<text>\" [from-name]"; }
+usage() { echo "usage: claude-session-msg.sh \"<session name>\" \"<text>\"|- [from-name]   (no text or -: read stdin)"; }
 case "${1:-}" in -h|--help) usage; awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
-name="$1"; text="$2"; from="${3:-cron}"
+name="$1"; text="${2:--}"; from="${3:-cron}"
+if [ "$text" = "-" ]; then
+  [ -t 0 ] && { usage >&2; exit 2; }
+  text="$(cat)"
+fi
 [ -n "$name" ] && [ -n "$text" ] || { usage >&2; exit 2; }
 dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions"
 for meta in "$dir"/*.json; do
@@ -25,7 +31,8 @@ for meta in "$dir"/*.json; do
   [ -S "$sock" ] && kill -0 "$pid" 2>/dev/null || continue
   key=$(ls "$dir/$pid".*.key 2>/dev/null | head -1); [ -n "$key" ] || continue
   tok=$(jq -r '.peerToken // empty' "$key"); [ -n "$tok" ] || continue
-  body=$(jq -Rn --arg t "$text" --arg f "$from" '"<cross-session-message from=\"cron:\($f)\" from-name=\"\($f)\" from-mode=\"prompting\">\n\($t)\n</cross-session-message>"')
+  # The text goes to jq by stdin, not --arg: an argument over ~128 KB is refused by the kernel.
+  body=$(printf '%s' "$text" | jq -Rs --arg f "$from" '"<cross-session-message from=\"cron:\($f)\" from-name=\"\($f)\" from-mode=\"prompting\">\n\(.)\n</cross-session-message>"')
   {
     printf '{"type":"auth","token":"%s"}\n' "$tok"
     printf '{"type":"user","message":{"role":"user","content":%s}}\n' "$body"
