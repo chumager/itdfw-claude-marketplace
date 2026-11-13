@@ -14,30 +14,24 @@ describe("claude-session-msg.sh", () => {
   it("delivers auth + user message to the session with that exact name; exit 0", async () => {
     const a = await env.session({name: "alpha"})
     const b = await env.session({name: "alpha-2"})
-    const r = await env.run(SCRIPT, ["alpha", "hello there"])
+    const r = await env.run(SCRIPT, ["alpha", "nightly", "hello there"])
     assert.equal(r.code, 0)
     const [auth, user] = parseReceived(a)
     assert.deepEqual(auth, {type: "auth", token: "tok-alpha"})
     assert.equal(user.message.role, "user")
-    assert.match(user.message.content, /^<cross-session-message from="cron:cron" from-name="cron" from-mode="prompting">\nhello there\n<\/cross-session-message>$/)
+    assert.match(user.message.content, /^<cross-session-message from="cron:nightly" from-name="nightly" from-mode="prompting">\nhello there\n<\/cross-session-message>$/)
     assert.equal(b.received.length, 0)
-  })
-
-  it("uses the third argument as from-name", async () => {
-    const a = await env.session({name: "alpha"})
-    await env.run(SCRIPT, ["alpha", "x", "nightly"])
-    assert.match(messageOf(a), /from="cron:nightly" from-name="nightly"/)
   })
 
   it("JSON-escapes quotes and newlines in the text", async () => {
     const a = await env.session({name: "alpha"})
-    await env.run(SCRIPT, ["alpha", 'say "hi"\nsecond line'])
+    await env.run(SCRIPT, ["alpha", "cron", 'say "hi"\nsecond line'])
     assert.ok(messageOf(a).includes('say "hi"\nsecond line'))
   })
 
   it("exit 1: no session with that name", async () => {
     await env.session({name: "alpha"})
-    assert.equal((await env.run(SCRIPT, ["nobody", "x"])).code, 1)
+    assert.equal((await env.run(SCRIPT, ["nobody", "cron", "x"])).code, 1)
   })
 
   it("exit 1 and nothing delivered: spare, dead pid, no socket, no key file", async () => {
@@ -46,7 +40,7 @@ describe("claude-session-msg.sh", () => {
       const e = makeEnv()
       try {
         const s = await e.session({name: "alpha", ...c})
-        const r = await e.run(SCRIPT, ["alpha", "x"])
+        const r = await e.run(SCRIPT, ["alpha", "cron", "x"])
         assert.equal(r.code, 1, JSON.stringify(c))
         assert.equal(s.received.length, 0, JSON.stringify(c))
       } finally { e.cleanup() }
@@ -56,7 +50,7 @@ describe("claude-session-msg.sh", () => {
   it("falls through to a second live session with the same name when the first is dead", async () => {
     await env.session({name: "alpha", alive: false})
     const live = await env.session({name: "alpha"})
-    assert.equal((await env.run(SCRIPT, ["alpha", "x"])).code, 0)
+    assert.equal((await env.run(SCRIPT, ["alpha", "cron", "x"])).code, 0)
     assert.equal(live.received.length, 2)
   })
 
@@ -64,35 +58,38 @@ describe("claude-session-msg.sh", () => {
     const other = makeEnv()
     try {
       const s = await other.session({name: "alpha"})
-      const r = await env.run(SCRIPT, ["alpha", "x"], {extraEnv: {CLAUDE_CONFIG_DIR: other.claude}})
+      const r = await env.run(SCRIPT, ["alpha", "cron", "x"], {extraEnv: {CLAUDE_CONFIG_DIR: other.claude}})
       assert.equal(r.code, 0)
       assert.equal(s.received.length, 2)
     } finally { other.cleanup() }
   })
 
-  it("reads the text from stdin when there is no second argument", async () => {
+  it("reads the text from stdin when there is no third argument", async () => {
     const a = await env.session({name: "alpha"})
-    assert.equal((await env.run(SCRIPT, ["alpha"], {stdin: "from stdin"})).code, 0)
-    assert.ok(messageOf(a).includes("\nfrom stdin\n"))
+    assert.equal((await env.run(SCRIPT, ["alpha", "hilo"], {stdin: "from stdin"})).code, 0)
+    assert.match(messageOf(a), /from="cron:hilo"[^]*\nfrom stdin\n/)
   })
 
-  it("'-' reads stdin and still takes the third argument as from-name", async () => {
+  it("a third argument wins over stdin", async () => {
     const a = await env.session({name: "alpha"})
-    await env.run(SCRIPT, ["alpha", "-", "hilo"], {stdin: "x"})
-    assert.match(messageOf(a), /from="cron:hilo"[^]*\nx\n/)
+    await env.run(SCRIPT, ["alpha", "cron", "from arg"], {stdin: "from stdin"})
+    assert.ok(messageOf(a).includes("\nfrom arg\n"))
+    assert.ok(!messageOf(a).includes("from stdin"))
   })
 
   it("delivers a 200 KB text from stdin intact (over the kernel's 128 KB limit for one argument)", async () => {
     const a = await env.session({name: "alpha"})
     const big = "START\n" + "abcdefghij".repeat(20000) + "\nEND"
-    assert.equal((await env.run(SCRIPT, ["alpha"], {stdin: big})).code, 0)
+    assert.equal((await env.run(SCRIPT, ["alpha", "cron"], {stdin: big})).code, 0)
     assert.ok(messageOf(a).includes(big))
   })
 
-  it("exit 2 and a usage line on stderr when the text is missing", async () => {
-    const r = await env.run(SCRIPT, ["alpha"])
-    assert.equal(r.code, 2)
-    assert.match(r.stderr, /^usage: claude-session-msg\.sh/)
+  it("exit 2 and a usage line on stderr when the session or the from-name is missing", async () => {
+    for (const args of [[], ["alpha"]]) {
+      const r = await env.run(SCRIPT, args)
+      assert.equal(r.code, 2, JSON.stringify(args))
+      assert.match(r.stderr, /^usage: claude-session-msg\.sh/)
+    }
   })
 })
 

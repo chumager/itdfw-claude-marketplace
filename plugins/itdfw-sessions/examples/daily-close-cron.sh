@@ -35,9 +35,9 @@ else. If not: create $dir/$day.running, run your closing routine, and when you f
 $day.done. Last of all, leave one line in your final message saying the close is done."
 
 send="$(command -v claude-session-msg.sh || echo "$(dirname "$(readlink -f "$0")")/../bin/claude-session-msg.sh")"
-"$send" "$owner" "$msg" daily-close && exit 0
+"$send" "$owner" daily-close "$msg" && exit 0
 if [ -n "$fallback" ]; then
-  "$send" "$fallback" "The session '$owner' is not alive. $msg" daily-close && exit 0
+  "$send" "$fallback" daily-close "The session '$owner' is not alive. $msg" && exit 0
 fi
 echo "daily-close-cron: no live session to receive it ($owner${fallback:+, $fallback}) ($day)" >&2
 exit 1
