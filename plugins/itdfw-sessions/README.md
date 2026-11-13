@@ -1,6 +1,6 @@
 # itdfw-sessions: talk to Claude Code sessions from outside, and between them
 
-Ten small shell scripts for people who run several Claude Code sessions at once (some of them background sessions that
+Fourteen small shell scripts for people who run several Claude Code sessions at once (some of them background sessions that
 nobody watches) and want a cron, a script or another session to talk to them. They have nothing to do with the ITDFW
 framework: the plugin lives in this marketplace because we use them to run our own sessions.
 
@@ -83,6 +83,10 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
 | `session-fg.sh <name> [window]` | Is the session on screen? `ACTIVE <pane>` / `VISIBLE <pane>` / `BG`, looking for its last text in the panes of a tmux window | 0 / 1 / 3 respectively · 2 not found |
 | `claude-usage-watch.sh [--loop s]` | Reads the Claude Code `/usage` without an open session; one line, plus a log | 0 · 1 no answer from `claude -p` |
 | `cartera.sh` | A work board: each session publishes its blocks and tasks in a JSON file that a panel can merge | 0 · 1 unknown session or block · 2 usage |
+| `hilo-capturar.sh` | `PreCompact` hook: saves the last 100 messages of the conversation (person, other sessions, assistant text; each cut at 4,000 characters) to `<state>/hilo/<name>.ultimos.md`. Prints nothing | always 0 |
+| `hilo-devolver.sh` | `PostCompact` hook: sends the compacted session its own summary (if from the last 24 h) and those messages, as one message from `cron:hilo` | always 0 |
+| `hilo-pedir.sh [--umbral N] [--excepto name]... [--solo name]...` | Asks only the sessions over the threshold to write their summary and run `hilo-listo.sh`; the rest are not woken | 0 · 1 a message was not delivered · 2 usage |
+| `hilo-listo.sh [--ruta]` | Run by a session with its summary written: leaves the mark `<state>/compactables/<name>` for whoever compacts | 0 · 1 no recent summary or no named session · 2 usage |
 
 `examples/` holds two files that are meant to be copied and changed, not run as they are:
 
@@ -158,6 +162,7 @@ files, a fake unix socket (`node:net`) that records what a session would receive
 | `test/wake-compact.test.mjs` | `cajarito-despertar.sh` and `cajaritos-compactar.sh` against a stub `claude` and a stub `tmux`: the decisions (already alive, ambiguous names, which session is compacted and which is skipped and why, `--solo`, `--excepto`, `--umbral`) |
 | `test/screen-usage.test.mjs` | `session-fg.sh` (ACTIVE / VISIBLE / BG from a fake transcript and fake panes), `claude-usage-watch.sh` (against a stub `claude -p`) and `examples/statusline-state.sh` |
 | `test/cartera.test.mjs` | `cartera.sh`: every subcommand, the state files, the old-format migration |
+| `test/hilo.test.mjs` | the four `hilo-*` scripts: what the capture keeps and drops, the last-N and per-message cut, the hand-back message and its 24 h summary rule, the ready mark, who is asked and who is not woken |
 | `test/help.test.mjs` | every script answers `--help` with its header, exit 0 |
 | `test/env-file.test.mjs` | the local config file: absent, present, `XDG_CONFIG_HOME` / `CLAUDE_SESSIONS_ENV`, the environment wins, a line that tries to run something is not executed, only `KEY=value` lines count, through a symlink, and that every script loads it on start |
 
