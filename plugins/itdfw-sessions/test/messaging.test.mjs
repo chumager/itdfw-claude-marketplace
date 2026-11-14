@@ -104,7 +104,7 @@ describe("claude-broadcast.sh", () => {
     const r = await env.run(SCRIPT, ["wake up"])
     assert.equal(r.code, 0)
     assert.deepEqual(r.stdout.split("\n").filter(Boolean).sort(), ["ok alpha", "ok beta"])
-    for (const s of [a, b]) assert.match(messageOf(s), /from="cron:user" from-name="user"[^>]*>\nwake up\n/)
+    for (const s of [a, b]) assert.match(messageOf(s), /from="user" from-name="user"[^>]*>\nwake up\n/)
     assert.equal(spare.received.length + dead.received.length, 0)
   })
 

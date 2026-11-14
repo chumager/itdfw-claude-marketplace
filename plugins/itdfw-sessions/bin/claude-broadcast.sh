@@ -28,7 +28,7 @@ while [ -n "$p" ] && [ "$p" != "1" ] && [ "$p" != "0" ]; do
   p=$(awk '{print $4}' "/proc/$p/stat" 2>/dev/null)
 done
 
-body=$(jq -Rn --arg t "$text" --arg f "$from" '"<cross-session-message from=\"cron:\($f)\" from-name=\"\($f)\" from-mode=\"prompting\">\n\($t)\n</cross-session-message>"')
+body=$(jq -Rn --arg t "$text" --arg f "$from" '"<cross-session-message from=\"\($f)\" from-name=\"\($f)\" from-mode=\"prompting\">\n\($t)\n</cross-session-message>"')
 rc=0
 for meta in "$dir"/*.json; do
   [ -f "$meta" ] || continue
