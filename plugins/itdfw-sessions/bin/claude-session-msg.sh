@@ -2,8 +2,9 @@
 # claude-session-msg.sh: deliver a text to ONE live Claude Code session, by name, as a cross-session message.
 #
 # Same mechanism as claude-keepalive.sh: session file <claude-home>/sessions/<pid>.json, key file <pid>.*.key,
-# line-JSON protocol over the session's unix socket. The message arrives with from="cron:<from-name>" (not
-# "uds:"), so the receiving session is not a peer and nobody tries to answer it with SendMessage.
+# line-JSON protocol over the session's unix socket. The message arrives with from="<from-name>" and
+# from-name="<from-name>", exactly as given: the sender names itself (a cron its full name, a session its own), and
+# when that name is a live session the receiver can answer it with SendMessage.
 #
 # Usage:   claude-session-msg.sh "<exact session name>" <from-name> ["<text>"]
 #          Both names are required. Without a text, it is read from stdin, as any Unix filter does (it waits if
@@ -29,7 +30,7 @@ for meta in "$dir"/*.json; do
   key=$(ls "$dir/$pid".*.key 2>/dev/null | head -1); [ -n "$key" ] || continue
   tok=$(jq -r '.peerToken // empty' "$key"); [ -n "$tok" ] || continue
   # The text goes to jq by stdin, not --arg: an argument over ~128 KB is refused by the kernel.
-  body=$(printf '%s' "$text" | jq -Rs --arg f "$from" '"<cross-session-message from=\"cron:\($f)\" from-name=\"\($f)\" from-mode=\"prompting\">\n\(.)\n</cross-session-message>"')
+  body=$(printf '%s' "$text" | jq -Rs --arg f "$from" '"<cross-session-message from=\"\($f)\" from-name=\"\($f)\" from-mode=\"prompting\">\n\(.)\n</cross-session-message>"')
   {
     printf '{"type":"auth","token":"%s"}\n' "$tok"
     printf '{"type":"user","message":{"role":"user","content":%s}}\n' "$body"

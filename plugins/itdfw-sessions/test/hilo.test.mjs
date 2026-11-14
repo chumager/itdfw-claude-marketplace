@@ -66,7 +66,7 @@ describe("hilo-devolver.sh", () => {
   const SCRIPT = join(BIN, "hilo-devolver.sh")
   const hilo = () => { const d = join(env.state, "hilo"); mkdirSync(d, {recursive: true}); return d }
 
-  it("sends the summary and the last messages to the session, from cron:hilo, after returning at once", async () => {
+  it("sends the summary and the last messages to the session, from hilo, after returning at once", async () => {
     const a = await env.session({name: "alpha"})
     writeFileSync(join(hilo(), "alpha.md"), "MY SUMMARY")
     writeFileSync(join(hilo(), "alpha.ultimos.md"), "LAST MESSAGES")
@@ -74,7 +74,7 @@ describe("hilo-devolver.sh", () => {
     assert.equal(r.code, 0)
     for (let i = 0; i < 40 && a.received.length < 2; i++) await wait(50)
     const m = messageOf(a)
-    assert.match(m, /from="cron:hilo"/)
+    assert.match(m, /from="hilo"/)
     assert.ok(m.includes("MY SUMMARY") && m.includes("LAST MESSAGES"))
   })
 
@@ -146,7 +146,7 @@ describe("hilo-pedir.sh", () => {
     const r = await env.run(SCRIPT, ["--excepto", "me"])
     assert.equal(r.code, 0)
     assert.equal(r.stdout.trim(), "asked hi (62%)")
-    assert.match(messageOf(hi), /from="cron:hilo"[^]*hilo\/hi\.md[^]*hilo-listo\.sh/)
+    assert.match(messageOf(hi), /from="hilo"[^]*hilo\/hi\.md[^]*hilo-listo\.sh/)
     for (const s of [lo, me, dead]) assert.equal(s.received.length, 0)
   })
 

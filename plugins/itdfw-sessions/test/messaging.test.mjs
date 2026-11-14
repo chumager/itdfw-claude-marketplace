@@ -19,7 +19,7 @@ describe("claude-session-msg.sh", () => {
     const [auth, user] = parseReceived(a)
     assert.deepEqual(auth, {type: "auth", token: "tok-alpha"})
     assert.equal(user.message.role, "user")
-    assert.match(user.message.content, /^<cross-session-message from="cron:nightly" from-name="nightly" from-mode="prompting">\nhello there\n<\/cross-session-message>$/)
+    assert.match(user.message.content, /^<cross-session-message from="nightly" from-name="nightly" from-mode="prompting">\nhello there\n<\/cross-session-message>$/)
     assert.equal(b.received.length, 0)
   })
 
@@ -67,7 +67,7 @@ describe("claude-session-msg.sh", () => {
   it("reads the text from stdin when there is no third argument", async () => {
     const a = await env.session({name: "alpha"})
     assert.equal((await env.run(SCRIPT, ["alpha", "hilo"], {stdin: "from stdin"})).code, 0)
-    assert.match(messageOf(a), /from="cron:hilo"[^]*\nfrom stdin\n/)
+    assert.match(messageOf(a), /from="hilo"[^]*\nfrom stdin\n/)
   })
 
   it("a third argument wins over stdin", async () => {
@@ -240,7 +240,7 @@ describe("examples/daily-close-cron.sh", () => {
     const owner = await env.session({name: "closer"})
     const r = await run("closer")
     assert.equal(r.code, 0)
-    assert.match(messageOf(owner), new RegExp(`from="cron:daily-close".*Daily close of ${day}`, "s"))
+    assert.match(messageOf(owner), new RegExp(`from="daily-close".*Daily close of ${day}`, "s"))
     assert.ok(messageOf(owner).includes(`${markDir()}/${day}.running`))
   })
 

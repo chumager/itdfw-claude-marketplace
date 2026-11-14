@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # hilo-devolver.sh: PostCompact hook. Hands the thread back to the session that was just compacted: its own summary
 # (if it wrote one in the last 24 h, see hilo-listo.sh) and the last messages that hilo-capturar.sh saved, as ONE
-# message from "cron:hilo" over the session socket.
+# message from "hilo" over the session socket.
 #
 # Usage:   in settings.json, hooks.PostCompact: {"type": "command", "command": "hilo-devolver.sh"}
 #          It reads the hook input on stdin: {"session_id", ...}.

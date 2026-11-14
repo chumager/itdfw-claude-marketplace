@@ -5,7 +5,7 @@
 #
 # Usage:   hilo-pedir.sh [--umbral 50] [--excepto <name>]... [--solo <name>]...
 # Reads:   `claude agents --json` (name, sessionId, status); <state-dir>/ctx-<sessionId>.json, field `used`
-# Writes:  nothing on disk; one message per chosen session through claude-session-msg.sh, from "cron:hilo".
+# Writes:  nothing on disk; one message per chosen session through claude-session-msg.sh, from "hilo".
 # Output:  one line per chosen session: "asked <name> (<used>%)" or "failed <name>".
 # Env:     CLAUDE_STATE_DIR   default <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or $HOME/.claude
 # Exit:    0 · 1 at least one message was not delivered · 2 bad usage

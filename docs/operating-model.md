@@ -341,8 +341,8 @@ allowed. One close per day.
 | Quota | Read the usage at the start and the end, and report the difference |
 
 The close runs on the mid-size model, in the background, and if it takes over about 30 minutes something is waiting on a
-prompt. A message from a cron uses the label `cron:<label>`, not a session address, because a session that received a
-session-style ping once tried to answer itself.
+prompt. A message from a cron carries the cron's own name as sender, never the receiver's, because a session that
+received a ping under its own name once tried to answer itself.
 
 ### 5.3 Compacting and reviving sessions
 
