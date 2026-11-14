@@ -240,7 +240,7 @@ describe("examples/daily-close-cron.sh", () => {
     const owner = await env.session({name: "closer"})
     const r = await run("closer")
     assert.equal(r.code, 0)
-    assert.match(messageOf(owner), new RegExp(`from="daily-close".*Daily close of ${day}`, "s"))
+    assert.match(messageOf(owner), new RegExp(`from="cron:daily-close".*Daily close of ${day}`, "s"))
     assert.ok(messageOf(owner).includes(`${markDir()}/${day}.running`))
   })
 

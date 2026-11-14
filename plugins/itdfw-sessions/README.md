@@ -84,7 +84,7 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
 | `claude-usage-watch.sh [--loop s]` | Reads the Claude Code `/usage` without an open session; one line, plus a log | 0 · 1 no answer from `claude -p` |
 | `cartera.sh` | A work board: each session publishes its blocks and tasks in a JSON file that a panel can merge | 0 · 1 unknown session or block · 2 usage |
 | `hilo-capturar.sh` | `PreCompact` hook: saves the last 100 messages of the conversation (person, other sessions, assistant text; each cut at 4,000 characters) to `<state>/hilo/<name>.ultimos.md`. Prints nothing | always 0 |
-| `hilo-devolver.sh` | `PostCompact` hook: sends the compacted session its own summary (if from the last 24 h) and those messages, as one message from `hilo` | always 0 |
+| `hilo-devolver.sh` | `PostCompact` hook: sends the compacted session its own summary (if from the last 24 h) and those messages, as one message from `hook:hilo` | always 0 |
 | `hilo-pedir.sh [--umbral N] [--excepto name]... [--solo name]...` | Asks only the sessions over the threshold to write their summary and run `hilo-listo.sh`; the rest are not woken | 0 · 1 a message was not delivered · 2 usage |
 | `hilo-listo.sh [--ruta]` | Run by a session with its summary written: leaves the mark `<state>/compactables/<name>` for whoever compacts | 0 · 1 no recent summary or no named session · 2 usage |
 
@@ -122,7 +122,8 @@ claude-session-msg.sh "<session>" <label> < file       # the same, with the text
 | telling the person | the session does it when it finishes (a push or a board entry), not the cron |
 
 - The model to copy is `examples/daily-close-cron.sh`: a day mark, and a fallback session if the owner is not alive.
-- The sender names itself: a cron with its full name, a session with its own. When that name is a live session, the
+- The sender names itself: a session with its own name; anything else says what it is, `cron:<name>`, `hook:<name>`
+  or `script:<name>`. When that name is a live session, the
   receiver can answer it with `SendMessage`; when it is not (a cron), there is nobody to answer. Do not send under the
   receiver's own name: a session that received a ping from itself once tried to answer itself.
 - The subagents the session starts run with that session's account.

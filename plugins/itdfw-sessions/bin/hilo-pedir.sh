@@ -5,7 +5,7 @@
 #
 # Usage:   hilo-pedir.sh [--umbral 50] [--excepto <name>]... [--solo <name>]...
 # Reads:   `claude agents --json` (name, sessionId, status); <state-dir>/ctx-<sessionId>.json, field `used`
-# Writes:  nothing on disk; one message per chosen session through claude-session-msg.sh, from "hilo".
+# Writes:  nothing on disk; one message per chosen session through claude-session-msg.sh, from "script:hilo".
 # Output:  one line per chosen session: "asked <name> (<used>%)" or "failed <name>".
 # Env:     CLAUDE_STATE_DIR   default <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or $HOME/.claude
 # Exit:    0 · 1 at least one message was not delivered · 2 bad usage
@@ -35,6 +35,6 @@ while IFS=$'\t' read -r nombre sid; do
 1. Escribe tu hilo en $STATE_DIR/hilo/$nombre.md: qué hiciste hoy (contrástalo con lo que ya dice ese archivo, si existe), en qué quedó lo último conversado, lo pendiente y de quién depende, y las palabras textuales de la persona que importen. Corto: es lo que vas a leer después de compactar.
 2. Corre hilo-listo.sh (o ~/bin/hilo-listo.sh). Eso avisa que puedes compactarte.
 No hace falta responder este mensaje."
-  if "$send" "$nombre" hilo "$msg"; then echo "asked $nombre (${used}%)"; else echo "failed $nombre"; status=1; fi
+  if "$send" "$nombre" script:hilo "$msg"; then echo "asked $nombre (${used}%)"; else echo "failed $nombre"; status=1; fi
 done < <(claude agents --json 2>/dev/null | jq -r '.[] | select(.status != null) | [.name, .sessionId] | @tsv')
 exit "$status"

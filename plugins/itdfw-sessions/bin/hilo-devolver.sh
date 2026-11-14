@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # hilo-devolver.sh: PostCompact hook. Hands the thread back to the session that was just compacted: its own summary
 # (if it wrote one in the last 24 h, see hilo-listo.sh) and the last messages that hilo-capturar.sh saved, as ONE
-# message from "hilo" over the session socket.
+# message from "hook:hilo" over the session socket (a sender that is not a session says what it is).
 #
 # Usage:   in settings.json, hooks.PostCompact: {"type": "command", "command": "hilo-devolver.sh"}
 #          It reads the hook input on stdin: {"session_id", ...}.
@@ -30,6 +30,6 @@ resumen="$state/hilo/$name.md"; ultimos="$state/hilo/$name.ultimos.md"; enviado=
   [ -r "$ultimos" ] && { echo; echo "=== Los últimos mensajes ($ultimos) ==="; cat "$ultimos"; }
 } > "$enviado" 2>/dev/null || exit 0
 send="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/claude-session-msg.sh"
-( sleep "${HILO_ESPERA:-5}"; "$send" "$name" hilo < "$enviado" ) >/dev/null 2>&1 </dev/null &
+( sleep "${HILO_ESPERA:-5}"; "$send" "$name" hook:hilo < "$enviado" ) >/dev/null 2>&1 </dev/null &
 disown 2>/dev/null
 exit 0
