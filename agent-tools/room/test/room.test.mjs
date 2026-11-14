@@ -319,6 +319,89 @@ describe("level 1: names ignore case", () => {
   });
 });
 
+describe("level 1: the person's lines stand out", () => {
+  const strip = text => text.replace(/\u001b\[[0-9;]*m/g, "");
+  const stamp = new Date().toISOString();
+  const messages = [{line: 1, ts: stamp, type: "msg", from: "ana", text: "from the person"}, {line: 2, ts: stamp, type: "msg", from: "bot", text: "from a session"}];
+
+  it("without a terminal a line of the person starts with a marker and a line of a session does not", () => {
+    const [person, session] = messages.map(record => formatRecord(record, {people: ["ana"]}));
+    assert.match(person, /^\n>> \[\d\d:\d\d\]\[ana\]: from the person$/);
+    assert.match(session, /^\n\[\d\d:\d\d\]\[bot\]: from a session$/);
+    assert.doesNotMatch(person, /\u001b/);
+    // the line number of `room read` still comes first, then the marker
+    assert.match(formatRecord(messages[0], {people: ["ana"], number: true}), /^\n1 >> \[/);
+  });
+
+  it("without being told who the people are nothing is marked, as before", () => {
+    assert.doesNotMatch(formatRecord(messages[0]), />>/);
+  });
+
+  it("in a terminal the person's header is bold in a colour no session name gets, and a session's is not", () => {
+    const [person, session] = messages.map(record => formatRecord(record, {terminal: true, width: 80, people: ["ana"]}));
+    assert.ok(person.includes("\u001b[1;7;38;5;226m"), "the name of the person is bold, reversed, in the reserved colour");
+    assert.ok(!session.includes("\u001b[1;7;38;5;226m"), "a session's name never takes that style");
+    assert.match(strip(person), /^\n>> \[\d\d:\d\d\]\[ana\]: from the person$/);
+  });
+
+  it("the live view and room read mark the lines of the person, and only those", async () => {
+    const b = await world.session("mark-b");
+    const view = world.interactive("mark");
+    await until(() => view.output.includes("mark"), "the room to open");
+    view.type("/invite mark-b");
+    await until(() => b.inbox.length === 1, "the invitation");
+    await b.room("say", "mark", "session words");
+    view.type("person words");
+    await until(() => b.inbox.length === 2, "the person's message");
+    await until(() => /\[ana\]: person words/.test(view.output) && /\[mark-b\]: session words/.test(view.output), "both lines in the live view");
+    assert.match(view.output, /^>> \[\d\d:\d\d\]\[ana\]: person words$/m, "the live view marks the person");
+    assert.match(view.output, /^\[\d\d:\d\d\]\[mark-b\]: session words$/m, "the live view does not mark the session");
+
+    const read = (await b.room("read", "mark")).stdout;
+    assert.match(read, /^\d+ >> \[\d\d:\d\d\]\[ana\]: person words$/m);
+    assert.match(read, /^\d+ \[\d\d:\d\d\]\[mark-b\]: session words$/m);
+    view.type("/leave");
+    await view.exited;
+  });
+});
+
+describe("level 1: a session learns whether the person is in the room", () => {
+  it("say tells the sender that the person is not in a room of sessions only", async () => {
+    const [a, b] = await roomWith(world, "nopers", ["nopers-a", "nopers-b"]);
+    const result = await a.room("say", "nopers", "just us");
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /^the person is not in this room$/m);
+    assert.match(result.stdout, /^sent nopers-b/m, "the delivery report is still there");
+    await until(() => b.inbox.length === 1, "the message still reaches the session");
+  });
+
+  it("say prints nothing about presence while the person is in the room, and the warning once they leave", async () => {
+    const b = await world.session("pers-b");
+    const view = world.interactive("pers");
+    await until(() => view.output.includes("pers"), "the room to open");
+    view.type("/invite pers-b");
+    await until(() => b.inbox.length === 1, "the invitation");
+    const present = await b.room("say", "pers", "hello");
+    assert.equal(present.code, 0);
+    assert.doesNotMatch(present.stdout, /the person is/, "presence is the default: it is not news");
+
+    view.type("/leave");
+    await view.exited;
+    assert.match((await b.room("say", "pers", "hello again")).stdout, /^the person is not in this room$/m);
+  });
+
+  it("the person saying from the shell is told nothing about presence", async () => {
+    await roomWith(world, "byperson", ["byperson-a"]);
+    const view = world.interactive("byperson");
+    await until(() => view.output.includes("byperson"), "the room to open");
+    const result = await world.person("say", "byperson", "from the shell");
+    assert.equal(result.code, 0);
+    assert.doesNotMatch(result.stdout, /the person is/);
+    view.type("/leave");
+    await view.exited;
+  });
+});
+
 describe("level 1: tab completion", () => {
   const complete = line => completeInput(line, "tab");
   before(async () => {

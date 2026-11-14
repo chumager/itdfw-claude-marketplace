@@ -63,7 +63,26 @@ it("in a real terminal, tab completes a session name after /invite and a @partic
   await view.exited;
 });
 
-it("markdown is rendered in the terminal, but an escape sequence inside it is not", {skip: process.platform !== "linux"}, async () => {
+it("in a real terminal the person's own line is marked and in the reserved style, and a session's is not", {skip: process.platform !== "linux"}, async () => {
+  const view = await openTerminal("ttyme", "ttyme-b");
+  let mark = view.output.length;
+  view.terminal.stdin.write("mine here\r");
+  await until(() => plain(view.output.slice(mark)).includes("[ana]: mine here"), "the person's own line");
+  const mine = view.output.slice(mark);
+  assert.ok(mine.includes("\u001b[1;7;38;5;226m"), "the person's name is bold, reversed, in the reserved colour");
+  assert.match(plain(mine), />> \[\d\d:\d\d\]\[ana\]: mine here/);
+
+  mark = view.output.length;
+  await view.session.room("say", "ttyme", "theirs here");
+  await until(() => plain(view.output.slice(mark)).includes("[ttyme-b]: theirs here"), "the session's line");
+  assert.ok(!view.output.slice(mark).includes("\u001b[1;7;38;5;226m"), "a session's line has no person style");
+  assert.doesNotMatch(plain(view.output.slice(mark)), />> \[\d\d:\d\d\]\[ttyme-b\]/);
+
+  view.terminal.stdin.write("/leave\r");
+  await view.exited;
+});
+
+it("markdown is rendered in the terminal, but an escape sequence inside it is not",{skip: process.platform !== "linux"}, async () => {
   const view = await openTerminal("ttymd", "ttymd-b");
   const mark = view.output.length;
   await view.session.room("say", "ttymd", "**bold** \u001b[31mred\u001b[0m `code`");

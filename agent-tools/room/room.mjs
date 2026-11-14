@@ -110,6 +110,19 @@ export function participantsOf(records) {
   return present;
 }
 
+/**
+ * Names that are a person, as the `kind` of their latest `join` says. Unlike {@link participantsOf} it also counts
+ * whoever left, because the history still shows what a person wrote after they are gone. This is the only way the room
+ * tells the person from a session: there is no second one.
+ * @param {object[]} records Records of the room.
+ * @returns {string[]} The names of the people, in order of arrival.
+ */
+export function peopleOf(records) {
+  const kinds = new Map();
+  for (const record of records) if (record.type === "join") kinds.set(record.who, record.kind);
+  return [...kinds].filter(([, kind]) => kind === "person").map(([name]) => name);
+}
+
 function requireParticipant(room, who) {
   const present = participantsOf(existingRecords(room));
   if (!present.has(who)) throw new RoomError(`${who} is not a participant of ${room}`);
@@ -321,13 +334,16 @@ export async function broadcast(room, from, line, excluded = [from], mentioned =
  * @param {string} room Room name.
  * @param {string} who Author.
  * @param {string} text Text of the message.
- * @returns {Promise<object>} The report of {@link broadcast}.
+ * @returns {Promise<object>} The report of {@link broadcast}, plus `people`: the people other than the author who are in
+ *   the room at the moment of writing (empty if the message was written into a room with no person in it). It only
+ *   informs: a room of sessions is allowed.
  */
 export async function say(room, who, text) {
   const present = requireParticipant(room, who);
   const mentioned = mentionsIn(text, [...present.keys()].filter(name => name !== who));
+  const people = [...present].filter(([name, kind]) => kind === "person" && name !== who).map(([name]) => name);
   appendRecord(room, {type: "msg", from: who, text});
-  return broadcast(room, who, `[room ${room}] ${escapeText(who)}: ${escapeText(text)}`, [who], mentioned);
+  return {...await broadcast(room, who, `[room ${room}] ${escapeText(who)}: ${escapeText(text)}`, [who], mentioned), people};
 }
 
 /**
@@ -403,6 +419,11 @@ const STYLE = {dim: `${ESC}2m`, reset: `${ESC}0m`};
 // 256-colour codes for the names, so a name colour can never look like a basic colour a message tried to inject.
 const NAME_COLOURS = [39, 208, 141, 77, 214, 170, 45, 203];
 const INDENT = "  ";
+// The person's lines: a marker that survives a pipe, and in a terminal a style no session name can take (bold, reversed,
+// yellow 226 is not in NAME_COLOURS). Reversed reads on a dark and on a light background alike.
+const PERSON_MARK = ">> ";
+const PERSON_STYLE = `${ESC}1;7;38;5;226m`;
+const PERSON_MARK_STYLE = `${ESC}1;38;5;226m`;
 
 const styled = (style, text) => `${STYLE[style]}${text}${STYLE.reset}`;
 const visibleLength = text => [...text.replace(/\u001b\[[0-9;]*m/g, "")].length;
@@ -478,12 +499,13 @@ const namesOf = records => [...new Set(records.filter(record => record.type === 
  * leave. Messages start with a blank line, so each one stands apart. With a terminal the markdown is rendered and the
  * text wrapped to its width; without one the text goes as it came, with the same layout and no ANSI.
  * @param {object} record A record of the room.
- * @param {{terminal?: boolean, width?: number, number?: boolean, names?: string[]}} options `number` prefixes the line
- *   of the file, which is what `room read --desde N` takes; `names` are the participants whose `@name` is highlighted
- *   on a terminal.
+ * @param {{terminal?: boolean, width?: number, number?: boolean, names?: string[], people?: string[]}} options `number`
+ *   prefixes the line of the file, which is what `room read --desde N` takes; `names` are the participants whose
+ *   `@name` is highlighted on a terminal; `people` are the names that are a person (see {@link peopleOf}): their
+ *   messages start with `>> `, and on a terminal their name is bold, reversed and yellow.
  * @returns {string} The formatted record, possibly on several lines.
  */
-export function formatRecord(record, {terminal = false, width = 80, number = false, names = []} = {}) {
+export function formatRecord(record, {terminal = false, width = 80, number = false, names = [], people = []} = {}) {
   const prefix = number ? `${record.line} ` : "";
   const clock = clockLabel(record.ts);
   if (record.type !== "msg") {
@@ -492,12 +514,18 @@ export function formatRecord(record, {terminal = false, width = 80, number = fal
   }
   const from = forDisplay(record.from);
   const text = forDisplay(record.text);
-  const plainHeader = `${prefix}[${clock}][${from}]: `;
+  const isPerson = people.includes(record.from);
+  const mark = isPerson ? PERSON_MARK : "";
+  const plainHeader = `${prefix}${mark}[${clock}][${from}]: `;
   if (!terminal) {
     const [firstLine, ...rest] = text.split("\n");
     return `\n${plainHeader}${firstLine}${rest.map(line => `\n${INDENT}${line}`).join("")}`;
   }
-  const header = `${styled("dim", `${prefix}[${clock}]`)}${styled("dim", "[")}${nameColour(from)}${from}${STYLE.reset}${styled("dim", "]:")} `;
+  const nameStyle = isPerson ? PERSON_STYLE : nameColour(from);
+  const stamp = isPerson
+    ? `${prefix ? styled("dim", prefix) : ""}${PERSON_MARK_STYLE}${mark}${STYLE.reset}${styled("dim", `[${clock}]`)}`
+    : styled("dim", `${prefix}[${clock}]`);
+  const header = `${stamp}${styled("dim", "[")}${nameStyle}${from}${STYLE.reset}${styled("dim", "]:")} `;
   const lines = highlightMentions(renderMarkdown(text, Math.max(20, width) - INDENT.length), mentionsIn(text, names));
   const inline = lines.length === 1 && visibleLength(plainHeader) + visibleLength(lines[0]) <= width;
   if (inline) return `\n${header}${lines[0]}`;
@@ -506,9 +534,9 @@ export function formatRecord(record, {terminal = false, width = 80, number = fal
 }
 
 const terminalWidth = () => process.stdout.columns || 80;
-const viewOf = (record, terminal, names = []) => formatRecord(record, {terminal, width: terminalWidth(), names});
-const numbered = (record, names = []) =>
-  formatRecord(record, {terminal: Boolean(process.stdout.isTTY), width: terminalWidth(), number: true, names});
+const viewOf = (record, terminal, names = [], people = []) => formatRecord(record, {terminal, width: terminalWidth(), names, people});
+const numbered = (record, names = [], people = []) =>
+  formatRecord(record, {terminal: Boolean(process.stdout.isTTY), width: terminalWidth(), number: true, names, people});
 
 /**
  * Lists every room with its participants.
@@ -561,7 +589,7 @@ export async function executeCommand(line, {room, who}) {
         const count = argument ? Number(argument) : DEFAULT_HISTORY;
         if (!Number.isInteger(count) || count < 1) return {output: ["usage: /history [n]"]};
         const records = existingRecords(room);
-        return {output: records.slice(-count).map(record => viewOf(record, Boolean(process.stdout.isTTY), namesOf(records)))};
+        return {output: records.slice(-count).map(record => viewOf(record, Boolean(process.stdout.isTTY), namesOf(records), peopleOf(records)))};
       }
       case "leave":
         await leave(room, who);
@@ -667,10 +695,15 @@ export async function runInteractive(room, who) {
   print(`Room ${room}. You are ${forDisplay(who)}. /help for commands.`);
   const earlier = parseLines(content.subarray(0, offset).toString("utf8"));
   const names = new Set(namesOf(earlier));
-  earlier.slice(-DEFAULT_HISTORY).map(record => viewOf(record, terminal, [...names])).forEach(print);
+  const people = new Set(peopleOf(earlier));
+  earlier.slice(-DEFAULT_HISTORY).map(record => viewOf(record, terminal, [...names], [...people])).forEach(print);
   stopFollowing = followRoom(room, offset, countLines(content.subarray(0, offset)) + 1, record => {
-    if (record.type === "join") names.add(record.who);
-    print(viewOf(record, terminal, [...names]));
+    if (record.type === "join") {
+      names.add(record.who);
+      if (record.kind === "person") people.add(record.who);
+      else people.delete(record.who);
+    }
+    print(viewOf(record, terminal, [...names], [...people]));
     if (record.type === "left" && record.who === who && record.reason === "kick") {
       closing = true;
       print(`You were removed from the room by ${forDisplay(record.by)}.`);
@@ -757,14 +790,20 @@ const requireArgs = (args, count) => {
 async function main(argv) {
   const [command, ...args] = argv;
   switch (command) {
-    case "say":
+    case "say": {
       requireArgs(args, 2);
-      return printReport(await say(args[0], whoAmI().name, args.slice(1).join(" ")));
+      const me = whoAmI();
+      const report = await say(args[0], me.name, args.slice(1).join(" "));
+      printReport(report);
+      // only absence is news; a person writing from the shell is, by definition, in the room
+      if (me.kind === "session" && !report.people.length) console.log("the person is not in this room");
+      return;
+    }
     case "read": {
       requireArgs(args, 1);
       const since = parseRead(args);
       const records = existingRecords(args[0]);
-      for (const record of records) if (record.line > since) console.log(numbered(record, namesOf(records)));
+      for (const record of records) if (record.line > since) console.log(numbered(record, namesOf(records), peopleOf(records)));
       return;
     }
     case "who":

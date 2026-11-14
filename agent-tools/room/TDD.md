@@ -123,6 +123,20 @@ sale de subir por los procesos padres hasta su ficha. No hay cron: nada corre si
   lee `invite`); `@` al inicio de palabra, los participantes de la sala. Se compara el prefijo sin distinguir mayúsculas.
 - **Decidido al implementar, por revisar:** la completación de `@` incluye a quien escribe y a las personas.
 
+## La persona se distingue y la ausencia se avisa (el dueño, 14-nov-2026; modo incremental: el disco y los comandos no cambian)
+- En una sala donde contestan varias sesiones, la persona no encuentra su mensaje: sus líneas van marcadas en la vista
+  en vivo, `/history` y `room read`. La persona es quien entró con `kind: person`: no hay segunda forma de saberlo.
+- Sin terminal, la línea empieza con `>> ` (después del número de línea de `read`). En terminal, el mismo `>> ` y el
+  nombre en negrita, invertido, amarillo 226 (fuera de los colores de nombre). Entradas, salidas y cuerpo no se marcan.
+- Una sesión que hace `room say` y no hay ninguna persona en la sala en ese momento recibe una línea: `the person is not in
+  this room`. Con una persona presente no se imprime nada; tampoco cuando quien escribe es la persona. Solo informa: no
+  bloquea ni cambia la entrega.
+- **Decidido al implementar, por revisar:** marca `>> ` y amarillo 226 (elegidos por contraste en fondo claro y oscuro);
+  solo la cabecera se estiliza, no el cuerpo (el renderizador de markdown ya usa negrita y colores adentro).
+- Casos (todos ✅): marca sin TTY y número primero · sin `people` nada se marca · estilo reservado en TTY · vista en vivo y
+  `room read` marcan solo a la persona · TTY real: línea propia marcada y la de una sesión no · `say` avisa en sala solo de
+  sesiones · no imprime con la persona presente y avisa cuando sale · la persona que hace `say` no recibe el aviso.
+
 ## Puesta en operación
 | Commit | Versión | Deploy | Uso |
 |---|---|---|---|
