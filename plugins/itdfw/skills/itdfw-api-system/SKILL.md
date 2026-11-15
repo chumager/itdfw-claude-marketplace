@@ -123,126 +123,16 @@ When to choose this over an APP/ file: the logic is intrinsically about the Mode
 
 Custom Mongoose types declared in the `mongooseTypes/` folder of the cascade can ship their own `options.API`. The endpoint is registered at type-load time and any schema using that type gets the API gratis — no need to redeclare in each model. This is the **lowest encapsulation level**: the API lives with the data definition itself.
 
-Canonical example: `mongooseTypes/Password.js`:
+Declarado en `mongooseTypes/<Type>.js` → `options.API` (ejemplo canónico: `Password.checkStrength`, `isAnonymous: true`, `defaultMethods: ["GET"]`). La punta se registra al cargar el type, existe **una vez** (`/APP/checkStrength.json`, sin prefijo de archivo) y todo schema que use el type la hereda gratis. Úsalo para lo intrínseco al TYPE (validar fuerza, decodificar, formatear): si 5 schemas usan el type, se declara una vez. Ejemplo completo y casos de uso: [references/levels-detail.md](references/levels-detail.md).
 
-```js
-export default {
-  Password: {
-    cast(val) { /* ... */ },
-    options: {
-      component: "Password",
-      keepOnEmpty: true,
-      forceAttrs: ["minUpper", "minLower", "minNumber", "minSymbols", "minStrength"],
-      API: {
-        checkStrength: {
-          validate: true,
-          isAnonymous: true,
-          hidden: true,
-          defaultMethods: ["GET"],
-          GET(req, res) {
-            const {password} = req.query;
-            const result = zxcvbn(password);
-            res.json({score: result.score, feedback: result.feedback});
-          }
-        }
-      }
-    }
-  }
-};
-```
 
-URL: `/APP/checkStrength.json` (or whatever path key declared). Independent of any schema — the endpoint exists once for the type, accessible globally. Cualquier form que use type Password puede llamar `checkStrength` desde el front sin que el modelo padre lo redeclare.
+## 🔴 Una RUTA no es una PUNTA; las rutas del front se declaran en el BACK
 
-Use cases:
-- **Validation utilities** intrinsic to the type (Password strength, Email DNS check, URL reachability).
-- **Decoding/encoding** services (cipher-decipher of refs, Base64 of File metadata).
-- **Type-specific format helpers** (Currency conversion endpoint, Date parsing).
+- El back solo conoce las puntas `/APP/<func>.<ext>` y los estáticos de `html/`. **Cualquier otro path** es una ruta del router del front: se sirve `index.html` con **200** y un `Log.warn("404 …")` normal de SPA. Pedir una ruta por curl/MCP devuelve el HTML. Litmus: *¿tiene `/APP/` y extensión?* No → es ruta, se prueba en el browser (Playwright).
+- El menú se arma desde el back (`Profile.getFunctions` → `userData.functions[]`, cada función trae su `route`). **El `router.js` del site NO es el lugar de una pantalla que va al menú**: sirve solo para rutas que no deben salir en él. Dos caminos: **`schema.options.route`** (la ruta es de un modelo: `setRoute` arma View/Create/Update/Upload y hace deep merge; los `children` se mergean por `path`) o la **`route` completa en la punta libre** (`APP/` u `options.API`).
+- Flags: estar en el perfil ya la pone en el menú; `hidden: true` existe pero **no sale** en el menú; `inNav: true` agrega además un link directo en la barra superior; `noProfile: true` no es asignable a perfiles.
 
-When to choose this over `options.API` of a model: the logic doesn't need a specific Model — it's about the TYPE itself. If 5 schemas use type Password, all 5 need the same `checkStrength` → declare once at type level.
-
-## 🔴 Una RUTA no es una PUNTA: el fallback SPA y el warn "404" del log (gap #26 — 2026-09-17)
-
-El back solo conoce dos cosas: las puntas `/APP/<func>.<ext>` y los archivos estáticos del `html/`. **Cualquier
-otro path** (`/auth`, `/Members`, `/Places/123`) es una ruta del router del front: el último middleware de
-`server.js` la sirve con **`index.html` y status 200**, y deja en el log un `Log.warn("404 <url> not found")`. Ese
-warn es el fallback normal de una SPA, no un error: la decisión de si la página existe la toma el router del
-front, ya en el browser (`ItdComponentNotFound` si no la tiene).
-
-⟹ Pedir una ruta por curl, MCP o cliente headless devuelve el HTML del index, nunca JSON. Quien lo hace y lee el
-warn del log concluye "el back tira 404 en /auth" — caso real 2026-09-17 (demo). Lo mismo con `AAA/getConfig` y
-`AAA/checkLogin` llamados desde el MCP: son puntas de **bootstrap de la sesión del browser** (el front las pide al
-cargar); desde un cliente que ya se autenticó por su propia vía no prueban nada.
-
-| Path | Quién responde | Status |
-|---|---|---|
-| `/APP/AAA/checkLogin.json` | `execEndpoint` | lo que diga la punta |
-| `/APP/noExiste.json` | `execEndpoint` | 404 `UNKNOWN FUNCTION` |
-| `/auth`, `/Members` | fallback SPA → `index.html` | **200** + warn "404" en el log |
-
-Litmus: *¿tiene `/APP/` y extensión?* No → es ruta, se prueba en el browser (Playwright), no por HTTP crudo.
-
-## 🔴 Rutas del front se declaran en el BACK (gaps #13, #14, #15 — 2026-09-15)
-
-**El `router.js` del site NO es el lugar para declarar una pantalla que va al menú.** El menú se arma desde el
-back: `Profile.getFunctions` → `userData.functions[]`, y cada función trae la `route` que el back armó. El
-`router.js` del site sirve **solo** para rutas que no deben salir en el menú (un detalle al que se llega desde
-otra pantalla). Una pantalla puesta ahí funciona escribiendo la URL a mano y **nunca aparece en el menú** — caso
-real: un site entero implementado así y reportado como defecto del FW.
-
-**Camino 1 — la ruta es de un modelo: `schema.options.route`.** `setRoute` (`FrontEnd.js`, static del plugin
-`FrontEnd`) arma el árbol base —`View` raíz, `Create/:mode?`, `Update/:id/:mode?`, `Upload` si hay `transform`— y
-hace **deep merge** con lo declarado. Los `children` se mergean **por `path`**: se agrega uno sin tocar los otros.
-
-```js
-// options del schema — agrega /Places/:id sin perder View/Create/Update
-route: {
-  children: [{path: ":id", component: "PlaceDetail", props: true, meta: {type: "Detail"}}]
-}
-// un string en vez de objeto solo cambia el componente del View raíz:
-route: "PlaceGrid"
-```
-
-El path raíz lo pone el FW desde el modelo; `meta.model`/`modelName` se inyectan al root y caen en cascada a los
-hijos; el `component` es un **string** que la cascada del front resuelve desde `views/`/`components/`.
-
-**Camino 2 — la ruta es de una punta libre** (`APP/` u `options.API`): la punta lleva la `route` completa (ejemplo
-real: `AAA/recovery` en `User.js`):
-
-```js
-"places/detail": {
-  GET: {json(req, res) {/* … */}},
-  defaultMethods: ["GET"],
-  name: "Detalle de sucursal",           // lo que muestra el menú
-  component: "PlaceDetail",
-  route: {path: "/Places/:id", name: "placeDetail", props: true, component: "PlaceDetail", meta: {model: "Place"}}
-}
-```
-
-**Los tres flags, tres efectos distintos** (ninguno "pone" la pantalla en el menú: llegar en el perfil la pone):
-
-| Flag | Efecto |
-|---|---|
-| (la función está en el perfil) | **ya está en el menú**: `userData.functions` la trae |
-| `hidden: true` | existe y se puede llamar, pero **no sale** en el menú |
-| `inNav: true` | **además** un link directo en la barra superior (`nav`). Ponérselo a todo solo llena el nav |
-| `noProfile: true` | no es asignable a perfiles (puntas de infraestructura) |
-
-**Desde una punta, las funciones del que llama** son las mismas que ve su menú: `const user = await
-req.getUser()` (null si anónimo) y `(await user.userData(req)).functions` — `path` ya prefijado
-(`/APP/AAA/User`), con `hidden`, `route.children[].meta.type` (View/Create/Update). Caso real: el ref-función
-`User.intent` del plugin `typesafe` (gap #41, 2026-09-20).
-
-**Lo que recibe el front al autenticarse** (`checkLogin` → `{user, userData, forceLink}`; verificado en vivo:
-34 de 38 funciones con `route`, las 4 sin `route` no son pantallas). Cada función: `path`, `name`,
-`defaultMethods`, `inNav`, `hidden` y su `route`. La de un modelo llega así:
-
-```js
-route: {component: "baseModel", props: {model: "PlanExercise"}, children: [
-  {path: "",                  component: "View", meta: {method: "GET",  type: "View"}},
-  {path: "Create/:mode?",     component: "Form", meta: {method: "POST", type: "Create"}},
-  {path: "Update/:id/:mode?", component: "Form", meta: {method: "PUT",  type: "Update"}}
-]}
-```
+Ejemplos, lo que recibe el front al autenticarse y las funciones del que llama: [references/front-routes.md](references/front-routes.md).
 
 ## Executor: `execEndpoint`
 
@@ -263,224 +153,39 @@ Debug "UNKNOWN FUNCTION": missing extension handler — add `any` or the specifi
 
 ## Flujo de errores — el gate es `HTTPError`
 
-🔴 **El ÚNICO error aceptado en el flujo es `HTTPError`** (`new HTTPError(msg, status, extras)`, global de
-`server.js`). Es el **gate de control**: viaja con su `status`, es flujo ESPERADO (404/401/403/400…).
-Cualquier OTRO error es **UNCONTROLLED** — se coló sin controlar, problema más profundo a **subsanar**
-(envolverlo en HTTPError en su origen).
+🔴 **El único error aceptado en el flujo es `HTTPError`** (`new HTTPError(msg, status, extras)`): es **global** (no se importa), sus `extras` viajan al JSON del cliente, y se tira desde `pre("validate")`/`pre("save")` llegando con su status y texto. Un `throw new Error` pelado llega como **500** (no es el FW traduciendo mal). Cómo emitir: una **punta** hace `res.json(new HTTPError(...))` o `throw`; un **helper** hace `throw`; un **middleware transitivo** (como `auth`) hace `next(new HTTPError(...))` (en Express 4 el throw de un middleware async no se captura y el request cuelga). El terminal es único (el mid de 4 args de `server.js`). **4XX es respuesta: no se loguea. 5XX: `Log.error("UNCONTROLLED", url, err)` una vez, en el terminal.**
 
-**La firma, y tres cosas que no se adivinan** (gap #16):
+Recorrido hasta el cliente, la tabla de quién emite y el formato de `ValidationError`: [references/error-flow.md](references/error-flow.md).
 
-```js
-global.HTTPError = class HTTPError extends Error {
-  constructor(message, status = 500, extras = {}) { super(message); this.status = status; Object.assign(this, extras); }
-};
-throw new HTTPError("sucursal no encontrada", 404, {placeId, code: "PLACE_NOT_FOUND"});
-```
+## Niveles de llamada, verbo, extensión y status
 
-1. **Es GLOBAL** (`server.js`): no se importa. Buscarla para importarla es el primer tropiezo.
-2. **Los `extras` viajan**: se asignan al error y salen en el JSON que recibe el front (`code`, ids, lo que sea).
-3. **Se tira desde `pre("validate")` / `pre("save")` de un modelo y llega al cliente con su status y su texto.**
-   Un rechazo de regla de negocio que "llega como 500" es un error pelado (`throw new Error`), no el FW
-   traduciendo mal. Envoltura de errores ajenos: `if (err instanceof HTTPError) throw err; throw new
-   HTTPError(err.message, err.status ?? 500);`.
+- Los 3 niveles del executor: `API[func]` función = **composición** (la discriminación vive en TU código; permite dinamismo por BD); `API[func][method]` y `[method][ext]` = **estructura** (la discriminación es declarativa, la hace el FW).
+- 🔴🔒 **El AAA gatea por verbo solo en estructura (niveles 2-3).** En el nivel 1 hay un solo handler: con permiso `GET`, un atacante dispara lógica de mutación → **escalada de privilegio**. Tu factory DEBE re-discriminar `req.method`/`req.requestedMethod` antes de cualquier mutación; si la lógica cruza verbos con efectos distintos, **prefiere nivel 2-3**.
+- 🔴 **La extensión es SIEMPRE obligatoria** en la llamada (`/APP/<func>.<ext>`): en nivel 3 discrimina el handler; en 1-2 es decorativa. Anti-patrón: `/APP/register/form` (path con slash, sin ext) o querer `skipCSRF` "porque es anónima".
+- **Coherencia estructural — declaración = existencia.** Lo que el modelo niega (`noCreate`/`noUpdate`/`noCRUD`, Upload sin `transform`) **no existe** a nivel HTTP: `checkAndLoadEndpoint` no registra la punta y el executor responde 404 UNKNOWN FUNCTION. `setRoute` es presentación (un 404 del FRONT, sin tráfico). Los checkers (`checkCreate`/`checkUpdate`/`checkDelete`/`checkUpload`) viven siempre.
 
-**Quién emite y cómo:**
-
-| Quién | Cómo emite | Por qué |
-|---|---|---|
-| **Punta** (handler) | `res.json(new HTTPError(...))` **o** `throw` | `execEndpoint` **awaitea** el handler dentro de un try/catch → atrapa el throw (sync o async). Convención: la punta emite (`res.json`); `throw` también es válido (execEndpoint lo atrapa). |
-| **Helper de una punta** | `throw new HTTPError(...)` | corre DENTRO del handler → el throw sube al try/catch de `execEndpoint`. No necesita conocer `res`. |
-| **Middleware transitivo** (ej. `auth`) | **`next(new HTTPError(...))`** | 🔴 NO pasa por `execEndpoint` — es middleware Express directo. En **Express 4 el `throw` de un middleware *async* NO lo captura Express** (→ `unhandledRejection` → el request **CUELGA**). La vía es `next(err)`. |
-
-**Recorrido hasta el cliente (terminal ÚNICO, back ≥ 7.3.9):**
-1. Punta tira/emite → `execEndpoint` catch hace `res.json(err)` **sin loguear** (o la punta llama `res.json(err)` directo).
-2. `res.json` es **pipe**: si el arg es Error → **`next(err)`** (NO lo tira; lo reenvía). Si el arg es una
-   **promesa que rechaza**, el `catch` del sender también hace `next(err)`; si los headers ya salieron (stream a
-   medias) no hay a quién mandar JSON: `Log.error` + `res.end()`.
-3. **Mid de 4-arg** (`server.js`) = terminal único (el mismo de `auth`): lee `err.status` (o lo deriva:
-   ValidationError/CastError → 400, JWT → 401, CSRF → mensaje + `deleteAllCookies`, resto 500), borra el stack
-   fuera de dev → responde el JSON tal cual, sin pasar por `res.json` (o lo emite por SSE si el request es SSE). Un
-   `ValidationError` responde `{name, message, errors: {path: mensaje}}`: `message` son los mensajes de los campos,
-   sin el resumen de mongoose ni el nombre del modelo (back ≥ 7.6.0). El resto, `SE(err)`.
-
-**Logging — 4XX es respuesta, 5XX es error (jcmunoz 17-sep-2026):**
-
-| Status | Qué es | Log |
-|---|---|---|
-| **4XX** | respuesta válida: el que llamó metió mal los dedos o no tiene permiso. Es flujo. | **ninguno** (ni silly) |
-| **5XX** | error interno, algo se coló sin control | `Log.error("UNCONTROLLED", url, err)` **una vez**, en el terminal → correo al admin → subsanar |
-
-Nadie más loguea errores: ni `execEndpoint` (hasta 7.3.8 duplicaba con "UNCONTROLLED ERROR"), ni el JWT (un 401
-no es error del sistema). Ejecutor permanente: punta onDev `test/errorTerminal` (`?status=418|500`, `&viaJson=1`)
-en `SITE/APP/test.js`. Detalle: la doc de arquitectura «error-terminal» (#193).
-
-## Los 3 niveles de llamada de una punta — composición vs estructura
-
-Las tres ramas de resolución del executor (arriba) NO son "granularidad creciente" — son una decisión de diseño sobre **DÓNDE vive la discriminación** del request. El dispatcher las resuelve igual; lo que cambia es quién decide qué corre.
-
-| Nivel | Forma | Discriminación vive en | Eje HTTP |
-|-------|-------|------------------------|----------|
-| **1** | `API[func]` = función | **TU código** (factory interno) | recurso |
-| **2** | `API[func][method]` = `GET(req,res)` | el **dispatcher FW** (por verbo) | recurso + método |
-| **3** | `API[func][method][ext]` = `GET:{form,data}` | el **dispatcher FW** (verbo + ext) | recurso + método + representación/MIME |
-
-**Niveles 2-3 = modo ESTRUCTURA.** La discriminación es **declarativa**: el FW resuelve por verbo/ext. Handlers fijos al boot, explícitos en la declaración. El dev afín a estructura prefiere esto: se ve qué puntas hay sin leer el cuerpo.
-
-**Nivel 1 = modo COMPOSICIÓN.** La discriminación vive en **tu código**: `GET(req) → factory(req)` y el factory decide internamente (por ext, por QS, o **por info de la BD**). El dev afín a composition prefiere esto.
-
-🔑 **El superpoder del nivel 1 que el 2-3 NO pueden: dinamismo.** Un factory que lee la BD define **funciones dinámicas en runtime** — endpoints cuyo comportamiento depende de datos. Con `GET:{funcA,funcB,funcC}` los handlers están hardcodeados en el objeto al boot; no puedes inventar `funcD` porque apareció un registro en Mongo. Con el factory, sí. Es **database-native llevado a la capa de routing** (coherente con schemas-como-datos del FW).
-
-**Caso real**: el `json` con `switch(req.query.type)` de `FrontEnd.js` (form/specs/value por QS) ES composición pura. Funciona, pero ahí se eligió migrar a extensiones separadas (`tableForm`, `formSpecs`, `formCreate`… = estructura) porque salía más barato/legible. Prueba viva de que **ambos caminos son válidos** — es diseño, no jerarquía donde uno gana.
-
-### 🔴🔒 El costo de seguridad del nivel 1: el AAA discrimina por VERBO
-
-El AAA gatea permisos **por verbo** — `GET`/`POST`/`PUT`/`DELETE` son capacidades separadas en el profile. Esto cambia radicalmente entre niveles:
-
-- **Niveles 2-3 (estructura) → AAA por verbo GRATIS y a prueba de balas.** El dispatcher resuelve `API[func][method]`: al handler `DELETE` SOLO se llega si pasaste el gate `DELETE`. El verbo del request ya fue validado contra el permiso de ESE verbo antes de tocar tu código. Imposible ejecutar lógica de mutación con permiso de solo-lectura.
-- **Nivel 1 (composición) → el candado por verbo se ROMPE.** Hay un solo handler para todos los verbos → el AAA solo gatea a nivel `func`, no por método. Si tu profile da permiso `GET` y tu factory ejecuta lógica de mutación según body/QS **sin re-discriminar el verbo internamente**, un atacante con permiso `GET` dispara lógica `POST`/`PUT`/`DELETE` → **escalada de privilegio**. La discriminación de seguridad por verbo, que en estructura hace el FW, en composición **es responsabilidad del dev** — fallarla es un hoyo.
-
-> **Regla**: si eliges nivel 1 (composición), tu factory DEBE re-discriminar el verbo (`req.method`/`req.requestedMethod`) antes de ejecutar cualquier lógica con efecto de mutación, replicando el gate que el FW te daría gratis en nivel 2-3. La cara B del dinamismo: ganas factory dinámico que lee BD, pero asumes el AAA por verbo a mano. Si la lógica del endpoint cruza verbos con efectos distintos, **prefiere nivel 2-3** y deja que el FW cuide el gate.
-
-### 🔴 La extensión es SIEMPRE obligatoria en la llamada
-
-Toda punta se llama **con extensión en la URL**, en los 3 niveles, sin excepción. Lo que varía es si el back la USA:
-- **Nivel 3**: la ext **discrimina** el handler (`.form` ≠ `.data`) → tiene significado.
-- **Nivel 1-2**: la ext es **decorativa/MIME** → cae al handler del verbo (o al factory) sin importar cuál pongas. "Coherencia de chiche", no funcional.
-
-**Doble razón de la obligatoriedad**:
-1. **Sintáctica**: la regex del router (`/APP/:func.:ext`) la exige. Es decisión de diseño (se podría relajar a ruta sin ext), pero no aporta.
-2. **Semántica**: coherencia REST — todo request declara la representación que espera (es el `Accept`/content-type, pero en la URL). Aunque en nivel 1-2 no discrimine, **declara intención de formato** → el request tiene sentido completo por sí solo. Esa coherencia es la que habilita el nivel 3 sin casos especiales: la ext ya está siempre, solo cambia si el back la lee o la ignora.
-
-> **🔴 Anti-patrón** (error real 2026-06-09): proponer una punta como `/APP/register/form` (path con slash, sin ext) o querer `skipCSRF` "porque es anónima". (a) La estructura correcta es `/APP/register.form` — `form` es el handler-ext (nivel 3) o `GET(req,res)` con ext decorativa (nivel 2). (b) CSRF aplica a TODO POST de browser, anónimo incluido (protege contra forgery cross-site; el front anónimo pide `getCSRF` y manda el token igual que `checkLogin`). `skipCSRF` es solo para machine-to-machine/webhooks que no pueden obtener token — nunca para un form de browser.
-
-## Coherencia ESTRUCTURAL: declaración = existencia (2026-06-10)
-
-Las operaciones CRUD que el modelo NIEGA (`noCreate`/`noUpdate`/`noCRUD`, o Upload sin `transform`)
-**NO EXISTEN** a nivel HTTP — no son un 401/403 de permisos. 🔴 Pero OJO a qué capa lo produce (no
-confundir presentación con definición):
-- **`setRoute` = PRESENTACIÓN, no declaración.** No construye el child (Create/Update/Upload) → el router
-  del front no lo tiene → si por bug se filtra el botón y lo pinchas, caes en un **404 del FRONT = un
-  COMPONENTE 404**, NO un HTTP 404. Cero tráfico al back. **No razones el status HTTP desde acá.**
-- **`checkAndLoadEndpoint` = DEFINICIÓN: es el que CAPEA las puntas.** noXXX → la punta de delivery
-  (espejos GET formCreate/formUpdate/formData, POST formCreate/upload, exts funcionales) **no se registra**
-  → headless → `execEndpoint` UNKNOWN FUNCTION → **HTTP 404 real**. Esta es la "coherencia de capado":
-  el 404 lo da el EXECUTOR sobre una punta capada por capacidad, **nunca una punta viva diciendo "no existo"**.
-- **Los CHECKERS viven SIEMPRE** (`checkCreate/checkUpdate/checkDelete/checkUpload`): son el aviso al
-  front de qué parte del CRUD tiene el modelo.
-
-**La tríada semántica de status (NO confundir los planos):**
 | Status | Significa | Lo decide |
 |---|---|---|
 | **401** | la punta EXISTE pero no estás autenticado | AAA (hasAccess) |
 | **403** | estás autenticado pero NO tienes permiso | AAA/perfiles |
-| **404** | la punta no está registrada — capada por capacidad (noXXX en `checkAndLoadEndpoint`) o nunca declarada | el **EXECUTOR** (UNKNOWN FUNCTION) |
+| **404** | la punta no está registrada (capada por capacidad o nunca declarada) | el **EXECUTOR** (UNKNOWN FUNCTION) |
 
-> 🔴 Una punta VIVA (que se ejecuta) **nunca** responde 404 sobre sí misma — sería incoherente. El 404 de
-> "no existe la punta" lo da SIEMPRE el executor sobre algo no registrado. Caso aparte: una punta viva
-> puede responder 404 de **RECURSO** (`documento por id no encontrado`) — eso SÍ es coherente (el recurso
-> pedido no existe, no la punta).
+Una punta VIVA **nunca** responde 404 sobre sí misma; sí puede responder 404 de **RECURSO** (documento por id no encontrado). Los handlers declarados en plugins operan SIEMPRE vía `this`, nunca por clausura sobre `schema` (hallazgo #71).
 
-`execEndpoint` responde **404** ante ext inexistente (UNKNOWN FUNCTION — era 500 hasta 2026-06-10).
-Los statics internos (`FWcreate`/`FWupdate`/`FWdelete`) sobreviven siempre — los usan callers
-internos (saveRefs).
-
-> 🔴 Gotcha histórico (Hallazgo #71): los handlers de endpoint declarados en plugins NUNCA deben
-> clausurar sobre `schema` — operar SIEMPRE vía `this` (el Model bindeado post-model). Durante años
-> `checkAndLoadEndpoint` compartió UN set de handlers entre TODOS los schemas (objeto `verbs` a nivel
-> de módulo, fixed 2026-06-10) y solo la disciplina del `this` mantuvo el FW correcto encima del bug.
+Detalle, el costo de seguridad del nivel 1 y el caso de FrontEnd: [references/call-levels.md](references/call-levels.md).
 
 ## AAA: authentication & permissions
 
-`hasAccess(req)` en `AAA.js`. Orden (el detalle real, paso a paso, está en la sección siguiente):
+`hasAccess(req)` decide en este orden: (1) **`x-itd-access`** (firma cifrada `url;method;date`, valida las 3 partes, ventana de 5 s; reparte carga entre workers y **salta perfiles**: no es vía de cliente); (2) **`req.auth`** (JWT); (3) **sesión**; (4) **anónimo** (`Profile.canSee`; sin modelo `Profile`, el `isAnonymous` de la punta). El middleware `auth` corre antes: 404 si la punta no existe → `runAuthenticators` (sesión, JWT del FW, FWPlugins por su key `auth`) → `User.installIdentity` → `hasAccess`, que sin permiso responde **403 si `req.isAuth` y 401 si no**. Un perfil concede una función cuando `path === func` y el verbo está en el `defaultMethods` **guardado en el perfil** (copia al asignar); las anónimas leen el `defaultMethods` de la punta. **Level** 0–10000 (menor = más poder).
 
-1. **`x-itd-access` header** — firma cifrada `${url};${method};${dateString}` (la emite `directRequest` en el server para llamadas worker→worker, god-access). `hasAccess` valida las **3 partes**: `url` == `req.fullURL`, `method` == `req.method`, y `dateString` < **5 s** (anti-replay). El token queda atado a punta+verbo+tiempo → robarlo no sirve para otra punta, otro verbo, ni pasada la ventana. Migración a JWT pendiente (TODO «directaccess-jwt»).
-2. **`req.auth` (JWT)** — `req.db[auth.model].canSee(req)`.
-3. **Session** (`req.session.auth`) — `req.db[session.model].canSee(req)`.
-4. **Anonymous** — `Profile.canSee(req)` if Profile model exists; otherwise endpoint's `isAnonymous` (boolean | function | "auth").
-
-`x-itd-access` existe para **repartir carga entre workers**: un worker le pasa a otro una petición ya autorizada y
-esa vía **salta perfiles**. No es una vía de cliente ni sirve para preguntar permisos.
-
-**`req.hasAccess(func, verb)`** (inyectado por `shareData`, como `changeMethod`): **pregunta** al AAA si el que llama
-puede correr `func` (el path de `pool.API`, p.ej. `"AAA/Profile"`) con `verb`, **sin despachar nada**. Sale del mismo
-gate que una petición real (perfil, `isAnonymous` true/"auth"/función) y **restaura el `req`** al volver: la punta en
-curso conserva su `params.func`, `method` y `requestedMethod`. `func` es obligatorio (sin él lanza: la punta en curso
-ya pasó su gate, preguntar por sí misma no significa nada); sin `verb` vale el de la petición.
-Sirve desde cualquier código que tenga un `req` (punta, ref, hook con `setReq`): mostrar u ocultar una acción,
-decidir qué ofrecer. Los comparadores de `Profile` leen `req.requestedFunc ?? req.params.func` y
-`req.requestedMethod ?? req.method`. Ejecutor: la prueba de back `hasAccess` (punta onDev `test/hasAccess`).
-
-`isAnonymous: "auth"`: cualquier usuario **autenticado** pasa sin asignación; un anónimo no (`Profile.getAnonymousFunctions` la cuenta solo si `req.isAuth`, y sin modelo `Profile` queda cerrada). Úsalo en puntas tipo `myProfile`; la punta puede además leer `req.session`/`req.auth`.
-
-**Getters de identidad**: `req.isAuth` (cualquier vía; lo instala `User.installIdentity` dentro del middleware `auth`)
-y los **consultores inmutables** de `server.js` (`req.setImmutableAttr`, al inicio de la cadena: un getter calcula al
-leerse, no al definirse; asignarlos o redefinirlos lanza): **`req.sessAuth`** (boolean: autenticado por la cookie de
-sesión, ni JWT ni anónimo) y `req.browserAuth` (abajo). Ojo: el autenticador de sesión corre primero y también llena `req.auth`, así que `req.auth` no
-distingue la vía; para eso está `req.sessAuth`, no `req.session.auth` a mano. Para el origen de la petición:
-`req.sameOrigin` (Referer/Origin contra `req.baseURL`, getters de URL en skill `itdfw-deploy-config`).
-**`req.browserAuth`** = `sessAuth && sameOrigin`: sesión por cookie pedida desde una página de este mismo origen (el
-front en un browser). 🔴 Un ref o punta que paga un servicio externo (IA, SMS, mapas) lee `req.browserAuth` y decide
-su propio respaldo cuando es false (rechazar, cuota, cache): el FW no decide por él.
-Ejecutor: la prueba de back `reqFlags`.
-
-🔴 **El `Authorization` NO es siempre del FW** (2026-09-09): web-push firma `vapid t=…, k=…` (RFC 8292) y un
-cliente OIDC o MCP manda su propio `Bearer`. `expressjwt` está montado global y con 3+ partes lanzaba 500
-**ignorando `credentialsRequired: false`**, antes de llegar a la punta. Hoy `readFWToken(req)`, en
-`AAA.js` y usado por el autenticador `FWJWT`, filtra por partes, esquema `Bearer` y **`model` en el payload** —esa
-es la firma de que el token es nuestro, y el headless client lo manda siempre— y devuelve `undefined` para lo
-ajeno, que sigue su camino. ⟹ una punta anónima **sí puede** recibir un webhook firmado de un tercero.
-Detalle: la doc de arquitectura «jwt-gate».
-
-### 🔴 El acceso paso a paso — quién decide de verdad (verificado contra el código, 2026-11-09)
-
-El middleware `auth` (`AAA.js`, primero de la ruta `/APP/`) corre en este orden: **(1)** 404 si la punta no existe en
-`pool.API`; **(2)** `runAuthenticators`: recorre `pool.authenticators` (primero la sesión, luego el JWT del FW, luego los
-de los FWPlugins por su key `auth`; `pos` `"^"`/`"$"`/número los reordena, y un `"^"` de plugin queda **antes** de la
-sesión). Cada uno decide con `claims(req)`, síncrono y barato; si reclama, `User.auth(req, authenticate)` resuelve al
-usuario (por `_id` si es hex de 24, si no por `username`; un usuario `blocked` no resuelve) y **es el único que escribe
-`req.auth`**: el primero que lo deja corta, uno que lanza corta la petición con su error, y si ninguno resuelve la
-petición sigue como anónima; **(3)** `User.installIdentity` instala `req.isAuth`, `req.model`, `req.getUser()`
-(memoizado por petición) y `req.actualUser` (sale de la sesión); **(4)** `hasAccess`: sin permiso responde **403 si
-`req.isAuth` y 401 si no**.
-
-`hasAccess` decide así: con `x-itd-access`, solo la firma (url + verbo + 5 s) y sin perfiles; si no, con `req.isAuth`, el
-`canSee` del **modelo con que se autenticó el caller** (`req.model`, no el modelo destino de la punta) junta `profile` +
-`profiles` del usuario y pregunta a `Profile.canSee`; si ninguno concede, **cae a las funciones anónimas**. Un anónimo
-solo tiene estas. Un perfil concede una función cuando `path === <func>` **y** el verbo está en el `defaultMethods`
-**guardado en el perfil** (una copia que se hizo al asignarla: si la punta cambia sus verbos después, el perfil no se
-entera). Las anónimas se leen del `defaultMethods` de la punta: una punta anónima también tiene que declararlo.
-
-**Level** (0 a 10000, menor = más poder, por omisión 10000): a un usuario o perfil de level igual o menor al tuyo no lo
-editas ni lo borras; el 0 edita a todos; nadie se borra a sí mismo, y solo el 0 se edita a sí mismo. Un level solo se
-asigna estrictamente mayor al propio (el 0 asigna cualquiera), y los perfiles que puedes repartir son los de level
-estrictamente mayor al tuyo. Además, un usuario nunca guarda un perfil de level menor al suyo. En el arranque con
-`firstTime` todo esto queda libre y los modelos `User` y `Profile` son anónimos.
-
-**`getRef` y `getSimpleName`** (FWPlugin `names`) son `noProfile` y `hidden`, solo `GET`, con `isAnonymous: "auth"` en
-producción (`true` únicamente en `onDev` o con `firstTime`): los recibe cualquier autenticado, de cualquier modelo
-autenticable, sin asignación. Un modelo marcado `internal` (la opción vale `true` por omisión) responde 403 a un
-autenticado que no sea `User`; `internal: false` lo abre (el plugin `restaurant` lo usa en lo que ve su dueño).
-
-### 🔴 JWT es headless; el front espera SESIÓN (gap #17)
-
-JWT es el camino **headless / MCP**: ya viene autenticado y no pasa por el flujo del navegador. **El front espera
-sesión**: un 401 **corta, encola las peticiones pendientes y pide identificarse**; al volver la sesión, se reanudan.
-Eso solo existe en el navegador. ⟹ Un arnés de pruebas que habla por JWT **no reproduce el flujo del front** y
-produce falsos defectos: "lecturas que responden 200 o 401 al azar", "`getConfig` responde 401". Caso real
-2026-09-15: dos defectos reportados contra el FW que eran el arnés. Para probar lo que ve el usuario, se prueba con
-sesión (Playwright con login), no con el headless client.
-
-### 🔴 401 y 403 son FLUJO, no fallas que se muestran (gap #18)
-
-El sistema pregunta "¿puedo?" y la respuesta "no" es un **403**: queda en consola y **no se le muestra a la
-persona**. El **401** dispara el login, no un mensaje de error. Diseñar la pantalla para mostrar todo error que
-vuelva termina exhibiendo operación interna.
+- **`req.hasAccess(func, verb)`**: **pregunta** al AAA si el que llama puede correr `func` con `verb`, **sin despachar nada**, y restaura el `req`. `func` es obligatorio; sin `verb` vale el de la petición. Sirve desde cualquier código con un `req`.
+- Identidad: `req.isAuth`, `req.sessAuth` (cookie de sesión) y `req.browserAuth` (= `sessAuth && sameOrigin`; úsalo para decidir el respaldo de una punta que paga un servicio externo).
+- 🔴 El `Authorization` no es siempre del FW: `readFWToken` filtra por partes, esquema `Bearer` y `model` en el payload; lo ajeno sigue su camino (una punta anónima **puede** recibir un webhook firmado de un tercero).
+- 🔴 **JWT es headless; el front espera SESIÓN**: un 401 corta, encola y pide login, algo que solo existe en el navegador. Un arnés por JWT no reproduce el flujo del front y produce falsos defectos ("200 o 401 al azar", "`getConfig` da 401"): lo que ve el usuario se prueba con sesión (Playwright con login).
+- 🔴 **401 y 403 son FLUJO**: el 403 queda en consola y no se le muestra a la persona; el 401 dispara el login.
+- `isAnonymous: "auth"`: cualquier **autenticado** pasa sin asignación; un anónimo no.
 
 ### 🔴🔒 Los 3 estados de acceso — el descenso se JUSTIFICA, el default no
-
-La seguridad del FW no duele porque la provee el framework: **una punta nace perfilada** y sin asignación en
-el perfil no pasa nadie. Poner `isAnonymous` es un acto DELIBERADO — no hay forma de abrir una punta por
-descuido. ⟹ lo que hay que justificar no es por qué una punta es segura, sino **por qué alguna deja de serlo**.
 
 | Estado | `isAnonymous` | Qué significa | Cuándo |
 |---|---|---|---|
@@ -488,112 +193,19 @@ descuido. ⟹ lo que hay que justificar no es por qué una punta es segura, sino
 | **Anónima autenticada** | `"auth"` | no exige asignación, **pero sí un usuario autenticado detrás** | la regla general de todo lo que se abre |
 | **Anónima sin autenticar** | `true` / `fn` | abierta a internet | solo si el ORIGEN no puede tener usuario todavía |
 
-🔴 **La zona gris está entre las dos últimas, y la tendencia natural es irse a la de abajo** (funciona igual y
-no hay que pensar). La norma es la inversa: **todo lo anónimo es anónimo AUTENTICADO**, salvo que se demuestre
-que el origen no espera un usuario autenticado — pantalla de login, registro público, un webhook de un tercero,
-un `.well-known`. "Es más cómodo" o "así funciona igual" no es demostración.
+La norma: **todo lo anónimo es anónimo AUTENTICADO**, salvo que el origen no espere un usuario (login, registro público, webhook de un tercero, `.well-known`). Una punta anónima-sin-autenticar **no acepta un identificador arbitrario** (si lo acepta, es `getFile` con otro nombre: el logo tiene su punta propia, con clausura). Cruzar siempre permiso × verbos: `isAnonymous: true` + todos los verbos es CRUD abierto a internet.
 
-**El caso canónico (jcmunoz 2026-09-10, HECHO 22-sep):** `getFile` es anónimo **autenticado** (`"auth"`): un
-archivo por id es un recurso de alguien. El único origen que necesita un archivo antes del login es el **logo del
-nav**, y tiene su propia punta **`File/getLogo?_id=`**: anónima, **con clausura**: recibe el id (así la URL sigue
-siendo cacheable un año, `public`; cambiar el logo cambia el id y la URL) pero solo sirve si ese id ES el
-`Home.homeLogo` de la Config; cualquier otro id, 404. Un anónimo alcanza exactamente un archivo. Sin id en la URL
-se perdía el cache (una URL fija no se puede invalidar), y con `getFile` abierto se abría el recurso completo para
-una capacidad de una línea — lo que prohíbe la rule `access-vs-capability`. Ejecutor: la prueba de back `getLogo`.
+🔴🔴 **Lo que "anónima" significa DE VERDAD**: (1) **no se gobierna por perfil**: declarar `isAnonymous: true` **es** la autorización; (2) `anonymousStates = [true, "auth"]` y para un autenticado el filtro acepta los dos ⟹ **cualquier usuario autenticado entra a cualquier punta `isAnonymous: true`**: si es anónima, es de todos, y no se puede restringir a un subconjunto de autenticados. Si una operación debe ser abierta en un escenario y perfilada en el resto, son **dos puntas**. La forma **función** `(req)=>bool` opera (back ≥ 7.3.8, se evalúa por request) pero **no se abre una ESCRITURA así**.
 
-🔴 **Por qué este error no se nota NUNCA:** `getFile` cachea un año cuando le pasan id. El usuario anónimo pide
-el logo, falla, se autentica, lo pide de nuevo, funciona — y queda cacheado. El error existe durante cinco
-minutos de la vida de cada usuario y nadie lo ve jamás. Un bug invisible sigue siendo un bug.
+Paso a paso del acceso, level, `getRef`, el caso `getFile`/`getLogo` y la forma función: [references/aaa-access.md](references/aaa-access.md).
 
-**El test que se deriva solo**: una punta anónima-sin-autenticar prueba que **no acepta un identificador
-arbitrario**. Si lo acepta, es `getFile` con otro nombre.
+## Autenticación y registro de un modelo nuevo
 
-⚠️ Y cruzar SIEMPRE permiso × verbos: `isAnonymous: true` + `defaultMethods: [GET, POST, PUT, DELETE]` es CRUD
-abierto a internet. Si algo es anónimo, sus verbos se justifican uno por uno.
+🔴 **No se implementa NADA de auth para un modelo nuevo.** Un modelo **autenticable** se declara **clon de User** (`User.safeClone(...)`) y hereda `authForm.json`, `checkLogin.json` y `recovery.json`. El front solo activa el flujo con valores del store `auth` (`modelAuth`, `modelOption`); una ruta/portal propio lleva `meta: {redirect: true}`.
 
-#### 🔴🔴 Lo que "anónima" significa DE VERDAD — dos cosas que no son obvias (medido 2026-09-10, hallazgo #189)
+🔴 **Registro público**: las puntas globales YA existen (`register.json`, anónimas). Para hacer **registrable** un modelo (clon de User): (1) **`registrable: true`** en sus schema options (gate estructural); (2) campos propios que el registrante no debe tocar → `hidden:["register"]`; (3) front: ruta `{path:"/Register", component:"Register", props:{authModel:"X"}}` **SIN `meta.model`**. CSRF normal: `skipCSRF` nunca para forms de browser.
 
-**1. Una punta anónima NO se puede gobernar por perfil.** El anónimo no consulta perfiles de la BD: usa un
-**perfil por defecto** que `Profile.canSee` arma con la API ENTERA filtrada por la declaración
-(`getDefaultProfile` + `sift`). ⟹ declarar `isAnonymous: true` **es** la autorización; no hay asignación que
-la limite, ni asignación que haga falta. Verificado: una punta anónima asignable, sin estar en ningún perfil,
-responde 200 a un anónimo puro.
-
-**2. 🔴 `anonymousStates = [true, "auth"]`, y para un AUTENTICADO el filtro acepta los dos** ⟹ **cualquier
-usuario autenticado entra a cualquier punta `isAnonymous: true`**, tenga o no la función en su perfil. Una
-punta anónima no se puede restringir a un subconjunto de autenticados: **si es anónima, es de todos.** En un
-sitio con usuarios externos (socios, clientes) eso es literalmente cualquiera con cuenta.
-
-⟹ Si una operación necesita ser abierta EN ALGÚN escenario y perfilada en el resto, **son dos puntas**: una
-perfilada (permanente) y otra anónima acotada a ese escenario, que se niega sola cuando el escenario no
-aplica. No una anónima con el chequeo adentro: ahí el candado es una línea de código que nadie vuelve a
-mirar.
-
-✅ La forma **función** (`(req)=>bool`) OPERA (back ≥ 7.3.8, `Profile.getAnonymousFunctions`, #189 resuelto):
-la lista de funciones con `isAnonymous` `true`/`"auth"`/función se arma desde `req.API` en **cada llamada**, sin
-memo (cuesta menos de 1 ms; el memo dejaba fuera las puntas registradas después, #235), y la función se **evalúa por
-request** (`await isAnonymous(req)`); si el handler revienta, cierra SOLO su punta y el resto sigue. La rama
-`typeof isAnonymous === "function"` de `hasAccess` es código muerto (solo corre sin modelo `Profile`): no la
-leas como "la vía". 🔴 Una ESCRITURA no se abre así aunque se pueda: `Translation/redefine` fue anónima por una llave
-de la Config hasta el 20-oct-2026 y se cerró, porque un `t-href` redefinido mandaba a todos los visitantes a otro
-sitio y sobrevivía a cerrar la llave. La forma función es para capacidades sin efecto persistente o acotado (catalogar).
-
-## Autenticación de un modelo nuevo (autenticable = clon de User)
-
-**🔴 Premisa: NO se implementa NADA de auth para un modelo nuevo.** Si un modelo es **autenticable**
-(sus instancias se loguean) se declara como **clon de User** (`User.safeClone(...)`). Con eso hereda
-TODO el aparato de auth del back, gratis y sin una línea nueva:
-- `authForm.json` — genera el form de login según `{model, option}`.
-- `checkLogin.json` — valida credenciales, puebla sesión, devuelve `userData` + `link` (página del perfil).
-- `recovery.json` — recuperación de contraseña.
-- Los paths con `auth: "password"` (username/email/identidad) ya son las opciones de login.
-- Perfil forzado (en `pre("validate")` el modelo asigna su perfil único — buscar por **`profileName`**
-  camelCase, verificado vía MCP `modelFields Profile`, NUNCA copiar `profile_name` snake de un corpus viejo).
-
-### La frontera back↔front (zona gris)
-El **back provee el flujo completo**; el **front solo lo activa con valores de store** (módulo `auth`):
-
-| Valor (store `auth`) | Qué hace | Cómo se setea |
-|----------------------|----------|---------------|
-| `modelAuth` | Modelo a autenticar (default `"User"`) | `commit("auth/setAuthMode", {modelAuth: "Member"})` |
-| `modelOption` | Método de login fijo → salta el select de "forma de autenticar" | mismo `setAuthMode`, `{modelOption: "email"}` |
-
-**La pega del front es trivial (~5 min) y opcional**: basta setear esos valores de store **en cualquier
-parte** (el botón Auth del nav ya dispara el flujo — no es obligatorio crear una vista ni una ruta
-dedicada). Si se quiere una ruta/portal propio (ej. `/Member`), la ruta lleva **`meta: {redirect: true}`**
-→ tras autenticar, el FW manda al socio al `link` (página principal) de su perfil. Las rutas "puerta"
-(login/register/recovery/home) llevan ese meta; es polimórfico (cada perfil define su `link`).
-
-`forceLink` (state del store) es OTRO caso (DelegatedUser fuerza redirect al cambiar a modo delegado);
-su branch en el store está comentado (deuda). Para login normal el mecanismo es `meta.redirect`.
-
-> Detalle de cómo construir el MODELO autenticable (clon, perfil forzado, multitenant): ver
-> Doc «principios-modelos» §1.
-
-## Registro público de un modelo (registrable = clon de User + flag)
-
-**🔴 Premisa hermana de la anterior: NO se implementan puntas de registro para un modelo nuevo.** Las
-puntas globales YA existen (`User.options.API` key `register`, anónimas, nivel 2):
-- `GET /APP/register.json?model=X` → `{form, specs}` (form filtrado por contexto register).
-- `POST /APP/register.json?model=X` → `FWregister` → `setData("register")` → `pickRegister` filtra el body.
-
-Para hacer registrable un modelo (que DEBE ser clon de User):
-1. **`registrable: true`** en sus schema options — gate ESTRUCTURAL de la punta (no AAA; el QS no puede
-   volver registrable a un modelo que no lo es). User NO la lleva (internos, sin registro público).
-2. Campos propios que el registrante no debe tocar → `hidden:["register"]` (los de User ya vienen
-   blindados de la raíz).
-3. Front: ruta `{path:"/Register", component:"Register", props:{authModel:"X"}}` — **SIN `meta.model`**
-   (activaría el shell → pide help AAA-gated → 401 en anónimo → login indebido). La vista resuelve
-   `props.authModel ?? store.auth.modelAuth` (frontoffice usa el store; landing pasa el prop). La vista
-   `Register` (core/views) es sobrecargable por cascade; monta `ItdRegister` (core/components) que consume
-   `getRegisterForm()`/`setRegister({data})` de BackEnd.js (model del closure, sin argumento).
-
-**CSRF normal** (el front manda token como checkLogin) — `skipCSRF` NUNCA para forms de browser.
-**Anti-vestigio**: register como CRUD del modelo (child Register en setRoute, espejos formRegister,
-`case "register"`) fue eliminado 2026-06-09 — si aparece en un corpus viejo (código legacy), NO imitarlo.
-Capas pendientes del flujo: verificación de correo (doble opt-in, patrón recovery) + captcha (Config).
-
-> Enseñanza completa: doc «principios-modelos» §6. Ruta real: la bitácora del register (2026-06-09).
+Detalle y la frontera back↔front: [references/model-auth-register.md](references/model-auth-register.md).
 
 ## URL → handler
 
@@ -682,62 +294,11 @@ publica). `key` es la clave con que quedó en `pool.API` (con el prefijo del arc
 no necesita que le repitan su nombre. Puede ser `async`; un error se loguea y no detiene a las demás. Regresión:
 la prueba de back `apiInitKey` (K1-K4; el del FWPlugin lo cubre el plugin `conversation`).
 
-## 🔴 La política de cache se DECLARA en la punta: atributo `cache` (back ≥ 7.4.0, gap #40)
+## 🔴 La política de cache se DECLARA en la punta: atributo `cache` (back ≥ 7.4.0)
 
-Nadie escribe `Cache-Control` a mano. El middleware `aaa.cache` (cadena `auth → cache → sse → multer →
-execEndpoint`, `server.js`) lee el atributo `cache` **de la raíz del descriptor** (`API[func].cache`, al lado de
-`isAnonymous`; 🔴 nunca bajo un verbo: ahí el ejecutor lo resolvería como una ext llamable, `/APP/func.cache`) y
-pone los headers estándar **antes** de correr el handler; el handler puede pisarlos con `res.set` si sabe más.
-Como `isAnonymous`, acepta **función `(req) => política`** para decidir por quién pide (anónimo vs
-autenticado: `cache: req => req.isAuth ? {maxAge: 0, swr: 60} : {maxAge: 3600, public: true}`). Los nombres son
-nuestros; el header es de la RFC 9111 / 5861. 🔴 **Un MODELO también lo declara, en sus schema options** (`cache:
-{maxAge: 0, swr: 60}` junto a `defaultMethods`): `AAA.js` lo copia a `API["AAA/<Modelo>"]` como `isAnonymous`/`auth`
-(back ≥ 7.4.1, gap #44). Sin eso `tableData`/`formUpdate` responden `no-store` y ninguna grilla ve el stale.
+Nadie escribe `Cache-Control` a mano. El atributo `cache` va en la **raíz del descriptor** (`API[func].cache`, al lado de `isAnonymous`; 🔴 **nunca bajo un verbo**) o en las schema options de un modelo; acepta una **función `(req) => política`** (`req.params.ext` decide por punta; `undefined` cede al default del deploy, un mapa por ext en la config). **Sin declarar nada sale `private, max-age=0`** (se guarda pero se revalida con 304). `{noStore: true}` → `private, no-store`; `{maxAge: 0, swr: N, public: true}` → `public, max-age=0, stale-while-revalidate=N`. 🔴 Una punta **anónima legal** (`isAnonymous: true`) sale SIEMPRE `public`. 🔴 **`Vary` NO EXISTE en el FW**: nunca sale, `vary:` se ignora, y lo que cambia el contenido va en la URL (`?locale=`). Solo GET/HEAD reciben el header. `req.locale` = `x-locale` ?? config `Locale` ?? `es-CL`.
 
-**Por ext, con la misma raíz (jcmunoz 20-sep-2026: "la estructura es fija, los datos son SWR").** La función recibe
-`req` y `req.params.ext` es la punta concreta, así que UN `cache` en la raíz decide por punta; `undefined` cede al
-**default del deploy**, que es un **mapa por ext** en la config (`cache: {tableFields: {maxAge: 60}, tableData:
-{maxAge: 0, swr: 60}, "*": null}`: la estructura de todo modelo es fija, sus datos son SWR, sin que cada modelo lo
-repita), y sin nada es `private, max-age=0`:
-
-```js
-// schema options de un modelo (o raíz de una punta libre con varias ext)
-cache: req => ({tableData: {maxAge: 0, swr: 60}, tableFields: {maxAge: 300}})[req.params.ext]
-```
-
-Regla: *si quieres el default, devuelve `undefined`*. Solo GET/HEAD reciben el header; otros verbos lo ignoran, por
-eso el mapa va por ext y no por verbo. Una punta libre que quiera su política ajustable sin código registra su
-`setConfigDefinition` y la lee desde la Config dentro de esa función. Ejecutor: la prueba de back `cacheHeaders`
-(`test/cacheByExt.{fields,data,count}`).
-
-| `cache` | Header que sale |
-|---|---|
-| ausente (y sin default del deploy) | `Cache-Control: private, max-age=0` — **se guarda pero nunca se usa sin revalidar**: cada repetición es un 304 barato (back ≥ 7.4.1, 21-sep-2026; antes era `no-store`, que mataba la copia y con ella el `If-None-Match`) |
-| `{noStore: true}` | `private, no-store` — opt-in para lo que no puede quedar en disco |
-| `{maxAge: 0, swr: 604800, public: true}` | `public, max-age=0, stale-while-revalidate=604800` (catálogo de traducciones: el locale va en el QS) |
-| `{maxAge: 0, swr: 60}` | `private, max-age=0, stale-while-revalidate=60` (`tableData`, `tableFields`: de sesión) |
-| `{maxAge: 3600}` | `private, max-age=3600` (CF pura) |
-| `vary: …` | **se ignora**: nunca sale `Vary` desde la política de cache (ver abajo) |
-
-Reglas: **`private` es el default** (se parte de la restricción y se suelta con `public`). 🔴 **Sello (back ≥ 7.4.0):
-una punta anónima legal (`isAnonymous: true`, o su función devuelve `true`) sale SIEMPRE `public`**, diga lo que
-diga la política, pida quien pida: `private` es de sesión y un anónimo legal no es sesión de nadie (sin el sello, el
-401 contractual de un visitante, p.ej. `Translation/redefine.check`, le borraba la copia vía `clearPrivate`). `"auth"`
-y las perfiladas quedan como las declara el dev. Ejecutor: `cacheHeaders.test.js` (`test/cacheSealed*`). `private`/`public` no le
-dicen nada al browser (RFC 9111: son para intermediarios); son la marca de sesión del SW de smart-fetch: **al
-logout, y ante un 401 en cualquier revalidación (sesión caída por timeout), borra todo lo `private`** (SWR o CF, da
-igual) y lo `public` sobrevive; **nada se borra por TTL**, una copia
-vencida se revalida (304) · 🔴 **`Vary` NO EXISTE en el FW** (jcmunoz 22-sep-2026): la Cache API de todo browser
-(spec WHATWG, medido en Chrome 153) indexa por URL y nunca guarda dos variantes de una URL: `Vary` ahí solo valida
-el `match` y el `put` pisa. Un cache que respeta `Vary` a veces es peor que uno que nunca lo mira, así que `aaa.cache`
-no lo manda nunca y el SW de smart-fetch indexa **por URL, estricto, siempre**. **Lo que cambia el contenido va en
-la URL** (translate: `?locale=`); `X-Locale` sigue viajando solo para `req.locale` y lo que se genera en el back. Se
-revisa el día que WHATWG e IETF se pongan de acuerdo · valores en segundos.
-**`req.locale`** (getter en `server.js`): `headers["x-locale"] ?? configGet("Locale") ?? "es-CL"`: el header manda
-(el front ya manda el forzado cuando hay `forceLocale`), la config del site es el fallback. Un cliente sin header (el
-MCP, un curl) cae al `Locale` del site: si quiere otro idioma, manda `x-locale`. Antes del 22-sep-2026 el getter
-prefería la config y anulaba el header en todo deploy con `Locale` (gap #56).
-Ejecutor permanente: la prueba de back `cacheHeaders` sobre las puntas `test/cache*` de `SITE/APP/test.js`.
+Tabla completa, el sello de las anónimas y las razones: [references/cache-policy.md](references/cache-policy.md).
 
 ## 🔴 Archivos: la punta DEBE declarar `hasFiles` (capa de seguridad)
 
@@ -754,30 +315,9 @@ El front manda los archivos como **multipart** con el path del campo como `field
 🔴 Si el front manda JSON con el `Blob` adentro, el archivo llega como OBJETO: `saveRefs` lo toma por "ref con payload",
 llama `File.FWcreate` y revienta con `req.files undefined`. Caso real 2026-08-27: punta `myFolder` de un deploy.
 
-## Deuda histórica: prefijo `AAA/` vestigial
+## Deuda histórica y hallazgos
 
-⚠️ El prefijo `AAA/` que aparece en muchos paths actuales (`/APP/AAA/getIcon`, `/APP/AAA/setVersion`, `/APP/AAA/User.tableFields`) **NO es semánticamente significativo** — es deuda histórica:
-
-1. El FW partió con un único controller llamado `AAA`.
-2. Todo se acumuló bajo `AAA/` por inercia.
-3. Cuando se agregaron otros modelos, se forzó la convención `AAA/<model>` para que el front siguiera funcionando.
-4. Después se introdujo `route.meta.model` en el front → el `AAA/` quedó vestigial pero nadie limpió.
-
-**Implicación para nuevos endpoints**: NO sigas la inercia. Cuando crees un nuevo endpoint nivel 1 (APP/), elige un filename que refleje SCOPE SEMÁNTICO real:
-- ❌ `APP/AAA.js` con `getIcon` → path `/APP/AAA/getIcon`
-- ✅ `APP/icons.js` con `getIcon` → path `/APP/icons/getIcon`
-- ✅ `APP/utils/icons.js` con `getIcon` → path `/APP/utils/icons/getIcon`
-
-Y para nivel 3 (`schema.options.API`), también vale revisar la convención: `"AAA/myProfile"` es vestigial, podría declararse simplemente `"myProfile"` (decisión de migración pendiente).
-
-Migración completa documentada en el TODO «aaa-prefix-cleanup».
-
-## Hallazgos (code review for jcmunoz)
-
-- Plugin `FrontEnd` — `//FIX` markers acknowledge the `switch(type)` antipattern (combos `form+specs+value` in `?type=create|update|register|check`). Pending split into discrete extensions.
-- `AAA` — commented block transferring `schema.statics` to `route.meta` (saved 57KB payload). Confirm definitive removal.
-- `User` — `myProfile` exists in `options.API` while a duplicate (commented) lives in `APP/AAA`. Decide canonical home.
-- `execEndpoint` swallows missing methods silently (no `case "undefined"` for the outer `typeof API[func][method]` switch) — `POST` to a `GET-only` endpoint hits no branch and returns nothing. Worth an explicit 405.
+El prefijo `AAA/` de muchos paths es **vestigial**: en un endpoint nuevo de nivel 1, elige un filename con SCOPE semántico real (`APP/icons.js`, no `APP/AAA.js`). La historia y los hallazgos abiertos: [references/history-and-findings.md](references/history-and-findings.md).
 
 ## References
 
@@ -814,3 +354,4 @@ No declares "listo"/"funciona" sin pasar por la **puerta de salida** del FW: tes
 si tocaste algo con retención (EE/hooks/globals/cache → `WeakRef`+gc+canario), completitud (*¿qué más toqué que
 no probé?*), logs con niveles (front `$log`/`$logDebug`, back `Log.XXX`+`logLevel`), y validación **externa** (el
 "Done" no se da sobre tu propio testing). Es un **servicio**, no un browser → cero memleaks. Skill **`itdfw-completeness`**.
+
