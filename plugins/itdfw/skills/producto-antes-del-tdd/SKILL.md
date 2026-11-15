@@ -68,27 +68,37 @@ Una página para decidir (no un `.md` árido), con estas partes, en este orden:
 Lo que no se pudo ver (un flujo tras un login, un precio que cambia el recorrido) se escribe como "sin ver". Lo que un
 navegador soporta se coteja en caniuse o MDN, nunca de memoria.
 
-## Skills externos que se usan aquí — a pedido
+## 🔴 Skills externos VINCULADOS a cada paso
 
-No se cargan por reflejo: cada uno se invoca cuando el dueño del producto pide esa pieza, o cuando el paso la necesita
-y se le avisa antes. Si el skill no está instalado, se dice y se hace a mano.
+Cada paso de este camino carga su skill con el Skill tool **antes de producir su entrega**, sin esperar a que el dueño
+lo pida. Hacer el paso "de memoria", sin su skill, es no haber hecho el paso. Si un skill no está instalado, se dice en
+la entrega cuál faltó y esa parte se hace a mano.
 
-| Para qué | Quién | Skill |
-|---|---|---|
-| la ficha comercial de un competidor nombrado (oferta, precios, cómo se le gana); no reemplaza el estudio de pantallas de `designer` | `Comercial` | `sales:competitive-intelligence` |
-| investigar una empresa o un prospecto concreto | `Comercial` | `sales:account-research` |
-| lista de prospectos con un motivo por cada uno | `Comercial` | `small-business:lead-finder` (o `small-business:grow-pipeline` si además se les escribe) |
-| cómo aparece el producto en buscadores y en respuestas de IA | `Comercial` | `small-business:seo-ai-visibility` |
-| plan de contenidos y canales | `Comercial` | `small-business:content-strategy` |
-| una pieza para mostrarle a un prospecto (página, una hoja) | `Comercial` | `sales:create-an-asset` |
-| dibujar el árbol de capacidades o un recorrido | `designer` | `diagram-design` |
-| dirección visual de las alternativas | `designer` | `frontend-design:frontend-design` |
-| auditar o extender el sistema de diseño propio | `designer` | `design-system` |
-| qué permite hoy la plataforma web (antes de prometer una capacidad) | `designer` | `modern-web-guidance:modern-web-guidance` |
-| la página para decidir | quien la publica | `artifact-design` |
+**Análisis comercial (`Comercial`)** — todos se cargan:
 
-Lo que sale de un skill externo es materia prima: los datos de mercado llevan su fecha y su fuente, y nada de eso entra
-al TDD sin pasar por la elección del dueño.
+| Parte del análisis | Skill |
+|---|---|
+| la competencia como negocio: oferta, precios, cómo se le gana | `sales:competitive-intelligence` |
+| quién es cada competidor o socio (empresa, noticias, encaje) | `sales:account-research` |
+| a quién se le vende primero: lista de prospectos con un motivo cada uno | `small-business:lead-finder` |
+| cómo aparece el producto en buscadores y en respuestas de IA | `small-business:seo-ai-visibility` |
+| plan de contenidos y canales | `small-business:content-strategy` |
+
+Al salir a vender (después del análisis): `small-business:grow-pipeline` para el contacto a los prospectos y
+`sales:create-an-asset` para la pieza que se les muestra.
+
+**Estudio del producto de la competencia (`designer`)** — todos se cargan:
+
+| Parte del estudio | Skill |
+|---|---|
+| el árbol de capacidades y los recorridos, dibujados | `diagram-design` |
+| la dirección visual de cada alternativa | `frontend-design:frontend-design` |
+| que cada alternativa calce con el sistema de diseño propio | `design-system` |
+| qué permite hoy la plataforma web, antes de prometer una capacidad | `modern-web-guidance:modern-web-guidance` |
+| la página para decidir | `artifact-design` |
+
+La entrega de cada uno termina con la lista de skills que cargó. Lo que sale de un skill externo es materia prima: los
+datos de mercado llevan su fecha y su fuente, y nada de eso entra al TDD sin pasar por la elección del dueño.
 
 ## Lo que recibe el PMO, y lo que hace con eso
 
@@ -107,6 +117,8 @@ al TDD sin pasar por la elección del dueño.
 - "Es un acuerdo ya tomado, no hace falta estudio": el acuerdo mueve a Comercial al final, no elimina el estudio de
   `designer`.
 - Un estudio de competencia para una grilla de back office.
+- Un análisis comercial o un estudio entregado sin la lista de skills cargados, o esperando que el dueño pida "usa el
+  skill de ventas".
 
 ## Qué deja escrito cada uno
 
