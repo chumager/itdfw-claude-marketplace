@@ -63,7 +63,7 @@ src/
 
 ## 🔴 Los CSS: dos mecanismos opuestos con nombres parecidos
 
-`init.js:1003-1008` los carga con funciones DISTINTAS, y ahí está toda la diferencia:
+el `init` los carga con funciones DISTINTAS, y ahí está toda la diferencia:
 
 ```js
 this.customImport("cascadeStyle.css", "css");        // first-return → gana UNO solo
@@ -83,6 +83,6 @@ o sea la capa de render afina, no reemplaza. Lo dice el propio comentario del co
 (NUI) afina estas mismas clases a su forma de pintar filas"*.
 
 **Tercer mecanismo, que no es cascada**: un CSS propio de un componente se importa directo desde su SFC
-(`ItdNumber.vue:143` → `<style scoped src="core/css/number.css">`). Por eso `core/src/css/number.css` existe
+(`ItdNumber.vue` → `<style scoped src="core/css/number.css">`). Por eso `core/src/css/number.css` existe
 y no lo carga ninguna de las dos funciones de arriba. Si un CSS es de UN componente, va así — no al
 `mergedStyle`.

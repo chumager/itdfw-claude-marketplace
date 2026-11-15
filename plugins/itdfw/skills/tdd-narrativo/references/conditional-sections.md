@@ -152,7 +152,7 @@ entregan. Por cada entrada, una línea y un caso que lo haría fallar:
 | **DoW** (denial of wallet): ¿un actor puede gastar plata nuestra (IA, SMS, mapas)? | `req.browserAuth` + cuota (skill `itdfw-api-system`) |
 | **Config**: ¿una llave editable por el admin abre algo de lo anterior? | no va en Config (rule `config-nunca-abre-un-hoyo`) |
 
-Caso canónico (30-oct-2026, `plugins/notifications`): `subscribe` guardaba cualquier `endpoint` y el back le hace POST
+Caso canónico (30-oct-2026, plugin `notifications`): `subscribe` guardaba cualquier `endpoint` y el back le hace POST
 en cada aviso (así funciona Web Push, RFC 8030); un cliente podía apuntarlo a una IP interna, y la punta `send`
 devolvía lo que esa IP contestaba. Arreglo: `https` y solo los cuatro servicios de push, fijos en el código. El hoyo
 lo cazó una revisión automática, no el TDD: nunca habíamos pensado al atacante desde esa posición.
@@ -177,7 +177,7 @@ nivel lo decide lo que el cliente paga, no el gusto del diseño:
 
 Consecuencias para el TDD:
 - **Medio y alto**: lo que un tenant haga dentro de su BD (un pipeline libre, un `$lookup`, un `$out`) solo alcanza sus
-  datos; el módulo **no recorta capacidades** para defender a un tenant de otro (caso `plugins/kpi`, 30-oct: la lista
+  datos; el módulo **no recorta capacidades** para defender a un tenant de otro (caso del plugin `kpi`, 30-oct: la lista
   blanca de etapas se descartó porque el hoyo era compartir la BD).
 - **Bajo**: comparten BD, así que el módulo **sí recorta**: nada que el cliente configure o escriba puede saltarse el
   prefiltro (pipelines libres, `DBModelRaw`, Tools, `$lookup` a otra colección), los índices únicos incluyen al dueño, y

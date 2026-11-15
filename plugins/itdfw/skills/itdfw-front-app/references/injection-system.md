@@ -50,7 +50,7 @@ src/injections/
 `processComponent` builds the path from the `base` it received:
 
 ```js
-const injectionPath = `injections${base ? `/${base}` : ""}`;   // import.js:289
+const injectionPath = `injections${base ? `/${base}` : ""}`;   // import.js
 ```
 
 So the rule is: **wherever the component lives, its injection lives under the same relative path inside
@@ -61,7 +61,7 @@ So the rule is: **wherever the component lives, its injection lives under the sa
 `components/`, so the core loads it with an EMPTY base:
 
 ```js
-App: () => localImport("App", "")     // index.js:419
+App: () => localImport("App", "")     // index.js
 ```
 
 ⟹ `base = ""` → the injection is looked up at **`injections/App.js`**, NOT

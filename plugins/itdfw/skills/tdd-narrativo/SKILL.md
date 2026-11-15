@@ -84,7 +84,7 @@ cumple". Ver `feedback_verificado-es-la-propiedad-no-la-apariencia.md`.
    diseñarlos de antemano.
 5. **Cuando cambia una propiedad, se reescribe la NARRATIVA**, no solo el estado de los tests.
 
-Caso canónico: `plugins/translate/TDD.md` (16-sep-2026) — el helper `/t-test` con `caseBlock` por caso.
+Caso canónico: el TDD del plugin `translate` (16-sep-2026) — el helper `/t-test` con `caseBlock` por caso.
 
 ### 0b · 🔴 El MODO del TDD se declara en la cabecera: nuevo, refactor o incremental
 
@@ -271,7 +271,7 @@ resultado no prueba nada: que choquen depende del procesador, la red y la carga,
 operaciones que se serializaron solas. La carrera se fuerza con una **barrera** (cada participante entra a la zona
 crítica, espera hasta que estén todos adentro, y recién ahí actúa) y la prueba **afirma que hubo choque** (reintentos,
 conflictos, esperas) además del resultado. Esa aserción es la que la hace caer en rojo cuando el mecanismo falta.
-Caso canónico: `plugins/autoincrement/test/level3.test.js` (N3.3/N3.4): veinte transacciones abiertas tras una
+Caso canónico: la prueba de nivel 3 del plugin `autoincrement` (N3.3/N3.4): veinte transacciones abiertas tras una
 barrera, números 1..20 **y** cuerpos corridos > 20; sin la sesión en el contador da `bodies run 20` y cae (jcmunoz,
 7-oct-2026: *"la única forma de probar concurrencia es forzar el race, no depender de la capacidad del procesador ni
 de la red"*).
@@ -467,7 +467,7 @@ contra esa sección, no contra su memoria.
 ## 🔴 TRES archivos, no uno: contrato · bitácora · corridas
 
 Un TDD que junta el contrato con la historia de sus decisiones y con el resultado de cada corrida **se vuelve
-ilegible y caduca cada media hora**. El caso que lo prueba (19-sep-2026, `plugins/translate`): 1.143 líneas, con la
+ilegible y caduca cada media hora**. El caso que lo prueba (19-sep-2026, plugin `translate`): 1.143 líneas, con la
 sección Modelo cargando el AST viejo y el nuevo, "Decisiones" como diario por fecha con citas, y cada fila de prueba
 arrastrando píxeles y conteos de cada corrida. jcmunoz: *"mi impresión duró menos de media hora y ya era inválida"*.
 

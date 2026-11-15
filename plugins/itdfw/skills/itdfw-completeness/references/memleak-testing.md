@@ -66,7 +66,7 @@ else                           console.log("✗ MEMLEAK: el sujeto sobrevive —
 
 ## Material vivo (ejemplos reales, 2026-06-30)
 
-Tres pruebas que cerraron el diseño pub/sub del FW (`tests/mongoose/`):
+Tres pruebas que cerraron el diseño pub/sub del FW:
 - `doc-gc-weakref.test.js` — listeners cruzados internos → el doc se recolecta (autocontenido).
 - `doc-gc-accumulate.test.js` — 1001 listeners sin cleanup → se recolecta igual ⟹ el cleanup es opt, no requisito.
 - `doc-gc-external-listener.test.js` — suscriptor externo (`doc.on` desde fuera) → se recolecta ⟹ el EE de

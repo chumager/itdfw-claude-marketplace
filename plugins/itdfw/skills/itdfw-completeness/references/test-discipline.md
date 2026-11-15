@@ -82,7 +82,7 @@ const d = new M({f: <input válido>});
 🔴 **mongoose DIFIERE el `CastError`**: el cast que lanza dentro de `new Model({f: <malo>})` **NO propaga
 el throw** — lo guarda para `validateSync()`/`save()`. ⟹ probá el **red** con `schemaType.cast(malo)`
 directo (lanza), **o** `new M({f:malo}).validateSync().errors.f` (existe). Esperar `throw` en la
-construcción del doc te da un falso "no rechaza". Material vivo: `tests/mongoose/loadtypes-class-extends.test.js`.
+construcción del doc te da un falso "no rechaza". Material vivo: la prueba `loadtypes-class-extends` de mongoose.
 
 ## 🔴 VO transversal → el e2e cubre BACK **Y** FRONT, y vive EN el plugin
 
@@ -110,18 +110,18 @@ Cómo se escriben, para que el gallinero se ordene solo:
 
 - **`node:test`** (Node ≥ 22 basta: `describe/it`, `before/after`, `skip`, `mock`, reporters `spec|tap|junit|dot`).
   Nada de scripts que impriman `OK/FALLA`: se afirma con `node:assert/strict`.
-- **El runner es `tests/back/index.js`**: `node index.js -H <URL COMPLETA> -U <user> -T <token> [-P <password>]
+- **El runner de `tests/back/`**: `node index.js -H <URL COMPLETA> -U <user> -T <token> [-P <password>]
   [--reporter junit] [patrón…]`. Deja `ITDFW_HOST/USER/TOKEN/PASSWORD` en el entorno y corre los `*.test.js`.
   🔴 `-H` es la **URL completa** (`https://<host>:<puerto>`): el test no decide ni deduce nada de
   red, así se prueba igual un sitio local, uno por nginx o uno remoto.
-- **`tests/back/lib/site.js`** entrega `admin()`, `as(user, token)`, `url(path)`, `request()`, `json()`. El
+- **El helper `site` de `tests/back/`** entrega `admin()`, `as(user, token)`, `url(path)`, `request()`, `json()`. El
   **transporte** (headless client, `fetch`, curl, Playwright) lo elige cada test; el runner no sabe de eso.
 - 🔴 **Browser = spec programático de `@playwright/test`** (`npx playwright test <ruta> --reporter=line`), que vive
   con la unidad (`plugins/<x>/test/e2e/`, `fronts/itdfw-naiveui/test/`, fuera del tarball). **Nunca un MCP de
   browser** (`plugin_playwright`, `playwright-headless`): cada llamada trae la página entera al contexto y no deja
-  nada reutilizable. Patrón: `fronts/itdfw-naiveui/test/menu.spec.js`. La consola del browser se afirma dentro
+  nada reutilizable. Patrón: un spec de NUI que afirma la consola (el de `menu`). La consola del browser se afirma dentro
   del spec (`page.on("console")`).
-- **Fixtures del core**: puntas `onDev` en `back/itdfw/src/SITE/APP/test.js` (`test/exec`, `test/anonFn*`,
+- **Fixtures del core**: puntas `onDev` (la API `test`: `test/exec`, `test/anonFn*`,
   `test/readonlyUser`). Nacen perfiladas: el test las asigna al admin del runner con `MCP/assignFunction` antes de
   usarlas. Sin modo desarrollo responden 404 y el caso se salta con `ctx.skip`, no falla.
 - 🔴 **Un modelo o punta de prueba de un plugin tiene DOS cosas, ORTOGONALES** (jcmunoz 18-sep-2026):
@@ -209,7 +209,7 @@ CurrencyTest original tenía min/max en el root y los nested PELADOS). El modelo
 - **root × SIN restricción** (el control: vacío debe GUARDAR),
 - **nested × restricción** (el sub-schema con `required`/`min`/`max` INTERNOS — embedded Y docArray).
 Qué restricciones aplican depende del type: Currency = min+max+required (aplica FUERTE); Rut/Address =
-solo required. Molde vivo: `plugins/address/mongooseSchema/AddressTest.js` (matriz en el header). La
+solo required. Molde vivo: el modelo de prueba `AddressTest` del plugin `address` (matriz en el header). La
 batería green/red se corre HEADLESS como test de back (`node:test` contra las puntas del site: POST
 caso válido / sin el required / violando la restricción nested) ANTES del e2e de browser — más barato
 y caza la mitad de los bugs. Un test que queda, no llamadas sueltas a mano por el MCP: esas no se
