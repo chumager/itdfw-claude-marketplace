@@ -4,7 +4,7 @@ El front NO transforma el **shape de data** que llega del back: `component`, `ty
 
 ## Anti-pattern
 
-Si te encuentras escribiendo `if (input.filter === "X") input.component = "Y"` en el front (ItdGrid, ItdFilter, GIW, donde sea) — **STOP**. Eso pertenece a `back/itdfw/src/SITE/mongoosePlugins/FrontEnd.js:formFilter`.
+Si te encuentras escribiendo `if (input.filter === "X") input.component = "Y"` en el front (ItdGrid, ItdFilter, GIW, donde sea) — **STOP**. Eso pertenece a `formFilter` del plugin `FrontEnd` del back.
 
 Mezclar concerns = múltiples puntos de control para la misma transformación, garantías framework-agnostic rotas (NUI vs BV divergen silencioso), bugs que se ocultan entre sí.
 

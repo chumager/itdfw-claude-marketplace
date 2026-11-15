@@ -67,7 +67,7 @@ addLoader(
 
 Pattern del archivo separado:
 ```js
-// libs/itdfw-site-vue-core/xxxLoader.js
+// xxxLoader.js (en el core front)
 export default async function xxxLoader(comp, config) {
   // factory — corre cuando el componente es registrado
 }
@@ -151,9 +151,9 @@ async function registerXxxLoader() {
 
 ## Ejemplos de loaders existentes
 
-- **`$lodash`** (init.js:230) — adds lodash method via `lodashMethod` + globalize
-- **`$emitter`** (init.js:175) — mitt-based event emitter per instance
-- **`$vModel`** (init.js:159, `vModel.js` root) — vModel compat Vue2/Vue3
-- **`$validateSelf`** (`plugins/validateSelf.js:399`) — validation mixin
-- **`$NUI`** (NUI init.js:10) — Naive UI components loader
+- **`$lodash`** — adds lodash method via `lodashMethod` + globalize
+- **`$emitter`** — mitt-based event emitter per instance
+- **`$vModel`** (`vModel.js` en la raíz) — vModel compat Vue2/Vue3
+- **`$validateSelf`** (plugin `validateSelf`) — validation mixin
+- **`$NUI`** (el `init` de NUI) — Naive UI components loader
 - **`$urlSync`** (`urlSyncLoader.js` root) — QS ↔ computed sync

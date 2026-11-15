@@ -71,6 +71,6 @@ trigger por framework.
 
 ## Referencia de código
 
-`libs/itdfw-site-vue-core/src/components/ItdFile.jsx` — file uploader con preview/download: el `this.tag`
+`ItdFile` (core front) — file uploader con preview/download: el `this.tag`
 es el trigger (captura del File), el GI maneja value/validación/preview; NUI especializa el trigger con
 `n-upload`.

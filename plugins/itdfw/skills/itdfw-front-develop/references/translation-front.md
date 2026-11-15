@@ -1,6 +1,6 @@
 # Traducción en el front: quién declara, quién rinde, cómo se prueba
 
-Contrato completo: `plugins/translate/TDD.md`. Este reference responde las preguntas que los gaps del grafo
+Contrato completo: el TDD del plugin `translate`. Este reference responde las preguntas que los gaps del grafo
 (#28, #30, #32, #36, #37, #38, #47, #48, #50, #51, #52) dejaron sin respuesta el 22-sep-2026.
 
 ## Las puertas (globales del pack, sin import)
@@ -13,7 +13,7 @@ Contrato completo: `plugins/translate/TDD.md`. Este reference responde las pregu
 
 `t` y `rt` son **globales inyectados por el pack** (`init.js` del core, bloque `t`/`rt`/`localT`): no hay
 import que seguir, así que ni Serena ni el grafo listan sus llamadores. La única vía para "¿quién usa `t()`?" es
-texto: `grep -rn "\bt(\|rt(" libs/itdfw-site-vue-core/src fronts/itdfw-naiveui/src plugins/*/vue` (gaps
+texto: un `grep` de `t(` y `rt(` sobre el core front, NUI y los `vue/` de los plugins (gaps
 #47/#48/#52). Cualquier otra `var` del pack que un componente necesite se expone igual: como global desde su bloque
 del `init.js`, nunca leyendo `vars` desde el componente (#36).
 
@@ -48,7 +48,7 @@ render() { return <span>{this.emptyText.value}</span>; }   // o rt(...) directo 
 
 Las opciones vienen de cualquier lado (un enum, un `ref` de datos, un `ref` de interfaces, las funciones de
 `checkLogin`); **quien manda el dato declara la coordenada** en el input (`optionsTranslation`), y el GI traduce
-(contrato: `fronts/itdfw-naiveui/TDD-options.md` enmienda 1):
+(contrato: el TDD de options de NUI, enmienda 1):
 
 ```js
 optionsTranslation: {context: "Interface", text: "name-{{value}}", description: "description-{{value}}"}
@@ -100,7 +100,7 @@ componente construye ni pisa el placeholder; envolverlo con `t()` en otro lado d
 Para montar un form con definición de inputs a mano dentro de un componente propio (no como input de otro form):
 `ItdForm` con `form={[...inputs]}`, `modelValue`, `onUpdate:modelValue`, `buttons` y `onSubmit({errors, value})`,
 con `model` forzado si el componente puede abrirse dentro de cualquier admin. Caso vivo:
-`plugins/translate/vue/components/ItdTranslationEditor.jsx`; el patrón original, `views/Upload.jsx`. En modo `form`
+`ItdTranslationEditor` del plugin `translate`; el patrón original, la vista `Upload`. En modo `form`
 lo que se muestra sale del prop (`externalValue`); `formBus.getValue` lee el contenedor interno. La definición se
 construye UNA vez (`data()`): si cambia de identidad, el watcher del GF reconstruye `localForm` y pisa lo que el
 controller puso.
@@ -113,6 +113,6 @@ controller puso.
   tag, `input[data-test='itd-t-locale']` / `textarea[data-test='itd-t-input']`, o resuelve a dos elementos.
 - El texto se lee del `.itd-t-html` (innerHTML siempre); el `status` no está en el DOM, se infiere del borde en modo
   traducción (`getComputedStyle(el.parentElement).borderTopStyle`).
-- Árbol de specs: `plugins/translate/playwright.config.js` (un worker, proyectos `setup` → `anonymous` /
+- Árbol de specs: el `playwright.config.js` del plugin `translate` (un worker, proyectos `setup` → `anonymous` /
   `authenticated`; el login se hace una vez en `auth.setup.js` y viaja por `storageState`). Una pestaña que
   aterriza directo en una ruta no recibe redefiniciones en vivo: `boot(page)` de `lab.js` arranca la app en `/`.

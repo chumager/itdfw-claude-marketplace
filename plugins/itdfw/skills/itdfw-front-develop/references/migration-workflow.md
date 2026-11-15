@@ -6,7 +6,7 @@
 3. **Reiniciar dev server**: `tmux send-keys -t FW:8.1 C-c "" && sleep 2 && tmux send-keys -t FW:8.1 Up Enter` — HMR no detecta archivos movidos/nuevos
 
 ## Crear y probar core nativo
-4. **Crear componente core**: `libs/itdfw-site-vue-core/src/components/ItdX.jsx` — extends GenericInput (global), configurar data/methods
+4. **Crear componente core**: `components/ItdX.jsx` del core front — extends GenericInput (global), configurar data/methods
 5. **Agregar test en TestFormPage**: input + valor inicial en `fronts/.../testGI/TestFormPage.jsx`
 6. **Probar en `/test-form`**: URL `http://localhost:8080/test-form`
    - Verificar: valor inicial correcto, edición funciona, valor emitido en JSON de abajo

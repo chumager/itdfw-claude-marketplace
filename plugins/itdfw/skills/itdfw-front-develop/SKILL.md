@@ -99,7 +99,7 @@ Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) apli
   que llega es texto o HTML. El back además sanea el type `Html` al guardarlo (setter con `sanitize-html`). Vale para
   la ayuda de un modelo, alertas, acciones, traducciones y cualquier texto que venga del back o de un usuario.
   Origen: 20-oct-2026, XSS por campos Html y por textos redefinibles.
-- **🔴 FLUJO DE VALORES SELLADO (2026-07-13)** — los gates del ciclo raw→VSV→VSR→emisión (forceDisplay, corte de eco, assignVSR puro, snapshot de emisión, lazy ortogonal) están CONGELADOS: solo cambios idempotentes pasan; NO tocar sin tema MUY fuerte. Operación: [value-pipeline.md](references/value-pipeline.md); declaración canónica: `claude-docs/architecture/core/value-flow-sealed.md`.
+- **🔴 FLUJO DE VALORES SELLADO (2026-07-13)** — los gates del ciclo raw→VSV→VSR→emisión (forceDisplay, corte de eco, assignVSR puro, snapshot de emisión, lazy ortogonal) están CONGELADOS: solo cambios idempotentes pasan; NO tocar sin tema MUY fuerte. Operación: [value-pipeline.md](references/value-pipeline.md); declaración canónica: la doc de arquitectura «value-flow-sealed».
 - **🔴 Contrato VO↔GI** — si el campo tiene un Value Object, se ENCHUFA (`data.VO` + pseudoDoc `this.doc`) y el GI delega los hooks espejo 1:1 con fallback nativo + warn onDev. 🔴 Hooks de clase SOLO SIN externalidades (los valores deben existir REALMENTE en doc y GI — `_currency` sí; `locale`/`mask` JAMÁS: son del USUARIO, nunca se parchan al pseudoDoc); externalidades → **WRAPPER del VO** en el componente (`class extends VO` + `setLocale(vm.staticLocale)` — snapshot PLANO, nunca el getter reactivo: getter-tubo). SSoT del flujo = VSR (nada de revertir display). La herencia por similitud MUERE cuando el VO suple la implementación. [vo-gi-contract.md](references/vo-gi-contract.md).
 - **🔴 Contrato de capacidades por viewType (`support`)** — la tabla `data.viewTypes` (keys homologadas 1:1 a la punta: validateSelf/assignVSR/formBus) es la SSoT de qué puede hacer cada modo. LA PUNTA discierne (`support(cap, silent?)`: forma rota EXPLOTA siempre; capability false → false + weeo default); el CONSUMER llama PELADO — NUNCA `if (viewType === ...)` en un componente (whitelist ad-hoc = invariante replicado). [viewtype-contract.md](references/viewtype-contract.md).
 - **GenericInput SIEMPRE global**: `/*global GenericInput*/`. Import directo = sin loaders. **Vive en `lib/GenericInput.jsx`, NO en `components/`** — GI no se usa como componente renderizable, es base de extensión cargada como global (loadFormFactories); `components/` es solo para lo que rinde/cascadea. (Mismo criterio GF/GFMin.)
@@ -120,7 +120,7 @@ Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) apli
 - **🔴 Quien EXTIENDE una base de `lib/` la carga con `applyLoaders`** — `const Base = await import("core/lib/X.jsx").applyLoaders().get("default")` (canon: GI NUI, 2026-07-05). Los loaders que la base DECLARA ($vModel, $emitter, $validateSelf…) se aplican A SU objeto (singleton de módulo → todo el universo hereda; el mixin queda en el nivel de precedencia correcto → un computed del front pisa legítimo al mixin del loader). Import directo pelado deja los loaders huérfanos (con hoist:false nadie los aplica); el hoist:true viejo los aplicaba en la HOJA y su mixin pisaba los computeds del front — así murió por meses la regla lazyFormatter⟹"value" (sobrevivía solo por estáticos `$vModelChildProp` por componente, vestigio junto al `delete $validateSelf` del NUI — ambos eliminados).
 - **Setup vs Options API**: `setup` corre antes de `created` → `this` no existe; nada que dependa de `this` vive ahí. Aplica al escribir setup/composables o loaders. [setup-lazy-async.md](references/setup-lazy-async.md), [anti-patterns.md](references/anti-patterns.md).
 - **🔴 DERIVAR datos: el CONTENEDOR CRUDO, NUNCA `validateSelfValue`** — el getter del VSV **CLONA** para
-  ser comparable (`plugins/validateSelf.js:307`), y **clonar LEE TODAS LAS LLAVES** → quien lo lee queda
+  ser comparable (plugin `validateSelf`), y **clonar LEE TODAS LAS LLAVES** → quien lo lee queda
   dependiente del objeto ENTERO → una tecla en cualquier campo re-rinde a TODOS los hijos. El crudo se lee
   **por llave** y el proxy de Vue 3 (`WeakMap<objeto, Map<llave, Dep>>`) despierta solo al dueño.
   🔴 Se accede por su DECLARACIÓN: **`this[this.$options.$validateSelfValue]`** — `localValue` es solo el
@@ -128,7 +128,7 @@ Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) apli
   latente. **VSV = COMPARAR/emitir/guardar (el todo como unidad); contenedor = DERIVAR (un dato de
   adentro).** Litmus: *¿necesito el objeto entero comparable, o UN dato?* Caso #115: 32 renders y 106 ms
   por tecla → 1 render y 1–3 ms.
-  `claude-docs/architecture/core/derivacion-vsv-vs-localvalue.md`.
+  la doc de arquitectura «derivacion-vsv-vs-localvalue».
 - **🔴 NO asumir dato-on-create (paradigma lazy/async)**: "creado ⟹ dato disponible" está ROTO (formBundle SWR lazy). `setup`/`created` no debe leer value/options/form esperando que ya esté; declara la punta y lee vía reactividad. Revisa esos 2 hooks al tocar cualquier componente. Incluye la 🪄 magia negra de `formBus.getValue` (reactivo en vivo / muerto si snapshoteas) y cross-field reactivo. [setup-lazy-async.md](references/setup-lazy-async.md), [value-pipeline.md](references/value-pipeline.md).
 - **🔴 Prefijo `Itd`** — `name:` del componente Vue SIEMPRE `Itd*`; declaración back (`component:"X"`) prefijada SOLO si colisiona con HTML built-in (Code/Select/Form/Input/Button…). Aplica al nombrar componentes o declarar `component` en schemas. [itd-prefix-resolve-tag.md](references/itd-prefix-resolve-tag.md).
 
@@ -147,11 +147,11 @@ Dos mixins globales (init.js) se aplican a TODO componente: `modelTransitivity` 
 | "el componente compila y no rinde nada" | `$NUI` no declarado (`itdfw-nui`) |
 | "el override del site no toma" | `itdfw-front-app` (cascada, `injections/` espeja la base) |
 | "`r.data` sale undefined" / "reading 'map'" tras subir el front | `$http` resuelve con el CUERPO (core ≥ 7.1): `http-error-traps.md` §primera |
-| "un botón por fila / una acción sobre la selección de la grilla" | ya existe: back `mongooseDB/addActionButton.js` (`addActionButton`/`addToggleButton`) y `tableSpecs.buttons`; front `ItdActionButton`/`ItdActionToggleButton`/`ItdBulkButton`; la grilla NUI provee `itdGridRefresh` e `itdGridMerge` (= `ItdGrid.mergeRow`); banco onDev `TestActionButton`. Contratos: `libs/itdfw-site-vue-core/TDD-action-buttons.md` y `TDD-bulk-actions.md` |
+| "un botón por fila / una acción sobre la selección de la grilla" | ya existe: back, la capa `mongooseDB` (`addActionButton`/`addToggleButton`) y `tableSpecs.buttons`; front `ItdActionButton`/`ItdActionToggleButton`/`ItdBulkButton`; la grilla NUI provee `itdGridRefresh` e `itdGridMerge` (= `ItdGrid.mergeRow`); banco onDev `TestActionButton`. Contratos: los TDD de action-buttons y bulk-actions del core front |
 
 ## `ItdFile` existe — no lo construyas de nuevo (gap #21)
 
-`libs/itdfw-site-vue-core/src/components/ItdFile.jsx` (core) + `fronts/itdfw-naiveui/src/components/ItdFile.jsx`:
+`ItdFile` (core front) + `ItdFile` (NUI):
 
 - **Modos**: `input` (uploader + botón ojo), `view` (grilla), `detail` (preview inline directo).
 - `loadPreview()` resuelve el descriptor (`/APP/File/fileDesc.json?id=`, o directo si el value ya trae `URL`), baja el

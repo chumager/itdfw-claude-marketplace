@@ -14,11 +14,11 @@
 - `this.resolveComp(tag)` — method Y global (init.js: `method: true`). Retorna **`{component, native}`**
   (native=true → tag HTML/WC pelado, se usa como string).
 - **`resolveTag(name)` (GLOBAL)** — resuelve un componente por nombre. **Dos efectos**: (1) side-effect → **registra el componente GLOBALMENTE** en la app Vue; (2) return → devuelve el componente. Acepta kebab/pascal (`"itdForm"`/`"ItdForm"`).
-- 🔴 **EQUIVALENCIA** (init.js:383): `resolveTag(X) === resolveComp(X).component` — resolveTag ES
+- 🔴 **EQUIVALENCIA** (en el `init`): `resolveTag(X) === resolveComp(X).component` — resolveTag ES
   literalmente `(...args) => resolveComp(...args).component`. Si solo necesitas el componente (99% de
   los renders), usa `resolveTag`; `resolveComp` solo cuando necesitas el flag `native`.
 
-### El flujo interno de resolveComp (init.js:293 — la cascada de resolución)
+### El flujo interno de resolveComp (en el `init` — la cascada de resolución)
 
 Por orden, sobre el argumento `component`:
 1. **thenable** (Promise) → THROW ("use a function or static import") — una Promise no es componente.
@@ -47,6 +47,6 @@ render() {
 ```
 
 **Anti-patrón** (Form.jsx, deuda estética): `components: ci("itdForm")` + `<itd-form>` en el render.
-- `ci` (init.js:411) = `{Pascal: resolveTag(comp)}` para asignar a `components:`. PERO **en JSX la opción `components` NO se lee** para resolver tags del render. Lo que hace andar el `<itd-form>` es el **side-effect global** de resolveTag (llamado dentro de ci), NO el objeto asignado a `components`.
+- `ci` (en el `init`) = `{Pascal: resolveTag(comp)}` para asignar a `components:`. PERO **en JSX la opción `components` NO se lee** para resolver tags del render. Lo que hace andar el `<itd-form>` es el **side-effect global** de resolveTag (llamado dentro de ci), NO el objeto asignado a `components`.
 - ⟹ mecanismo visible (`components:`) ≠ mecanismo real (registro global) → **confunde**: el dev mira `components: ci(...)` y asume Options-API-components, que JSX no usa. Mismo costo que resolveTag directo, peor claridad.
 - **Regla**: en render JSX → `const X = resolveTag("itdX")` explícito. `components: ci(...)` solo tiene sentido en un SFC `.vue` real (donde la opción `components` SÍ se lee). En JSX es cruce de funcionalidades que enreda. (Aprendizaje 2026-06-09: asumir que `<itd-form>` "resuelve global por casualidad" estaba mal — resuelve por el side-effect de resolveTag, explicitarlo es lo correcto.)

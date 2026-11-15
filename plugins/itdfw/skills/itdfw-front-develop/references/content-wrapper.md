@@ -4,7 +4,7 @@ Componente shell que vive en `App.vue` envolviendo `<router-view />`. Rendea tit
 
 ## Ubicación
 
-- **Core**: `libs/itdfw-site-vue-core/src/views/ContentWrapper.jsx`
+- **Core**: la vista `ContentWrapper` del core front
 - **Uso**: `App.vue` lo importa via `localImport("ContentWrapper", "views")` y envuelve el `<router-view />` del root.
 - **Override por front**: cada front (NUI, BV, futuros) crea su propio archivo en `views/ContentWrapper.jsx` que `extends Core` + `data()` con tags propios. Patrón documentado en `front-pattern.md`.
 
@@ -24,7 +24,7 @@ ContentWrapper es **pure receiver** del `$route.meta`. Lee tres campos, todos se
 
 **`title`, `description`, `model` son computed sobre `$route.meta`**, no estado interno. Reactividad gratis al navegar — no hay watcher poblando data, solo el watcher de `$route` que dispara `checkHelpExists()`.
 
-**`document.title`** NO lo maneja ContentWrapper. Vive centralizado en `libs/itdfw-site-vue-core/index.js` con `router.afterEach(to => document.title = to.meta?.title ?? firstTitle)`.
+**`document.title`** NO lo maneja ContentWrapper. Vive centralizado en el `index.js` del core front con `router.afterEach(to => document.title = to.meta?.title ?? firstTitle)`.
 
 ## Pipeline dinámico — De dónde viene el meta
 

@@ -3,7 +3,7 @@
 > 🔴 **FLUJO SELLADO (2026-07-13)**: los gates de abajo están CONGELADOS tras e2e de cruce completo.
 > NO tocar ninguno sin tema MUY fuerte — cada uno mata un modo de falla específico (eco, over-render,
 > retro-formateo, wipe). Declaración canónica pa reimplementar front/core:
-> `claude-docs/architecture/core/value-flow-sealed.md`.
+> La doc de arquitectura «value-flow-sealed».
 
 ## 🔴 El árbol de gates — CÓMO OPERA (sellado 2026-07-13)
 
@@ -121,7 +121,7 @@ user input → extractEventValue() → updateValue() → [validateSelfValue]
 
 `viewType` carga **TRES** responsabilidades que es fácil confundir. Un viewType EDITABLE nuevo debe registrarse en los TRES, o falla en el lugar que olvidaste:
 1. **Qué se renderiza** — LIBRE: `renderContent` hace `slotOrRender(viewType)` → resuelve el método `render{ViewType}` por nombre. Cualquier viewType (incluido uno inventado) rinde lo que su método diga. Ej: `viewType:"mainInput"` → `renderMainInput` (control desnudo, sin el InputGroup pipeline) — útil para un **GI composite** que mete sub-inputs en su PROPIO group (input-group de NUI: los sub-controles deben ser hijos directos, sin InputGroups anidados).
-2. **Si EMITE** — REGISTRADA en `assignVSR`: el round-trip de emisión (`updateValue/set → assignVSR → emitter → validateSelfRaw → vModelEmit`) **solo corre si el viewType está en la lista de `assignVSR`** (`plugins/validateSelf.js`: `["input", "filter", "mainInput"]`). Un viewType editable que NO esté ahí **rinde pero NO emite** → el padre nunca recibe el value (el handler jamás se dispara).
+2. **Si EMITE** — REGISTRADA en `assignVSR`: el round-trip de emisión (`updateValue/set → assignVSR → emitter → validateSelfRaw → vModelEmit`) **solo corre si el viewType está en la lista de `assignVSR`** (plugin `validateSelf`: `["input", "filter", "mainInput"]`). Un viewType editable que NO esté ahí **rinde pero NO emite** → el padre nunca recibe el value (el handler jamás se dispara).
 3. **Si el prop lo ACEPTA** — REGISTRADA en el `validator` del prop `viewType` (`lib/GenericInput.jsx`, prop `viewType` → `validator(v)` con la lista `["input","view","detail","filter","plain","mainInput"]`). Si no lo agregas, Vue **alega en consola** (`invalid prop`) aunque el render y la emisión funcionen.
 
 **🔴 Regla**: viewType EDITABLE nuevo → agrégalo en los TRES: `render{ViewType}` (método), lista de `assignVSR` (emisión), y `validator` del prop (sin warning). Síntomas por lugar olvidado (todos del caso ItdAddress, 2026-06-17):
@@ -136,19 +136,19 @@ Para un input cuyo value es un Object de N campos fijos (Address: address/detail
 - `renderMainInput()` los rinde A MANO con `this.renderGI(def, value, handler, {props:{viewType:"mainInput"}, ref:collect})` → cada sub-GI rinde su control **desnudo** (sin su propio InputGroup) → quedan como hijos directos del InputGroup del composite (NUI los pega como grupo);
 - **handlers explícitos** por sub-input (`handleX(val){ this.validateSelfValue = {...this.validateSelfValue, x: val} }`) → cero `if (qué-input-me-mandó)`, cero ciclo de form;
 - `validateSelf()` itera los refs recolectados y junta errores.
-Ventaja: toda la lógica de negocio del GI (initVal/emitter/cast/validación) disponible, renderizando los sub-controles sin wrapper. **Candidatos a migrar así**: `between` (hoy GF), `checkbox-group` (hoy GFMin en core — en NUI ya es GI directo porque NUI daba las prestaciones). Ejemplo vivo completo: `plugins/address/vue3/components/ItdAddress.jsx`.
+Ventaja: toda la lógica de negocio del GI (initVal/emitter/cast/validación) disponible, renderizando los sub-controles sin wrapper. **Candidatos a migrar así**: `between` (hoy GF), `checkbox-group` (hoy GFMin en core — en NUI ya es GI directo porque NUI daba las prestaciones). Ejemplo vivo completo: el componente `ItdAddress` del plugin `address`.
 
 **Corolario — controles auxiliares (botones, modales) DIRECTO en el fragment, con `this` natural.** Cuando rindes a mano, un botón left/right o un modal van como hijos del fragment del `renderMainInput`. Para el botón usa **`ItdButton`** (wrapper agnóstico del FW, `resolveTag("itdButton")`), NUNCA `n-button`/`button` directo — ItdButton trae su propio `$NUI:["Button"]` y los defaults por framework: `const ItdBtn = resolveTag("itdButton"); <ItdBtn onClick={() => { this.showMap = true }}>{{icon: () => <Icon name="map"/>}}</ItdBtn>` → el handler es un método/arrow del componente con **acceso pleno al `this`** (lógica de negocio, refs SWR, estado). Esto **evita** la fricción del `leftButton`/`rightButton` declarados en `inputDefaults`: ese es un **objeto de config sin `this`** → su handler obliga rebindeo / pasar referencias para tocar la lógica del componente. Rendir el control en el fragment lo pone en el MISMO scope que lo que dispara → cero rebindeo. (Mismo criterio para un modal: meterlo en el fragment — NUI lo teletransporta igual — en vez de pelear con `postInput`/slots que el GI condiciona a `viewType==="input"` y no se rinden con `$renderGI`.) Caso real: el botón del mapa + el `n-modal` de ItdAddress.
 
 ## 🔴 assignVSR + lazy: cuando un cambio de FORMATO capa el VALOR real
 
-`assignVSR(force)` (`plugins/validateSelf.js:315`) re-corre `emitter(validateSelfValue)` y asigna el
+`assignVSR(force)` (plugin `validateSelf`) re-corre `emitter(validateSelfValue)` y asigna el
 `validateSelfRaw` — el valor ENTREGADO al padre, **lo que los controllers calculan**. Dos guardas:
 - **viewType** editable (`input`/`filter`/`mainInput`); si no → return.
 - **lazy**: `if (this.localLazy && !force) return`. Con `lazyFormatter`, el watcher interno de
   `validateSelfValue` llama `assignVSR()` **SIN force** → queda **bloqueado** → el VSR NO se re-emite al
-  cambiar el display. Para forzar la emisión en el flujo lazy: `assignVSR(true)` (lo hacen `GenericForm.jsx:336`
-  y `GenericInput.jsx:501`).
+  cambiar el display. Para forzar la emisión en el flujo lazy: `assignVSR(true)` (lo hacen `GenericForm`
+  y `GenericInput`).
 
 🔴 **Caso raro (2026-07-01): un cambio de FORMATO que CAPA el valor real.** Normalmente el formato NO toca el
 valor (formatear "1000" no cambia el número) → el VSR no necesita re-emitirse. PERO en Currency la **precisión
@@ -234,4 +234,4 @@ Shortcut in computed: `this.validateSelfValue` (cloneDeep for objects).
 - Reemplazo limpio del legacy `extra` (el valor que se pasaba por prop antes de formBus).
 - Caso real: `ItdCurrency.currencySource` lee `_currency` del form así.
 
-**Caveat (pendiente de diseño):** `getValue` resuelve sobre el formBus INMEDIATO. En forms anidados (docArray — ej. cuotas de una simulación colgando de formBus) un hijo puede necesitar un valor del parent/root → cadena `formBus → parentBus → rootBus` (o wrapper encadenado que pregunte en orden). Sin resolver — ver `claude-docs/TODOs/ideas/formbus-nested-chain.md`.
+**Caveat (pendiente de diseño):** `getValue` resuelve sobre el formBus INMEDIATO. En forms anidados (docArray — ej. cuotas de una simulación colgando de formBus) un hijo puede necesitar un valor del parent/root → cadena `formBus → parentBus → rootBus` (o wrapper encadenado que pregunte en orden). Sin resolver — ver el TODO «formbus-nested-chain».

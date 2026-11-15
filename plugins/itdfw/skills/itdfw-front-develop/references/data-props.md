@@ -34,13 +34,13 @@ Chain (si forceLazy es undefined): OR de `this.lazy` → `$attrs.lazy` (arrastre
 - `childrenLazy` es concepto del GF (el contenedor declara el lazy de sus HIJOS sin ser lazy él) →
   value-pipeline.md §NESTED-LAZY.
 
-## File Locations
+## Dónde vive cada pieza (por concepto)
 
-- Core components: `libs/itdfw-site-vue-core/src/components/`
-- Front components: `fronts/itdfw-site-base/src/components/`
-- Back type defaults: `back/itdfw/src/SITE/mongooseTypes/z99base.js`
-- ValidateSelf plugin: `libs/itdfw-site-vue-core/src/plugins/validateSelf.js`
-- GenericInput: `libs/itdfw-site-vue-core/src/lib/GenericInput.jsx`
+- Core components: los `components/` del core front
+- Front components: los `components/` de la librería de front
+- Back type defaults: el type `z99base` del back
+- ValidateSelf: el plugin `validateSelf` del core front
+- GenericInput: el `GenericInput` del core front
 
 ## localImport Cascade
 
