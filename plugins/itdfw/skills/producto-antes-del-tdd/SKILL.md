@@ -25,7 +25,7 @@ pintar lo que otro pensó, y lo que la competencia ya resolvió mejor se descubr
 Mixto (front de cliente y back office): es un solo TDD; pasa por este skill solo la parte que ve el cliente, y el límite
 lo marca el PMO al pedir el estudio.
 
-## Los dos análisis, que no son el mismo
+## Dos trabajos, dos dueños: el estudio del producto y el análisis comercial
 
 | | Producto de la competencia | Comercial |
 |---|---|---|
@@ -51,7 +51,7 @@ Antes de empezar se dice en una línea cuál de los dos casos es. Si no se sabe,
 | un site o un producto nuevo | completo, como sigue |
 | una pantalla nueva de cliente en algo que ya opera | corto, y siempre doble: cómo lo resuelven uno o dos competidores **y** cómo lo resuelve ya el FW con sus piezas genéricas. Va en la sección UI/UX del TDD, sin página aparte |
 
-🔴 **El análisis es doble en los dos casos: la competencia y lo que el FW ya da.** La primera alternativa es siempre la
+🔴 **El estudio de `designer` mira dos lados, en los dos casos: la competencia y lo que el FW ya da.** La primera alternativa es siempre la
 **barata**: el producto (o la pantalla) hecho con lo que el FW provee hoy, sin diseño propio. Las demás muestran el
 estudio extra y lo que cuesta sobre esa base. Así el dueño decide el costo **por etapas**: se parte operando con lo que
 el FW da mientras se diseña la versión de vitrina.
@@ -118,7 +118,9 @@ Al salir a vender (después del análisis): `small-business:grow-pipeline` para 
 | qué permite hoy la plataforma web, antes de prometer una capacidad | `modern-web-guidance:modern-web-guidance` |
 | la página para decidir | `artifact-design` |
 
-La entrega de cada uno termina con la lista de skills que cargó. Lo que sale de un skill externo es materia prima: los
+Los carga la sesión dueña del paso (`Comercial` o `designer`), no sus subagentes: a cada subagente de una rama le llega
+en el brief lo que necesita de ese skill, porque puede no tenerlo. La entrega de cada uno termina con la lista de skills
+que cargó. Lo que sale de un skill externo es materia prima: los
 datos de mercado llevan su fecha y su fuente, y nada de eso entra al TDD sin pasar por la elección del dueño.
 
 ## Lo que recibe el PMO, y lo que hace con eso
