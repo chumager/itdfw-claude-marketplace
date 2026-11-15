@@ -99,123 +99,22 @@ fieldName: {            // camelCase SIEMPRE; identificadores en inglés
 (type "Phone" → componente Phone; solo se declara para override), `options` deriva de `enum`,
 `label` deriva de `name`, validación/cast vienen del type (NO los dupliques en pre-save).
 
-**Familia `filterXXX` — overrides del campo SOLO en contexto filtro** (el FW construye el form de
-filtro derivándolo del de edición; estos atributos lo especializan sin tocar create/update):
+**Familia `filterXXX` — overrides del campo SOLO en contexto filtro**: `filterType`, `filterComponent`, `filterDefault` (valor o `(req)=>val`), `filterName`, `filterTag` y `betweenType` (con `filter:"between"`, el operador del rango). 🔴 Un `ref` en el filtro se expande al FORM del modelo referenciado (Embedded en un drawer) salvo **`onlyRef: true`**, que lo deja como select typeahead sobre `getRef`. 🔴 **La multiselección del filtro se DERIVA, no se declara** (referencias y arreglos llevan `multiple: true`); el único valor de `filter` que altera la forma del input es `"between"`. Opciones de schema, raras: `cacheFilter`, `tableFieldsFilter`. Tabla completa y casos: [references/field-filters.md](references/field-filters.md).
 
-| Atributo | Qué hace en el filtro |
-|---|---|
-| `filterType` | pisa el `type` del input (ej. un campo `text` → `"search"`) |
-| `filterComponent` | pisa el `component` (ej. un ref pesado → componente liviano) |
-| `filterDefault` | valor inicial del filtro (valor o función `(req)=>val`) |
-| `filterName` | pisa el `label` solo en el filtro |
-| `filterTag` | pisa el `tag` del input |
-| `betweenType` | con `filter:"between"`, el operador del rango (`"="`, etc.) |
-
-🔴 **Un `ref` en el filtro se expande al FORM del modelo referenciado (Embedded en un drawer) salvo `onlyRef: true`**,
-que lo deja como select typeahead sobre `getRef` (`FrontEnd.js`: `hasRef(input) && !input.onlyRef` → Embedded). Es lo
-que usa `creationUser` del plugin `Accounting`, y lo que un modelo declara cuando quiere filtrar por "quién" y no por
-los campos del otro modelo. (Gap #46, 21-sep-2026, `Sample.owner` del banco de smart-fetch.)
-
-🔴 **La multiselección del filtro se DERIVA, no se declara.** El FW pone `multiple: true` sobre el input
-del filtro cuando el campo lo justifica: referencias (`ref`/`myRef` → `ItdSelect` unificado) y arreglos
-(un arreglo viaja SIEMPRE con `multiple: true`). El único valor de `filter` que altera la forma del input
-es `"between"`.
-
-⟹ Si un campo necesita filtrarse por varios valores y no lo hace solo, el ajuste va por la familia
-`filterXXX` (abajo), que opera sobre el input.
-
-A nivel de **options del schema** (2 más, raras): `cacheFilter:true` cachea el form de filtro
-(modelos con filtro pesado y estable); `tableFieldsFilter: (req, inputs)=>inputs` post-filtra los
-campos de la grilla por request. Todo esto lo consume el static `formFilter`.
 
 ## 3b. 🔴🔴 DOS ejes ORTOGONALES que se cruzan en el docArray (y por eso se confunden)
-
-Casi todo el mundo los mezcla porque el caso donde más aparecen es el mismo. **Pero cada uno rompe por su
-cuenta, con síntomas distintos**:
 
 | Eje | La pregunta | ✅ | ❌ |
 |---|---|---|---|
 | **1. Cómo se CONSTRUYE el objeto** | ¿pasó por la fábrica del FW? | `new db.Schema({...})` | literal `{a: …, b: …}` |
 | **2. Dónde va el ARREGLO** | ¿en el type o en el campo? | `{type: [X], ...options}` | `campo: [ … ]` |
 
-**La prueba de que son independientes** (el caso que engaña): pones el arreglo donde corresponde… y
-explota igual, porque el elemento sigue siendo literal.
+- 🔴🔴 **Eje 1 — TODO tipo objeto se construye con `db.Schema`, sin excepción** (embedded y docArray por igual): `const Line = new db.Schema({...}, {_id: false})` y `{type: Line}` / `{type: [Line]}`. Un literal (`{type: [{a: String}]}`) **REVIENTA EL BOOT COMPLETO**: mongoose lo acepta y el hijo nace crudo, sin las extensiones del FW, y cae el servicio, no solo el modelo. 🔴 **`eachVirtualPath is not a function` = alguien declaró un sub-schema con literal**: busca el docArray/embedded más reciente (revisa los plugins primero). Un plugin que agrega campos anidados necesita `db`: decláralo como función, `db => ({name, plugin(schema){…}})`.
+- 🔴🔴 **Eje 2 — el ARREGLO va en el `type`, NUNCA en el campo**: `files: {type: ["File"], name: "Files", cols: 3}` ✅; `files: [{type: "File", name: "Files"}]` ❌ (tus options se vuelven PATHS y pierdes label/filtro **en silencio**; con un type custom revienta el boot). El único atajo inocuo es `campo: [SubSchema]` con un `db.Schema` y sin ninguna option: no lo uses de patrón.
+- Son **independientes**: `{type: [{a, b}]}` tiene el arreglo bien puesto y explota igual por el eje 1.
 
-```js
-files: {type: [{a: String, b: String}], name: "Files"}   // ❌ eje 2 BIEN, eje 1 MAL → BOOM
-```
+El caso real de 2026-08-14, el ejemplo completo y la causa raíz (#98): [references/object-types-docarray.md](references/object-types-docarray.md).
 
----
-
-### Eje 1 — TODO tipo objeto se construye con `db.Schema`. Sin excepción.
-
-🔴 **Esto NO es cosa de docArrays**: aplica a **cualquier** campo de tipo objeto. Un **embedded simple**
-declarado como literal cae exactamente igual — para el rastreador del FW, embedded y docArray son lo mismo:
-una entrada en `childSchemas` con su `.schema`.
-
-```js
-const Line = new db.Schema({channel: {type: String}, externalId: {type: String}}, {_id: false});
-
-// ✅
-schema.add({detail: {type: Line, name: "Detail"}});          // embedded
-schema.add({lines:  {type: [Line], name: "Lines"}});         // docArray
-
-// ❌ REVIENTA EL BOOT — las dos, por la misma razón
-schema.add({detail: {type: {a: String, b: String}, name: "Detail"}});
-schema.add({lines:  {type: [{a: String, b: String}], name: "Lines"}});
-```
-
-**Mongoose acepta el literal sin chistar** —crea un schema implícito— y por eso el error aparece lejos y
-tarde. Pero ese hijo **NO pasa por `db.Schema`**, así que nace **crudo**: sin las extensiones que el FW
-instala en el prototipo (`eachVirtualPath`, entre otras). Cualquier plugin del framework que recorra
-`childSchemas` se lo encuentra y explota.
-
-🔴 **El costo real (caso 2026-08-14, media hora de caza a ciegas)**: un plugin declaró un docArray con
-literal sobre `User`. Resultado:
-
-- **Cayó el boot ENTERO** — no el plugin, no el modelo: el servicio.
-- Se llevó puestos a **User, Member y DelegatedUser** (todo lo que clona User).
-- El error —`currentSchema.eachVirtualPath is not a function` en `02hasFiles`— **no nombra ni el plugin,
-  ni el modelo, ni el campo culpable**. Apunta a un archivo del core que no tiene nada que ver.
-- Al caer `User`, cae la autenticación → **todas las puntas responden 500**, y el síntoma parece de red o
-  de sesión, no de un schema.
-
-⟹ Regla de lectura: **`eachVirtualPath is not a function` = alguien declaró un sub-schema con literal.**
-Busca el docArray/embedded más reciente que se haya agregado (revisa los plugins primero: un
-`schema.add` desde un plugin lo inyecta en modelos que ni sabes que lo tienen).
-
-Corolario para plugins: si tu plugin agrega campos anidados **necesita `db`** para construirlos. Un plugin
-declarado como objeto plano no lo tiene → decláralo como función (`db => ({name, plugin(schema){…}})`).
-
-### Eje 2 — el ARREGLO va en el `type`, NUNCA en el campo
-
-```js
-// ✅ el arreglo es del TYPE — el campo sigue siendo un descriptor con sus options
-files: {type: ["File"], name: "Files", cols: 3}
-lines: {type: [Line], name: "Lines"}
-
-// ❌ el arreglo es del CAMPO — mongoose lee el objeto como DEFINICIÓN DE SUB-SCHEMA
-files: [{type: "File", name: "Files", cols: 3}]
-```
-
-**Dos daños distintos, según qué type lleve adentro:**
-
-1. **Tus options se vuelven PATHS.** Mongoose entiende que el objeto describe **los campos del
-   subdocumento**, así que `name`, `cols`, `filter`, `required`… dejan de ser options: terminas con un
-   docArray cuyos elementos tienen un campo llamado `name` y otro llamado `cols`, y tu campo pierde label,
-   filtro y ancho **en silencio**.
-2. **Con un type CUSTOM, revienta el boot** (hallazgo #98, causa raíz verificada): mongoose resuelve el
-   elemento por **dos fuentes de Types distintas** según la forma. `{type:[X]}` lee de
-   `db.Schema.Types` —la copia de instancia donde el FW registra los custom— y funciona; `[{type:X}]` cae
-   en `SchemaArray`, que lee del **módulo core estático**, donde los custom NO están →
-   `Cannot set properties of undefined (setting '_arrayPath')`. Con types built-in (String/Number) las dos
-   formas andan, y por eso el error solo aparece cuando alguien usa un type propio.
-
-⟹ La forma canónica es **siempre** `{type: <lo que sea>, ...options}`. El arreglo es parte del TYPE.
-
-Único caso donde el atajo `campo: [SubSchema]` es inocuo: cuando `SubSchema` **ya es un `db.Schema`** y el
-campo **no lleva ninguna option**. Funciona, pero no lo uses como patrón — el día que alguien le agregue un
-`name` se convierte en el caso malo sin que nada avise.
 
 ## 4. OPTIONS — el segundo argumento de `new db.Schema(campos, options)`
 
@@ -270,59 +169,12 @@ await Model.updateOne({_id}, {$push: {hijos: {...}}});
 await Model.findOneAndUpdate(query, {$setOnInsert: {...}}, {upsert: true});
 ```
 
-**El FW no hace magia: usa las herramientas de los módulos que usa.** Todo lo suyo cuelga de **plugins
-de mongoose**, y esos plugins enganchan los **hooks de documento** (`pre`/`post` de `validate` y `save`).
-Las operaciones de query (`updateOne`, `updateMany`, `findOneAndUpdate`, `bulkWrite`, `insertMany`)
-**no pasan por los hooks de documento** — es una decisión de mongoose y el FW no puede compensarla.
+**El FW no hace magia: sus plugins enganchan los hooks de documento** (`pre`/`post` de `validate` y `save`). Las operaciones de query (`updateOne`, `updateMany`, `findOneAndUpdate`, `bulkWrite`, `insertMany`) **no pasan por ellos**: escribir así se come bitácora, `__history`, `updateUser`/`updateDate`, multitenant, cast de types custom, validación y cualquier plugin futuro, **y no avisa**.
 
-⟹ Escribir por esa vía **se come el flujo**: bitácora, `__history`, `updateUser`/`updateDate`,
-multitenant, cast de types custom, validación, y cualquier plugin que un tercero enganche mañana.
-**Y no avisa**: la operación responde OK y el dato queda escrito a medias respecto del contrato.
+🔴 **La regla NO es "no se puede": si no usas `save()`, eres responsable de lo que haces.** Saltárselo es legítimo y a veces obligatorio (un plugin que escribe con `save()` se dispara a sí mismo; `previousField` usa `updateMany` dentro de un `Mutex.lock`); entonces son tuyos los hooks que no corrieron, la coordinación entre procesos y la consistencia. Lo que NO vale es saltárselo **sin saberlo**.
 
-🔴 **Verificado empíricamente (2026-08-15, sonda contra el FW real)**: `Model.updateOne(..., {$push})`
-sobre un docArray → **CERO hooks disparados**, ni del root ni del subdocumento.
+🔴 **Efecto colateral**: con `save()`, los `pre`/`post` del **sub-schema** de un docArray corren sobre **todos los subdocumentos**, también cuando solo cambió un campo del root. **No cuelgues de un `post("save")` de sub-schema una acción con efecto externo** (evento, correo, API): va donde se sabe QUÉ cambió (la punta o el static que hizo el cambio). Las mediciones, el orden de los hooks y la sonda: [references/save-flow.md](references/save-flow.md).
 
-### 🔴 La regla NO es "no se puede" — es "si no usas `save()`, eres responsable de lo que haces"
-
-Saltarse el flujo es **legítimo y a veces obligatorio**. El propio FW lo hace: un plugin que escribe con
-`save()` se dispara a sí mismo → **recursión infinita**. Por eso `previousField` (denormalización de
-campos hacia los hijos) escribe así:
-
-```js
-await Model.model("Mutex").lock({          // ⟵ coordina entre procesos
-  async fn() {
-    await Model.updateMany(query, update, {strict: false, updatePipeline: true});
-  }
-});
-```
-
-Se salta el flujo **porque debe** (masivo, N documentos, y con `save()` se auto-invocaría), y a cambio
-**asume los recaudos**: mutex, chequeo de vista, solo el primer proceso. Ese es el trato completo.
-
-⟹ El criterio: **¿quiero el flujo del FW?** → `save()`. **¿Necesito saltármelo?** → adelante, pero
-entonces son tuyos los hooks que no corrieron, la coordinación entre procesos y la consistencia. Lo que
-NO vale es saltárselo **sin saber que lo hiciste** — que es el caso de "usé `updateOne` porque era más
-directo".
-
-### Efecto colateral que sí hay que conocer: los hooks del docArray corren para TODOS
-
-Con `save()`, los `pre`/`post` del **sub-schema** de un docArray corren sobre **todos los subdocumentos**,
-no solo el que cambió — y también cuando solo se modificó un campo del root. Medido:
-
-| Operación | Qué dispara |
-|---|---|
-| crear con 3 subdocs | 3 `pre` + 3 `post` del sub, 1 `post` del root |
-| agregar **1** subdoc a 3 existentes | **4** `pre` + **4** `post` del sub |
-| modificar SOLO un campo del root | **4** `pre` + **4** `post` del sub (¡sin tocar el array!) |
-| `updateOne` con `$push` | **nada** |
-
-Además: el `post` del **root** corre **antes** que los `post` de los subdocumentos, el orden entre
-subdocumentos **no es determinista**, y `modifiedPaths()` discrimina cuál cambió **solo en el `pre`** (en
-el `post` ya viene vacío para todos).
-
-⟹ **No cuelgues de un `post("save")` de sub-schema una acción con efecto externo** (emitir un evento,
-mandar un correo, llamar una API): se dispara para todos los subdocumentos y hasta cuando nadie los tocó.
-Esa acción va donde se sabe QUÉ cambió — la punta o el static que hizo el cambio.
 
 ## 4d. 🔴 Rechazos de regla desde el modelo: `HTTPError`, no `Error` (gap #16)
 
@@ -378,44 +230,13 @@ Regla: **NO declarar "listo" sin verificar vía MCP.**
 
 ### 🔴 Un modelo recién creado NO es accesible hasta ASIGNARLO A UN PERFIL
 
-Que el modelo cargue **no** lo hace visible ni llamable. Recién creado no es accesible **para nadie**:
-hay que **asignarlo a un perfil** (`Profile.functions`) con los verbos que corresponda. Un **403** al
-llamar sus puntas justo después de crearlo (un **401** si quien llama no está autenticado) es el sistema de perfiles funcionando, **no un error** —
-y no hay nada que arreglar en el modelo.
-
-⟹ Antes de dudar del código: **¿está asignado a un perfil?** Es el paso que más se olvida, porque el
-modelo compila, arranca y hasta crea su colección en la BD sin él.
-
-**Cómo se asigna** — dos vías:
-
-| Vía | Cómo | Qué tener presente |
-|---|---|---|
-| Formulario del perfil | En `Profile`, campo `functions`: se arrastra desde "Available Functions" a "Assigned Functions" y se eligen los verbos | La lista sale de `Profile.allFuncs`: toda la API registrada, salvo las puntas `noProfile` |
-| MCP `assignFunction` | `{profile, path, defaultMethods?}`: `profile` es el nombre o el `_id`; `path` es el que entrega `listAPIs` (`AAA/<Modelo>`) | Idempotente: si el perfil ya la tiene responde `exists`. Responde 404 si el perfil no existe o si el `path` no está en `allFuncs` (el back no cargó ese código, o es una punta `noProfile`). Sin `defaultMethods` copia los verbos de la función. La entrada se copia de `allFuncs`, nunca se arma a mano |
-
-El permiso se lee del perfil en la BD en cada petición, así que no hay que reiniciar.
-
-🔴 **Lo que NO existe:** ningún mecanismo agrega funciones a un perfil que ya existe, ni al instalar un plugin
-ni cuando aparece un modelo nuevo. Un plugin solo puede **sembrar perfiles propios nuevos**, y lo hace una vez
-(el plugin `restaurant` siembra `Owner` y no lo toca si ya existe). Si un plugin gana un modelo después, los
-perfiles ya sembrados no lo reciben: se asigna con alguna de las dos vías de arriba.
+Que el modelo cargue **no** lo hace visible ni llamable: un **403** al llamar sus puntas justo después de crearlo (un **401** sin identidad) es el sistema de perfiles funcionando, **no un error**. Antes de dudar del código: **¿está asignado a un perfil?** (`Profile.functions`, con los verbos que corresponda: el formulario del perfil o el MCP `assignFunction {profile, path, defaultMethods?}`, idempotente). Ningún mecanismo agrega funciones a un perfil que ya existe; un plugin solo siembra perfiles propios nuevos.
 
 ### 🔴 La ruta de las puntas (y por qué el 404 miente)
 
-```
-APP/AAA/<Modelo>.<func>      ✅   ej: APP/AAA/Vehicle.formCreate
-APP/AAA/<Modelo>.<func>.json ❌   → 404 "endpoint not found"
-```
+`APP/AAA/<Modelo>.<func>` ✅ (ej. `APP/AAA/Vehicle.formCreate`) · `APP/AAA/<Modelo>.<func>.json` ❌ → 404 `endpoint not found`: la FUNCIÓN ocupa el lugar de la extensión. **404 = la punta no está registrada · 403 = existe y tu perfil no la tiene · 401 = no hay identidad.** Si el modelo aparece en `listModels`, el modelo NO es el problema.
 
-**La FUNCIÓN ocupa el lugar de la extensión**, no va después. Con `.json` al final recibes
-**404 `endpoint not found`**, que es **indistinguible de "el modelo no existe"** → invita a parchar un
-modelo sano. Quítale el `.json` y el mismo llamado responde **403** (o **401** sin identidad), o el dato.
-
-> Regla de lectura: **404 = la punta no está registrada** · **403 = existe y estás autenticado, pero tu perfil no la tiene** · **401 = existe y no hay identidad**.
-> Si el modelo aparece en `listModels`, el modelo NO es el problema — revisa la URL y el perfil antes
-> de tocar código.
-
-(Mismo comportamiento y misma trampa que en los modelos definidos en la BD → `itdfw-db-models`.)
+Las dos vías de asignación con su detalle y la trampa del 404: [references/after-creating.md](references/after-creating.md).
 
 ## Red flags — si te ves haciendo esto, PARA
 
@@ -442,6 +263,10 @@ modelo sano. Quítale el `.json` y el mismo llamado responde **403** (o **401** 
 
 | Reference | Leer cuando... |
 |---|---|
+| [field-filters.md](references/field-filters.md) | tocas el filtro de un campo: `filterXXX`, `onlyRef`, multiselección |
+| [object-types-docarray.md](references/object-types-docarray.md) | declaras un embedded/docArray, o el boot cae con `eachVirtualPath is not a function` |
+| [save-flow.md](references/save-flow.md) | escribes sin `save()` o cuelgas algo de un hook de sub-schema: mediciones y orden de hooks |
+| [after-creating.md](references/after-creating.md) | el modelo nuevo da 403/404: asignarlo a un perfil y la ruta de las puntas |
 | [authenticatable.md](references/authenticatable.md) | el modelo se LOGUEA (clon de User, registrable, perfil forzado) |
 | [special-refs.md](references/special-refs.md) | el field referencia algo no-trivial: `refPath` (modelo polimórfico), `myRef`+`addGetRef` (ref por función — catálogo custom, 2º param obligatorio por ofuscación), descubrimiento vía tableFields, errores → 500 |
 | [options-catalog.md](references/options-catalog.md) | el inventario de OPTIONS por familias (estrictas vs ofertas de plugins, transitivos, virtuales de fila) |
@@ -460,3 +285,4 @@ No declares "listo"/"funciona" sin pasar por la **puerta de salida** del FW: tes
 si tocaste algo con retención (EE/hooks/globals/cache → `WeakRef`+gc+canario), completitud (*¿qué más toqué que
 no probé?*), logs con niveles (front `$log`/`$logDebug`, back `Log.XXX`+`logLevel`), y validación **externa** (el
 "Done" no se da sobre tu propio testing). Es un **servicio**, no un browser → cero memleaks. Skill **`itdfw-completeness`**.
+
