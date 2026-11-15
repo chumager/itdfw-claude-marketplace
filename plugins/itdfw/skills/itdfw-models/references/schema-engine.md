@@ -101,8 +101,8 @@ FWPlugin) puede aportar al pool desde su `post`/`ITDExecPost`. Dos flujos **dist
 pool.X = valor | fn;        // p.ej. pool.Config = ...,  pool.broadcast = hub.broadcast.bind(hub)
 ```
 
-**(b) Compartir al `req` — `pool.shareData`**: es un **ARRAY de definiciones** (AAA.js:36). Un
-middleware (`shareData(req,res,next)`, AAA.js:744, enchufado en server.js) lo recorre en CADA request y
+**(b) Compartir al `req` — `pool.shareData`**: es un **ARRAY de definiciones**. Un
+middleware (`shareData(req,res,next)`, enchufado en el server) lo recorre en CADA request y
 puebla `req`. Tres formas de entrada:
 
 | Entrada en `pool.shareData` | Efecto por request |

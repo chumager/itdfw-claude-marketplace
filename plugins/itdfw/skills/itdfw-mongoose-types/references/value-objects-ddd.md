@@ -27,8 +27,7 @@ capas.
 🔴 **`toBSON` también decide el DIRTY.** Un VO es opaco para el deepEqual de mongoose, así que el caster del
 FW marca `modified` por su cuenta — pero SOLO si `toBSON()` del valor casteado difiere del de `prev` (el 4°
 arg del caster). Re-setear el mismo valor (lo que hace `setData` en cada PUT) **no ensucia**. Comparación
-con `_.isEqualWith` + customizer por `_bsontype`, nunca `JSON.stringify` (orden de keys). Detalle:
-`claude-docs/architecture/back/types/custom-type-dirty.md`. El front (mismo VO vía `parse`/`serialize`) es **aprovechamiento transversal opcional**, NO la
+con `_.isEqualWith` + customizer por `_bsontype`, nunca `JSON.stringify` (orden de keys). Detalle: la doc de arquitectura «custom-type-dirty». El front (mismo VO vía `parse`/`serialize`) es **aprovechamiento transversal opcional**, NO la
 razón de ser: el VO se usa puro headless y ahí el back manda.
 
 ## 🔴 ¿Dónde vive la clase? — el cruce (CONDICIONAL) con FWP y front
@@ -130,7 +129,7 @@ por `setValue`, que guarda el valor como TRÁNSITO en vez de reventar.
 3. **`new VO(...args)`** — el constructor ES el cast, y recibe **todos** los args del caster.
 
 🔴 Si estás en (3), el constructor recibe la firma de mongoose. **NO declares cuántos son ni qué
-significan**: hoy son cinco (`value, doc, init, priorVal, options` — `lib/schemaType.js:1395` en 9.9.2) y
+significan**: hoy son cinco (`value, doc, init, priorVal, options` — `lib/schemaType.js` de mongoose, en 9.9.2) y
 el 5º es **API privada de mongoose** (`{_skipMarkModified}`, que usa al aplicar un `default`) — **no** son
 las options del campo, esas se leen de `this.options`. Tomá por posición solo lo que ocupes.
 

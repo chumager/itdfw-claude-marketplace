@@ -349,7 +349,7 @@ este límite; desde 7.3.6 el nombre del archivo subido llega en UTF-8 (`defParam
 
 | Llave | Sin ella | Qué poner en un deploy nuevo |
 |---|---|---|
-| `masterEmail` (con `from`) | muere antes de escuchar: `Cannot read properties of undefined (reading 'from')` — el appender de log por email se arma al inicio (`server.js:162`) | si no manda correo, un transporte inerte basta: `{host: localhost, port: 25, secure: false, from: "…"}`. **No copies credenciales SES a un deploy que no las necesita** |
+| `masterEmail` (con `from`) | muere antes de escuchar: `Cannot read properties of undefined (reading 'from')` — el appender de log por email se arma al inicio | si no manda correo, un transporte inerte basta: `{host: localhost, port: 25, secure: false, from: "…"}`. **No copies credenciales SES a un deploy que no las necesita** |
 | `instanceId` | arranca pero responde **423** `MACHINE_LOCK_VIOLATION` a todo (`No machine fingerprint configured`) | es el fingerprint **de la máquina**: en la misma máquina se reusa el de otro deploy; en una nueva se genera con el flujo de licencia |
 
 Un deploy sin `html/index.html` arranca igual en modo **HEADLESS** (solo API) — lo avisa con un WARN, no es error.

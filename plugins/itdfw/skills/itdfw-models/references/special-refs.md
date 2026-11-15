@@ -93,7 +93,7 @@ export default {
 
 Por dentro: `AAA/AAA.js` declara `pool.refs = {}` y lo comparte en `shareData` (`req.refs`); `#expandPlugins`
 reparte la key `refs`; `getRef` y `getSimpleName` miran `req.refs[ref]` antes que el modelo. Ejecutor:
-`tests/back/namedRef.test.js` sobre el FWPlugin onDev `TestRefs` y el campo `TestIcon.color`.
+la prueba de back `namedRef` sobre el FWPlugin onDev `TestRefs` y el campo `TestIcon.color`.
 
 ## Verificación vía MCP
 

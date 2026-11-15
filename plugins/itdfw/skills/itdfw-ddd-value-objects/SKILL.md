@@ -242,7 +242,7 @@ y "¿pasa el conformance?" = la puerta de salida objetiva (itdfw-completeness).
    validate transversal de esencia, auto-dirty. Sin anillos 2/3.
 2. **Currency** — el completo: + externalidades por wrapper, pub/sub, formatters, hooks GI.
 3. Rama futura: **distribución de clases de types al front** (para types core/DEFAULT sin FWP) →
-   `claude-docs/TODOs/features/backend/type-classes-distribution.md`.
+   (ver el TODO «type-classes-distribution»).
 
 ## Anti-patrones
 

@@ -14,7 +14,7 @@ Las options son EL canal de configuración del modelo, y hay dos clases:
 ## 1. Identidad (MUST — va SÍ O SÍ en todo modelo)
 
 🔴 **Lo que VE el usuario vs lo que usa el FW**: el AAA transfiere del schema a la RUTA del modelo
-(AAA.js:432) exactamente `[description, name, title, inNav, hidden, defaultMethods, isAnonymous, auth,
+exactamente `[description, name, title, inNav, hidden, defaultMethods, isAnonymous, auth,
 hasFiles]` → **`name`, `title` y `description` son lo que el MENÚ y el administrador muestran**. Sin
 `title`/`description` el operador ve una entrada muda: no sabe qué modelo es ni para qué sirve
 (jcmunoz 2026-07-27). `modelName` NO viaja: es identidad INTERNA (colección, selectores de modelo) y

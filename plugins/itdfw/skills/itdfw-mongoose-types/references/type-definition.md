@@ -60,7 +60,7 @@ El cast de un SchemaType recibe **`cast(value, doc, init, prev, options)`** y **
 SchemaType**. 🔴 Declara SOLO los parámetros que uses: mongoose agrega args con el tiempo y el 5º
 (`options`) es **API privada suya** (hoy `{_skipMarkModified}`, que usa al aplicar un `default`) — NO son
 las options del campo, esas se leen de `this.options`. Verificado en el código de mongoose 9.9.2
-(`lib/schemaType.js:1395`), no en la doc pública, que declara menos args de los que pasa. ⟹ la config del campo se lee de **`this.options`** (`this.options.measures`, `this.options.multiple`, etc.), NO de `this.schema.path(this.path).options` (frágil: `this.path` viene `undefined` durante `init`/hidratación → crash silencioso tipo `Cannot use 'in' operator … in undefined`).
+(`lib/schemaType.js` de mongoose), no en la doc pública, que declara menos args de los que pasa. ⟹ la config del campo se lee de **`this.options`** (`this.options.measures`, `this.options.multiple`, etc.), NO de `this.schema.path(this.path).options` (frágil: `this.path` viene `undefined` durante `init`/hidratación → crash silencioso tipo `Cannot use 'in' operator … in undefined`).
 
 - `value` = el valor a castear · `doc` = el documento · `init` = `true` si es hidratación desde BD.
 - Patrón DDD (valor con lógica): cast THIN **genérico** que retorna la clase: `cast(...args){ const [v]=args; if(v instanceof RegExp) return v; if(!v) return null; if(v instanceof VO) return v; return new VO(v, this.options.measures, …); }`. **Declará `cast(...args)`** (forward nativo, inmune a versionado de mongoose), no posicional. El detalle completo del VO (parse, toBSON/toJSON, niveles, pub/sub, atomicidad) → [value-objects-ddd.md](value-objects-ddd.md).

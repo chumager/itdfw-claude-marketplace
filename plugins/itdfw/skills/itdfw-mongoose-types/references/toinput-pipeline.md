@@ -163,7 +163,7 @@ como último parámetro opcional: `pickGeneric(filter, req, schema)`, `pickInput
 `pickCreate/Update/Register/Profile/View/Detail(req, schema)`, `pickData(ctx, req, schema)`. Sin `schema` se usa
 `this.schema` (el modelo). Así lo usan `setData` anidado (sub-schema del docArray) y `Profile.allFuncs` (`Func`).
 
-Por qué: `req.isAuth`, `req.model`, `getUser` son getters **no enumerables** (`server.js:1402`); mutar `req.schema`
+Por qué: `req.isAuth`, `req.model`, `getUser` son getters **no enumerables**; mutar `req.schema`
 hace carrera en la recursión paralela de docArrays, y copiarlo con `{...req}` pierde los getters → dentro del picker
 todo `hidden`/`readonly`/`disabled` FUNCIÓN ve un anónimo y el campo se DESCARTA al grabar, sin error. `req` es
 identidad + contexto: se pasa tal cual; el schema va aparte.

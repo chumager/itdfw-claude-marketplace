@@ -48,4 +48,4 @@ Two layers wrapping before the same name keep the cascade order (each `before` l
 The pack lives only inside the core module and is handed to each `init.js` (`fn(pack)`); it is not global. Nothing is
 locked after `applyPack`: keeping a reference and changing it later is out of the architecture.
 
-Contract and tests: `libs/itdfw-site-vue-core/TDD-pack.md`, `tests/pack.test.js`.
+Contract and tests: the core front's pack TDD and its pack test.

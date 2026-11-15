@@ -3,7 +3,7 @@
 El caso: un modelo que ya corre sobre ITDFW cambia el nombre de un campo. Los documentos en Mongo
 tienen el nombre viejo; el schema declara el nuevo. **Sin migración, esos datos quedan huérfanos.**
 
-`back/itdfw/src/SITE/mongoosePlugins/previousField.js`
+Es un mongoose plugin del framework: `previousField`.
 
 ## Cómo se usa
 

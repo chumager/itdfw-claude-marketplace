@@ -28,7 +28,7 @@ Un custom type NO es la respuesta por defecto — es la respuesta para UN caso e
 ## File Structure
 
 ```
-back/itdfw/src/SITE/mongooseTypes/
+mongooseTypes/      (carpeta de la cascada, en cualquier capa; los nombres son ilustrativos)
   z99base.js     — Configures ALL built-in types + defines Email, Url, File, etc.
   TimeFrame.js   — Custom: {measure, duration}
   Color.js       — Custom: hex color

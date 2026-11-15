@@ -37,7 +37,7 @@ posterior redefina la misma `name` (por defecto NO: redefinir tira `redefining X
 
 ### 🔴 Desde DÓNDE se llama, y por qué no hay que esperar nada
 
-`setConfigDefinition` vive en la **capa db** del plugin `config` (`plugins/config/mongooseDB/config.js`).
+`setConfigDefinition` vive en la **capa db** del plugin `config`.
 Las capas cargan en orden fijo — `db → types → plugins → schemas → APIs` — así que **desde un Schema o
 desde el `init` de una punta ya existe: se llama directo**, como hace el modelo de un deploy que lo usa.
 
@@ -52,7 +52,7 @@ arregló; la espera es del mundo viejo. Y si el plugin `config` no está instala
 no existe → revienta en el boot con error claro, que es mejor que un `waitForKey` colgado en silencio.
 
 Desde un `init` de punta (corre al inicio de `process()`, con `db` pelado): primero `await Schema.schemasLoaded`,
-después `db.setConfigDefinition(...)` y `await db.getConfig(name)`. Caso real: `plugins/telegram/APP/telegram.js`.
+después `db.setConfigDefinition(...)` y `await db.getConfig(name)`. Caso real: el plugin `telegram`.
 
 ## 2. CREAR el valor — un documento del modelo `Config`
 

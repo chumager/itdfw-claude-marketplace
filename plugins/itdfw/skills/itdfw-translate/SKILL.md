@@ -6,8 +6,7 @@ description: Use when a text of an ITDFW site has to be translatable or redefina
 # ITDFW Translate — texts belong to the site owner
 
 The developer writes the first version of every visible text; the owner renames it in place. The core ships the
-gates (`t`, `rt`, `ItdT`) as mirrors; the plugin `@chumager/itdfw-plugin-translate` makes them live. Contract:
-`plugins/translate/TDD.md`. Front detail: `itdfw-front-develop/references/translation-front.md`.
+gates (`t`, `rt`, `ItdT`) as mirrors; the plugin `@chumager/itdfw-plugin-translate` makes them live. Contract: the TDD of the `translate` plugin. Front detail: `itdfw-front-develop/references/translation-front.md`.
 
 ## 1. Enable
 
@@ -92,13 +91,13 @@ in the console like any refused verb. `User.canTranslate` no longer exists.
 
 ## 6. Test it
 
-- Specs live in `plugins/translate/test/e2e`, own `playwright.config.js` (one worker, `channel: "chrome"`,
+- Specs live in the plugin's `test/e2e` folder, own `playwright.config.js` (one worker, `channel: "chrome"`,
   projects `setup` → `anonymous` / `authenticated`; login once via `auth.setup.js`, session by `storageState`).
 - The pencil is the node's **sibling**: `#id + [data-test='itd-t-edit']`. Form inputs carry `data-test` on wrapper
   AND control: select with the tag (`input[data-test=…]`).
 - Console-clean assertions use `isNoise` from `lab.js`: it excludes only the check's 40x.
 - A tab landing straight on a route does not get live redefinitions: `boot(page)` starts the app at `/`.
-- Back: `tests/back/translatePut.test.js` (PUT, check, 401/403). The bootstrap key (catalogues, never redefines):
+- Back: the core's `translatePut` test (PUT, check, 401/403). The bootstrap key (catalogues, never redefines):
   e2e `anonymous-catalog`.
 
 ## Red flags
@@ -112,7 +111,7 @@ in the console like any refused verb. `User.canTranslate` no longer exists.
 
 ## References
 
-- `plugins/translate/TDD.md` — the contract (models, endpoints, `ItdT` tree, editor, coordinate norm, test rows)
-- `plugins/translate/TDD-bitacora.md` — why each decision (locale in QS, one coordinate, redefine endpoint, Vary)
+- the plugin's TDD — the contract (models, endpoints, `ItdT` tree, editor, coordinate norm, test rows)
+- the plugin's bitácora — why each decision (locale in QS, one coordinate, redefine endpoint, Vary)
 - `itdfw-front-develop/references/translation-front.md` — front detail and how specs reach the pieces
-- `plugins/translate/README.md` — the package face
+- the plugin's README — the package face

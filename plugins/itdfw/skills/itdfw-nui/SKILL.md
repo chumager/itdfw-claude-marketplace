@@ -31,7 +31,7 @@ export default {
 };
 ```
 
-El loader (`fronts/itdfw-naiveui/src/init.js`) convierte cada nombre a kebab y lo registra global
+El loader de NUI (su `init`) convierte cada nombre a kebab y lo registra global
 con **import dinámico**:
 
 ```js
@@ -56,7 +56,7 @@ lo primero que se revisa es si su nombre está en el `$NUI` de **ese** component
 
 ## 2 · `src/NUI/` es una carpeta GENERADA — jamás se escribe a mano
 
-`fronts/itdfw-naiveui/NUIBuilder.js`:
+El `NUIBuilder` de NUI:
 
 ```js
 const dir = "./src/NUI/";
@@ -73,7 +73,7 @@ tú: son composables, no componentes, y el builder los filtra por diseño.
 
 ## 3 · El tema viene de la BASE DE DATOS — por eso el color no se toca
 
-El front NUI es un FWPlugin (`fronts/itdfw-naiveui/index.js`) que trae el tema consigo; absorbió al viejo
+El front NUI es un FWPlugin que trae el tema consigo; absorbió al viejo
 `plugins/nui-theme`. Un site que tiene NUI tiene el tema, sin declarar nada más:
 
 | Pieza | Qué hace |
@@ -156,7 +156,7 @@ pack.push([function myNavItem() {
 **Bloques de la vista (sobre y bajo la grilla):** mismo patrón para la vista de un modelo, fuera del layout de la
 grilla. `this.store.commit("app/setViewBlock", {key, component, position: "above" | "below", props?})`, con
 `removeViewBlock(key)`. La vista NUI pinta cada bloque con sus `props` y el `filter` vigente de la grilla. No se junta
-con `setNavItem`: cambian por razones distintas. Primer consumidor: la fila de KPI (`plugins/kpi/vue/init.js`).
+con `setNavItem`: cambian por razones distintas. Primer consumidor: la fila de KPI (el plugin `kpi`).
 
 Cada sink es un componente (`ItdNav`, `ItdSide`, `ItdDrawer`) que `App` pinta con su nombre por prop
 (`<ItdNav sink="nav">`) cuando el sink existe, y que hace **`provide("sink")`**: un componente a cualquier
@@ -197,7 +197,7 @@ Los componentes de la base (`ItdNavHamburger`, `ItdNavLogo`, `ItdNavRegister`, `
 nadie enchufó `options` ni `ref` antes; un plugin o un site enchufa lo suyo con `commit("app/setMenu", {ref})` o
 `{options: [{value, text, description, icon}]}` desde su `init.js`, crudo, y si sus opciones se traducen declara con qué
 coordenadas (`optionsTranslation`; las de una interfaz: `{context: "Interface", text: "name-{{value}}", description:
-"description-{{value}}"}`, como hace `plugins/typesafe-palette`). Tiene una sola presentación: otra (un ícono que
+"description-{{value}}"}`, como hace el plugin `typesafe-palette`). Tiene una sola presentación: otra (un ícono que
 abre un modal, un atajo de teclado) es un componente propio que se pone en el ítem `menu`.
 
 **Una opción con descripción** (todo `ItdSelectNUI`, no solo el menú): la lista desplegable mide lo mismo que el
@@ -208,7 +208,7 @@ una descripción larga la dejaría ultra ancha y se perdería la elipsis (jcmuno
 🔴 Los textos propios de estos componentes se declaran con `t()` en `created`: un `t()` dentro del render declara una
 Query por render y smart-fetch lo corta con error.
 
-Reglas que el contrato blinda (`fronts/itdfw-naiveui/TDD-nav-items.md`, enmienda 4; `TDD-menu.md`):
+Reglas que el contrato blinda (el TDD de nav-items de NUI, enmienda 4, y el de menu):
 - El store es reactivo: una mutación o un cambio de ancho repinta, sin recargar.
 - `when` que revienta no tumba la barra: el ítem se omite y se loguea (`onDev`).
 - Los slots `preMenu/postMenu` (alrededor de `first`) y `preRight/postRight` (alrededor de `last`) siguen.
@@ -224,7 +224,7 @@ Reglas que el contrato blinda (`fronts/itdfw-naiveui/TDD-nav-items.md`, enmienda
   importan directo (`itdfw/NUI/NTabPane.js`) y se registran en el `init.js` del site o en el `created`
   del componente que los usa — como hace el propio front con `NGridItem` en `App.vue`. No es un defecto
   del loader: es cómo opera Naive (caso demo, 14-sep-2026).
-- Escribir un archivo en `fronts/itdfw-naiveui/src/NUI/` → basura, el builder la borra.
+- Escribir un archivo en la carpeta generada `NUI/` del front → basura, el builder la borra.
 - Un `#hex`, `rgb(...)` o `red` en un componente → le rompes el tema al cliente.
 - Usar `<n-algo>` sin haberlo puesto en `$NUI` → compila, no rinde, no avisa.
 - Nombrar el componente sin prefijo `Itd`.
