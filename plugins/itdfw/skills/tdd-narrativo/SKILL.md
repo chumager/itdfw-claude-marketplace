@@ -367,7 +367,7 @@ de gastar un token en código es el objetivo, no un fallo (jcmunoz 2026-09-08).
 
 | # | Debe traer | Si falta |
 |---|---|---|
-| 1 | Cabecera con estado **APROBADO por jcmunoz + fecha** y el **MODO** (nuevo / refactor con cobertura completa / incremental; o la enmienda con su modo) | sin aprobación no hay código, aunque el TDD esté perfecto; sin modo, "TDD INCOMPLETO: falta el modo", porque cambia cómo se trata cada línea (§0b) |
+| 1 | Cabecera con estado **APROBADO por jcmunoz + fecha** y el **MODO** (nuevo / refactor con cobertura completa / incremental; o la enmienda con su modo). 🔴 Si el TDD **trae o modifica front de cliente final**: además la **alternativa elegida** (una línea) y el **enlace al estudio** de `producto-antes-del-tdd` (para una pantalla suelta, el estudio corto va en la sección UI/UX y la cabecera lo nombra) | sin aprobación no hay código, aunque el TDD esté perfecto; sin modo, "TDD INCOMPLETO: falta el modo", porque cambia cómo se trata cada línea (§0b); sin la alternativa elegida y su estudio en un TDD de front de cliente, el cajarito se detiene y lo devuelve al PMO |
 | 2 | Narrativa en lenguaje de dominio | pedir la narrativa; no deducirla del código vecino |
 | 3 | Scopes (actor, concurrencia, quién mira, vida, red) | reportar; sin scope las pruebas se inventan |
 | 4 | **Modelo**: alcance escrito de cada entidad (qué es, por qué existe, quién la crea, cuánto vive), tabla de campos, tabla de puntas, mermaid de relaciones | 🔴 reportar; JAMÁS inventar campos, modelos ni puntas |
