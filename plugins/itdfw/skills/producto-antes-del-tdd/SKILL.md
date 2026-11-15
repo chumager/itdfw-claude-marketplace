@@ -82,9 +82,9 @@ y se le avisa antes. Si el skill no está instalado, se dice y se hace a mano.
 | plan de contenidos y canales | `Comercial` | `small-business:content-strategy` |
 | una pieza para mostrarle a un prospecto (página, una hoja) | `Comercial` | `sales:create-an-asset` |
 | dibujar el árbol de capacidades o un recorrido | `designer` | `diagram-design` |
-| dirección visual de las alternativas | `designer` | `frontend-design` |
+| dirección visual de las alternativas | `designer` | `frontend-design:frontend-design` |
 | auditar o extender el sistema de diseño propio | `designer` | `design-system` |
-| qué permite hoy la plataforma web (antes de prometer una capacidad) | `designer` | `modern-web-guidance` |
+| qué permite hoy la plataforma web (antes de prometer una capacidad) | `designer` | `modern-web-guidance:modern-web-guidance` |
 | la página para decidir | quien la publica | `artifact-design` |
 
 Lo que sale de un skill externo es materia prima: los datos de mercado llevan su fecha y su fuente, y nada de eso entra
