@@ -39,10 +39,21 @@ lo marca el PMO al pedir el estudio.
 | Cómo nace el producto | Comercial entra | Por qué |
 |---|---|---|
 | idea nueva, propia | **antes** de todo | su análisis decide si se hace |
-| nace de un acuerdo ya tomado (un socio, un cliente, un PRD ajeno) | **después**: no condiciona la decisión de construir ni frena el TDD | la decisión ya está; el análisis afina cómo se vende |
+| nace de un acuerdo ya tomado (un socio, un cliente, un PRD ajeno) | **después**: cuando el TDD ya está aprobado, en paralelo a la implementación, para llegar antes de salir a vender | la decisión ya está; el análisis afina cómo se vende y no frena el TDD |
 
-Antes de empezar se dice en una línea cuál de los dos casos es. Si no se sabe, se le pregunta al dueño del producto:
-quien aprueba su TDD.
+Antes de empezar se dice en una línea cuál de los dos casos es. Si no se sabe, se le pregunta al dueño del producto
+(jcmunoz): es quien elige la alternativa y aprueba el TDD.
+
+## Proporción: producto entero o pantalla suelta
+
+| Lo que se hace | Estudio |
+|---|---|
+| un site o un producto nuevo | completo, como sigue |
+| una pantalla nueva de cliente en algo que ya opera | corto: `designer` mira cómo lo resuelven uno o dos competidores y lo deja en la sección UI/UX del TDD, sin alternativas ni página aparte |
+
+🔴 **El estudio completo cabe en un par de horas, no en días.** `designer` lo parte en un árbol de tareas (un
+competidor por rama, una alternativa por rama) y las reparte en subagentes en paralelo; él arma y decide. Lo que no se
+alcanzó a ver se anota "sin ver" y no frena la entrega.
 
 ## El camino
 
@@ -64,6 +75,10 @@ Una página para decidir (no un `.md` árido), con estas partes, en este orden:
 4. **Dos o tres alternativas** para el producto propio: cada una con su recorrido principal, su árbol de capacidades y
    lo que cuesta (qué piezas del FW usa y qué habría que construir).
 5. **La recomendación**, con su porqué en una línea.
+
+- **Sin competidor directo**: se estudia lo que el cliente usa hoy para lo mismo (una planilla, WhatsApp, un cuaderno).
+- **La página la publica `designer`.** Si el dueño rechaza las alternativas o pide una mezcla, `designer` rehace una
+  vez con esa indicación.
 
 Lo que no se pudo ver (un flujo tras un login, un precio que cambia el recorrido) se escribe como "sin ver". Lo que un
 navegador soporta se coteja en caniuse o MDN, nunca de memoria.
