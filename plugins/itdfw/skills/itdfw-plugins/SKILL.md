@@ -16,7 +16,7 @@ keys (`db/types/plugins/schemas/API/libs/vue`) para que el motor las reparta. El
 motor real; un FWPlugin, entre otras cosas, puede *aportar* plugins en su key `plugins`. Las magias negras
 (pisar/inyectar) viven en el sistema de plugins y funcionan SIN FWPlugins.
 
-**Dónde**: un archivo en `back/itdfw/src/SITE/mongoosePlugins/*.js` (o el `DEFAULT/`/`App/` equivalente, cascada).
+**Dónde**: un archivo `.js` en la carpeta `mongoosePlugins/` de la cascada (core `SITE/`, o el `DEFAULT/`/`App/` equivalente).
 `loadPlugins()` los **autodescubre por disco** — no hay que registrarlos. Prefijo numérico (`02hasFiles.js`)
 ordena la carga alfabética. Export `default` = un **objeto** o una **función factory** — la factory se
 invoca **bindeada** (`this` = instancia Schema del FW) con `db` como arg0. Ver "Binding & parámetros" abajo
@@ -36,7 +36,7 @@ core era Currency, y se EXTERNALIZÓ.)
 
 ## Los 3 modos de aplicación (los decide el motor por las props del objeto)
 
-`#addPluginFromObject` (`mongooseSchema/index.js:195`) clasifica cada plugin por qué propiedad trae:
+`#addPluginFromObject` (el motor de schemas) clasifica cada plugin por qué propiedad trae:
 
 | Modo | Property | Cuándo se aplica | Semántica | Ejemplo real |
 |------|----------|------------------|-----------|--------------|
@@ -77,12 +77,12 @@ export default () => ({
 o `this` undefined.
 
 **1. La FACTORY** (el `export default` del archivo, cuando es función). `#addPluginFromObject` la llama
-**`res.call(this, this.db)`** (`mongooseSchema/index.js:192-193`):
+**`res.call(this, this.db)`** (en el motor de schemas):
 - `this` = la **instancia Schema del FW** → expone `db`, `pool`, `init`, `pluginOptions`, `registeredSchemas`/`registeredModels`, `schemasLoaded`…
 - `db` también llega como **arg0**.
 - Soporta `async` (se awaitea).
 
-⟹ obtén `db` con **`const {db} = this`** (idiomático — `FrontEnd.js:49`) **o** nombrando el param
+⟹ obtén `db` con **`const {db} = this`** (idiomático — el mongoose plugin `FrontEnd`) **o** nombrando el param
 **`function (db) {…}`** (estilo `mongooseDB/*.js`) — es el MISMO `db`. Para `pool`/`init`/etc. → SOLO vía `this`.
 
 ```js
@@ -101,7 +101,7 @@ factory tenía `(/*db*/)` comentado y SIN `const {db}=this` → `db is not defin
 - recibe **`(schema, options)`**.
 - **`this` NO está bindeado** acá — no lo uses. Opera sobre `schema`; cierra sobre `db`/lo-que-sea del scope de la factory.
 - `options` = `this.pluginOptions[name]` (config merge de `mongoosePlugins`), con `name = res.name ?? res.plugin.name`.
-- Aplicación por modo: GLOBAL → el motor envuelve para saltar `noGlobalPlugin` (`index.js:210-212`) y aplica
+- Aplicación por modo: GLOBAL → el motor envuelve para saltar `noGlobalPlugin` y aplica
   con `db.plugin(...)` (`:436`); FILTERED → `plugin(schema, options)` (`:593/597`); NAMED → `plugin(schema, options)` (`:659`).
 
 ### 🔴 Cómo llegar a un MODELO (o a `getConfig`) según dónde estás (jcmunoz, 2026-09-20)
@@ -112,10 +112,10 @@ factory tenía `(/*db*/)` comentado y SIN `const {db}=this` → `db is not defin
 | en la **factory** de un plugin, o donde tengas el singleton Schema (`this`) | `this.db.model(modelo)` | la factory va bindeada al singleton (`res.call(this, this.db)`) |
 | en la **función de un FWPlugin** | `this.db.model(modelo)` | también bindeada al singleton (`plugin.call(this)`, skill `itdfw-fwplugin`) |
 | **dentro de un schema** que depende de otro | `await this.init(nombre, {models: "Otro"})` | garantiza que el modelo ya exista (`schema-engine.md` en `itdfw-models`) |
-| la config de nivel 2 desde un Model | `Model.getConfig()` (static que pone el plugin `config` en todo schema) | dentro de un ref-función `this === Model`; caso real: `plugins/typesafe`, el 500 `db.getConfig is not a function` |
+| la config de nivel 2 desde un Model | `Model.getConfig()` (static que pone el plugin `config` en todo schema) | dentro de un ref-función `this === Model`; caso real: el plugin `typesafe`, el 500 `db.getConfig is not a function` |
 | la config de nivel 2 con la conexión a mano | `await this.db.getConfig("X")` | `mongooseDB/config.js` del plugin `config` la cuelga de la conexión, no de `db.models` |
 
-Verificado 2026-09-20 contra `AAA/AAA.js:57` (`req.db = pool.db.models`), `mongooseSchema/index.js:51/120/196/544/558`.
+Verificado 2026-09-20 contra el AAA (`req.db = pool.db.models`) y el motor de schemas.
 
 ## 🪄 Pisar/inyectar — la libertad extrema (black magic)
 
@@ -226,7 +226,7 @@ debe decir **`Found 1 version`**.
   `schema.preSearch(fn)`** (`mongooseDB/preSearch.js`, 2026-09-04), NUNCA el par `pre(/find/)` + `pre(/^count/)` a
   mano. La lista de qué es una lectura vive UNA vez (`[/find/, /^count/, "distinct"]`); escribirla por plugin es como
   nació #173: cuatro copias y a las cuatro les faltó `distinct` (en `zones` eso cruza tenants). `aggregate` va aparte
-  (su `this` es un Aggregate, `pipeline().unshift`). Los cuatro (`delete`, `expire`, `zones`, `queryFilter`) ya lo usan; regresión en `tests/presearch*.test.js`.
+  (su `this` es un Aggregate, `pipeline().unshift`). Los cuatro (`delete`, `expire`, `zones`, `queryFilter`) ya lo usan; regresión en las pruebas `presearch*` de back.
 - 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`** (jcmunoz 9-oct-2026). Un plugin que
   recorta lecturas y no recorta el aggregate deja ese camino abierto: el `$search` elige ids con `$limit` sin ese
   recorte y el `find` final (que sí lo tiene) devuelve vacío o incompleto, o un aggregate de reporte muestra lo que el
@@ -243,9 +243,9 @@ debe decir **`Found 1 version`**.
   encuentra índice); el resto (`$search`, `$vectorSearch`, `$rankFusion`…) → la etapa sube y los recortes quedan
   detrás. 🔴 **Contrato estricto**: un RECORTE entra con `unshift`; lo que un plugin agregue con `push` cae en la cola
   del dev y debe ser inocuo sobre metadatos (un `$unset` sí, un `$match` no). Los cuatro (`zones`, `queryFilter`,
-  `delete`, `expire`) cumplen el par; regresión en `tests/back/aggregateCuts.test.js` (D1-D4, E1). Un aggregate que
+  `delete`, `expire`) cumplen el par; regresión en la prueba de back `aggregateCuts` (D1-D4, E1). Un aggregate que
   lea `req` en un hook necesita `aggregate.localData = {req}` (así lo hace `ITDSearch`).
-  **Todos los `pre("aggregate")` del core** (`back/itdfw/src/SITE/mongoosePlugins/`): `allowDiskUse` (solo la opción, no
+  **Todos los `pre("aggregate")` del core** (los `mongoosePlugins/` del core): `allowDiskUse` (solo la opción, no
   toca el pipeline), los cuatro recortes (`zones`, `queryFilter` —async, lee el `req` de `localData`—, `delete`,
   `expire`) y `preAggregate` al final. Corren en el orden en que se aplican los plugins; entre los recortes el orden da
   lo mismo (cada uno antepone un `$match` y el resultado es su AND), lo único que importa es que `preAggregate` corra
@@ -255,7 +255,7 @@ debe decir **`Found 1 version`**.
   trae otros, un `aggregate` no pasa por ahí. Un `post("find")` que completa, renombra o agrega datos a los documentos
   falla en silencio con la primera proyección, y además corre sobre TODA lectura del modelo. Lo que un plugin agrega
   a una salida se engancha en quien la produce, envolviéndola por la salida (caso: `zones` envuelve `formOptions` y
-  agrega la zona con una sola consulta sobre los `value`, `back/itdfw/TDD-zones-refs.md`). Los recortes de lectura
+  agrega la zona con una sola consulta sobre los `value`; ver el TDD de zones-refs). Los recortes de lectura
   van antes (`preSearch` + su par en `pre("aggregate")`), nunca después. Al proyectar un `aggregate` y rehidratar,
   la proyección nombra `_id: 1`: `Model.hydrate(doc, {campo: 1})` deja `_id` en `undefined` (mongoose 9.11, medido
   22-oct-2026), aunque Mongo sí lo haya devuelto.
@@ -340,15 +340,15 @@ Antes de escribir lógica, mira qué PROVEE ya el core: virtuals `_update`/`_del
 `isRoot`/`isChild`, `lean`/`autopopulate`/`fetchAll`, auditoría (`__history`), soft-delete (`active`),
 multitenant (`_zone`), `weakEntity`, `autoincrement`, `pos`… Estas capacidades son las que permiten moldear
 sin sobre-ingeniería — ya están hechas. **Catálogo de USO** (quieres Z → opción exacta → ejemplo → quién la
-provee, con citas archivo:línea): `claude-docs/current/plugin-capabilities-catalog.md`. 🌫️ La mayoría son del
+provee, con citas archivo:línea): el catálogo de capacidades de plugins («plugin-capabilities-catalog»). 🌫️ La mayoría son del
 **FW en general** (las consume también quien escribe un MODELO, ver `itdfw-models`), no solo de plugins.
 
 ## Referencias de código
 
-Motor: `back/itdfw/src/SITE/mongooseSchema/index.js` — `#addPluginFromObject:195` (clasifica),
-`setPlugin:670` + `#applyPlugin:653` (NAMED), `#filteredPlugins` + `#addSchemaFromObject:585` (FILTERED),
-`#globalPlugins` + `db.plugin:434` (GLOBAL). Ejemplos: `mongoosePlugins/Banco.js` (filtered),
-`plugins/duration/index.js` `requestVariant` (named), `NationalId.js` del sitio (global re-cast).
+Motor: el de schemas del core — `#addPluginFromObject` (clasifica),
+`setPlugin` + `#applyPlugin` (NAMED), `#filteredPlugins` + `#addSchemaFromObject` (FILTERED),
+`#globalPlugins` + `db.plugin` (GLOBAL). Ejemplos: el mongoose plugin `Banco` (filtered),
+el plugin `duration`, `requestVariant` (named), `NationalId.js` del sitio (global re-cast).
 
 ---
 

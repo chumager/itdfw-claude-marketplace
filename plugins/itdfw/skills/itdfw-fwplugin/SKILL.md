@@ -31,8 +31,8 @@ copiar nada a su `DEFAULT`.
 | `db` | Utilidades sobre el objeto `db` | leer `mongooseDB/` existentes |
 | `libs` | Librerías compartidas → `pool.libs` | abajo (§libs) |
 | `auth` | Autenticadores: `{name, claims, authenticate, pos?}` o un arreglo de ellos. `claims(req)` es **síncrono** y barato (corre en cada petición del deploy); `authenticate(req)` devuelve `{model, user}` o `undefined`, o lanza si la credencial es suya y está mala. No escribe `req.auth`: lo escribe `User.auth`. Van después de la sesión y del JWT del FW, en orden de registro; `pos` `"^"` los pone antes de la sesión y `"$"` al final. Uno malformado se loguea y se omite | **`itdfw-api-system`** → "El acceso paso a paso" |
-| `wellKnown` | Aportes a `/.well-known/<nombre>`: un objeto `{<nombre>: {type, final?, content}}`; `content` es un valor o `(req, acumulado) => contenido`. **Se reparte y valida en el arranque** (`lib/wellKnown.js`) hacia `pool.wellKnown`: los aportes de un mismo nombre deben coincidir en `type` y en clase de `content` (arreglo, string u objeto; una función queda exenta), y si no el nombre queda inválido, se loguea y la ruta responde 404 con el motivo. **Al pedirse** (`server.js`, `/.well-known/:name`) las partes se mezclan (arreglos se concatenan, strings se unen con salto de línea, objetos en profundidad; mezclar clases lanza 500), y las `final: true` corren al último | `back/itdfw/src/lib/wellKnown.js` |
-| `captcha` | Proveedores de captcha: `{name, publicSpec(req, ctx), verify(req, token, ctx), challenge?(req, ctx), external: boolean}` o un arreglo. **El core no trae ninguno.** Se registran en el arranque por nombre en `pool.captchaProviders` (el mismo nombre reemplaza; uno inválido se loguea y se omite). **Solo se usan** cuando el `formSpecs` de un modelo declara `captcha` para ese tipo (`create`, `update`, `register`, `profile`…): `FWcreate` y `FWupdate` llaman `assertCaptcha`, que verifica el header `x-itd-captcha` (una llamada worker→worker con `x-itd-access` se exime). Aplica un solo proveedor: el de la Config `Captcha` (nivel 0), si no el del archivo (`captcha.provider`), si no el único registrado, y debe estar en `captcha.allow` (por omisión `["altcha"]`) o responde 503. Una prueba mala es 400, y un servicio externo que no contesta en 3 s falla cerrado con 503. Ejemplo: `plugins/captcha-altcha` | `back/itdfw/src/lib/captcha.js` |
+| `wellKnown` | Aportes a `/.well-known/<nombre>`: un objeto `{<nombre>: {type, final?, content}}`; `content` es un valor o `(req, acumulado) => contenido`. **Se reparte y valida en el arranque** (la utilidad `wellKnown` del core) hacia `pool.wellKnown`: los aportes de un mismo nombre deben coincidir en `type` y en clase de `content` (arreglo, string u objeto; una función queda exenta), y si no el nombre queda inválido, se loguea y la ruta responde 404 con el motivo. **Al pedirse** (`server.js`, `/.well-known/:name`) las partes se mezclan (arreglos se concatenan, strings se unen con salto de línea, objetos en profundidad; mezclar clases lanza 500), y las `final: true` corren al último | `wellKnown` (utilidad del core) |
+| `captcha` | Proveedores de captcha: `{name, publicSpec(req, ctx), verify(req, token, ctx), challenge?(req, ctx), external: boolean}` o un arreglo. **El core no trae ninguno.** Se registran en el arranque por nombre en `pool.captchaProviders` (el mismo nombre reemplaza; uno inválido se loguea y se omite). **Solo se usan** cuando el `formSpecs` de un modelo declara `captcha` para ese tipo (`create`, `update`, `register`, `profile`…): `FWcreate` y `FWupdate` llaman `assertCaptcha`, que verifica el header `x-itd-captcha` (una llamada worker→worker con `x-itd-access` se exime). Aplica un solo proveedor: el de la Config `Captcha` (nivel 0), si no el del archivo (`captcha.provider`), si no el único registrado, y debe estar en `captcha.allow` (por omisión `["altcha"]`) o responde 503. Una prueba mala es 400, y un servicio externo que no contesta en 3 s falla cerrado con 503. Ejemplo: el plugin `captcha-altcha` | `captcha` (utilidad del core) |
 | `refs` | Fuentes de opciones de un select con nombre (`"plugin/nombre": (req, query) => [{value, text}]`) → `pool.refs`, que leen `getRef`/`getSimpleName`; el campo las pide con `myRef: "plugin/nombre"` | **`itdfw-models`** → `references/special-refs.md` §4 |
 | `vue2`/`vue3`/`react`/`svelte`/`solid`/`lit` | **Frontend** por framework | abajo (§frontend) — lo único exclusivo del FWPlugin |
 | `name` | Nombre para logging | — |
@@ -84,7 +84,7 @@ legible y coherente con el resto del FW. Para arrancar bien, **copiá el templat
 espejo y `README.md`, y **sin `TDD*.md` ni `test/`**: el README es la cara del paquete, el TDD es la cocina y va en
 git pero no en el tarball (jcmunoz 17-sep-2026). Seis plugins nacidos antes de esa decisión declararon `TDD.md` a
 mano en `files` porque el template no traía `package.json`; el veto de `itdfw-deps.sh files` los cazó el 18-sep.
-Los FWP que viven INLINE en `back/.../FWPlugins/` (Currency.js, PDF.js) están así por **migración desde el
+Los FWP que viven INLINE en la carpeta `FWPlugins/` del core (Currency, PDF) están así por **migración desde el
 core** (se movieron/mergearon), NO porque sea el patrón a imitar.
 
 ### 🔴 El scope se decide con `inFront`/`inBack` — NUNCA por el argumento
@@ -116,13 +116,13 @@ export default exp;
 🔴 **`let exp = {}`, nunca `let exp;`.** El módulo se importa en los dos scopes siempre: un plugin
 solo-back que hace `if (inBack) exp = {…}` deja **`undefined` en el front** → `Object.entries(undefined)`
 en el loader → **cae el front de todo deploy que lo tenga instalado**. Caso real 2026-08-26
-(`plugins/telegram`). Partir de `{}` es la línea que lo evita — el front recibe un objeto vacío y sigue.
+(el plugin `telegram`). Partir de `{}` es la línea que lo evita — el front recibe un objeto vacío y sigue.
 Y si el plugin solo-back no quiere que el front cargue sus dependencias (telegraf, libs del back), los
 imports van **dentro** de la rama (`await import(...)`), no arriba del archivo.
 
 #### 🔴🔴 El FWPlugin NO recibe `db` por argumento (y confundirlo lo deja MUDO)
 
-Verificado en `back/itdfw/src/SITE/mongooseSchema/index.js` → `#expandPlugins`:
+Verificado en el motor de schemas del core → `#expandPlugins`:
 
 ```js
 if (typeof plugin === "function") {
@@ -157,7 +157,7 @@ Si el FWPlugin **no necesita lógica** (solo declara keys estáticas) → forma 
 función y sin scope que resolver. La función es solo para los que SÍ necesitan runtime.
 
 *(Corregido 2026-08-14: el skill documentaba `function (db)` con detección por ausencia del argumento —
-le atribuía al FWPlugin la firma del mongoosePlugin. Cazado cuando `plugins/conversation` cargó mudo.)*
+le atribuía al FWPlugin la firma del mongoosePlugin. Cazado cuando el plugin `conversation` cargó mudo.)*
 
 ## 🪄 Frontend — el hook de framework de reactividad (lo ultra-power)
 
@@ -188,7 +188,7 @@ existe una **front-library** montada para ese framework (cómo se arma un front 
 2. El plugin ITDFW extrae los aliases del framework detectado desde los plugins mergeados (`configArray('plugins')`).
 3. Genera el módulo virtual `virtual:itdfw-custom-import` con búsqueda en **cascada**:
    `@/<comp>` (app) → `default/<comp>` (sitio) → `currency/<comp>` (plugins) → `itdfw/<comp>` (front, NUI) →
-   `core/<comp>` (`libs/itdfw-vite-plugin/index.js`, `basePaths` de `customImport`). **La app y el default mandan
+   `core/<comp>` (el plugin de vite del framework, `basePaths` de `customImport`). **La app y el default mandan
    siempre**; un plugin pisa al front y al core, nunca al site. Los merges (`init.js`, store) recorren al revés (core
    primero) para que la app gane igual; `public/` se copia de abajo hacia arriba por lo mismo.
 4. El front consume agnóstico: `const C = await customImport('ItdCurrency')` — el mismo código corre en
@@ -228,7 +228,7 @@ Dos cosas del front de un plugin que no se adivinan (gap #42, 2026-09-20): **un 
 desde el `vue/init.js` del plugin con `this.store.commit("app/setNavItem", {key, component, sink, position:
 "first" | "center" | "last", pos, when})`, donde `sink` es `"nav"`, `"side"`, `"drawer"`, un arreglo o una función
 del ancho; y la fuente del menú se enchufa con `commit("app/setMenu", {ref})` (modelo completo: skill `itdfw-nui` §5;
-ejemplo vivo: `plugins/typesafe-palette/vue/init.js`). Un plugin que no deja elegir el sink de lo que agrega le quita
+ejemplo vivo: el plugin `typesafe-palette`). Un plugin que no deja elegir el sink de lo que agrega le quita
 la libertad al site. Y **una punta propia se llama** con `this.$http.get/post/put(url, body, {params})`, nunca con
 `fetch` ni `axios` importados.
 
@@ -265,11 +265,11 @@ Detalle del pack, flags de registro y cómo escribir loaders → skill **`itdfw-
 sin que la app toque una línea, y sin declarar más que la carpeta.
 
 *(Verificado e2e el 2026-08-15 con el plugin `conversation`, cuyo `vue/` ya no existe: una ruta y una vista del
-plugin se renderizaron sin tocar el site. Ejemplo vivo hoy: `plugins/openid/vue/router.js` + `vue/views/OpenIDConsent.jsx`.)*
+plugin se renderizaron sin tocar el site. Ejemplo vivo hoy: el plugin `openid` (su `vue/` con router y una vista).)*
 
 ## Dónde vive y cómo se enchufa
 
-**FWPlugin del FW propio / del deploy**: archivo en `FWPlugins/` (cascada `back/itdfw/src/SITE/FWPlugins/`
+**FWPlugin del FW propio / del deploy**: archivo en `FWPlugins/` (cascada: `SITE/FWPlugins/`
 → `<deploy>/DEFAULT/FWPlugins/` → app). El motor los descubre solo (`#getFiles("FWPlugins")`) — no hay
 que registrarlos.
 
@@ -340,7 +340,7 @@ en su `package.json`: el site pone solo el hijo y no tiene por qué saber que la
 
 Y la base expone un **guard** (`enabled`, con un interruptor `enabled` en su Config; no `active`, que es nombre
 reservado) para que un hijo apagado o sin configurar responda como flujo (`[]`) y no con un 5XX que termina en correo
-al admin. Medido 27-sep-2026 en un site de prueba con `plugins/typesafe` + `plugins/typesafe-icon`.
+al admin. Medido 27-sep-2026 en un site de prueba con los plugins `typesafe` + `typesafe-icon`.
 
 ## libs — interconexión runtime
 
