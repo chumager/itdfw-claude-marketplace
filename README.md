@@ -72,7 +72,7 @@ So the AST work in this repository is done by espree, esbuild, tree-sitter (insi
 ## Honest limits
 
 - `scripts/test-all.sh` runs every suite in one command. `inventory` has 17, `itdfw-graph` 13, `room` 43,
-  `agent-runner` 48 and the session scripts 157 (278 in all, each runs by itself), and the hooks have none.
+  `agent-runner` 48 and the session scripts 159 (280 in all, each runs by itself), and the hooks have none.
 - Each README lists its own open limits, with the line that shows each one. None is hidden.
 - The skills are written in a mix of English and Spanish and were written for an agent reader, not as a manual.
 - Counts such as the number of tools, tests or graph nodes are the result of one reading on 2026-11-12; the code is

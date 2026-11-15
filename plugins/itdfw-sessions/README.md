@@ -79,7 +79,7 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
 | `claude-keepalive.sh` | From a system cron, queues a `ping` in every live session so the prompt cache (1 h TTL) stays warm | always 0 |
 | `claude-session-name.sh` | Prints the name of the session this command runs under (walks up the parent processes) | 0 printed · 1 not under a named session |
 | `cron-owner-guard.sh <owner> <label>` | Sourced by a cron script: only the owner session may run it; any other gets the order to do nothing and drop its cron | return 0 owner · 1 another session |
-| `cajaritos-compactar.sh [--umbral N] [--excepto name]... [--solo name]...` | Compacts the idle background sessions over a context threshold (attach in a tmux window, `/compact`, wait, close the window) | 0 done · 1 no tmux server · 2 usage |
+| `cajaritos-compactar.sh [--umbral N] [--excepto name]... [--solo name]... [--modelo M]` | Compacts the idle background sessions over a context threshold (attach in a tmux window, `/compact`, wait, close the window). With `--modelo`, a session whose compaction worked is switched to that model before the window closes; one whose % did not drop keeps its model, because a switch rewrites the whole context at the new price | 0 done · 1 no tmux server · 2 usage |
 | `session-fg.sh <name> [window]` | Is the session on screen? `ACTIVE <pane>` / `VISIBLE <pane>` / `BG`, looking for its last text in the panes of a tmux window | 0 / 1 / 3 respectively · 2 not found |
 | `claude-usage-watch.sh [--loop s]` | Reads the Claude Code `/usage` without an open session; one line, plus a log | 0 · 1 no answer from `claude -p` |
 | `cartera.sh` | A work board: each session publishes its blocks and tasks in a JSON file that a panel can merge | 0 · 1 unknown session or block · 2 usage |
@@ -161,7 +161,7 @@ files, a fake unix socket (`node:net`) that records what a session would receive
 | File | What it proves |
 |---|---|
 | `test/messaging.test.mjs` | `claude-session-msg.sh`, `claude-broadcast.sh`, `claude-keepalive.sh`, `claude-session-name.sh`, `cron-owner-guard.sh` and `examples/daily-close-cron.sh`: who receives what, the auth and message lines, the skips (spare, dead, no socket, no key), the ancestor skip in the broadcast, the exit codes |
-| `test/wake-compact.test.mjs` | `cajarito-despertar.sh` and `cajaritos-compactar.sh` against a stub `claude` and a stub `tmux`: the decisions (already alive, ambiguous names, which session is compacted and which is skipped and why, `--solo`, `--excepto`, `--umbral`) |
+| `test/wake-compact.test.mjs` | `cajarito-despertar.sh` and `cajaritos-compactar.sh` against a stub `claude` and a stub `tmux`: the decisions (already alive, ambiguous names, which session is compacted and which is skipped and why, `--solo`, `--excepto`, `--umbral`, `--modelo` only after a compaction that worked) |
 | `test/screen-usage.test.mjs` | `session-fg.sh` (ACTIVE / VISIBLE / BG from a fake transcript and fake panes), `claude-usage-watch.sh` (against a stub `claude -p`) and `examples/statusline-state.sh` |
 | `test/cartera.test.mjs` | `cartera.sh`: every subcommand, the state files, the old-format migration |
 | `test/hilo.test.mjs` | the four `hilo-*` scripts: what the capture keeps and drops, the last-N and per-message cut, the hand-back message and its 24 h summary rule, the ready mark, who is asked and who is not woken |

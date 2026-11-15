@@ -196,6 +196,25 @@ esac`
     assert.equal(r.stdout.trim(), "alpha: 70% -> 70% (idle)")
   })
 
+  it("--modelo switches the model after a compaction that worked, before closing the window", async () => {
+    setAgents([{name: "alpha", id: "a1", sessionId: "sA", status: "idle"}])
+    ctx("sA", 70)
+    const r = await env.run(SCRIPT, ["--modelo", "opus"], {extraEnv: {...base(), FAKE_COMPACT_FILE: join(env.state, "ctx-sA.json")}})
+    assert.equal(r.stdout.trim(), "alpha: 70% -> 12% (idle, model opus)")
+    const calls = env.calls()
+    const model = calls.indexOf("tmux send-keys -t main:cmp-a1 /model opus")
+    assert.ok(model > calls.indexOf("tmux send-keys -t main:cmp-a1 /compact"))
+    assert.ok(model < calls.indexOf("tmux kill-window -t main:cmp-a1"))
+  })
+
+  it("--modelo leaves the model alone when the compaction did not bring the % down", async () => {
+    setAgents([{name: "alpha", id: "a1", sessionId: "sA", status: "idle"}])
+    ctx("sA", 70)
+    const r = await env.run(SCRIPT, ["--modelo", "opus"], {extraEnv: base()})
+    assert.equal(r.stdout.trim(), "alpha: 70% -> 70% (idle)")
+    assert.equal(env.calls().some(c => c.includes("/model")), false)
+  })
+
   it("reads the ctx files from CLAUDE_STATE_DIR when set", async () => {
     const dir = join(env.root, "elsewhere")
     mkdirSync(dir)

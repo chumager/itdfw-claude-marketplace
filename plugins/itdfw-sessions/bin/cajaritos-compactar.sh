@@ -7,6 +7,9 @@
 #          --umbral N     compact the sessions whose context is at N % or more (default 50)
 #          --excepto NAME skip that session (repeatable)
 #          --solo NAME    only that session (repeatable)
+#          --modelo M     after a compaction that worked, switch the session to model M (`/model M`). A switch
+#                         rewrites the whole context at the new model's price, so it only happens on a compacted
+#                         session; one whose % did not drop keeps its model
 # Reads:   `claude agents --json` (name, id, sessionId, status)
 #          <state-dir>/ctx-<sessionId>.json, field `used` = context % of the session. Claude Code does not write it:
 #          a status line does (see examples/statusline-state.sh in this plugin)
@@ -19,14 +22,15 @@
 _cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -uo pipefail
 STATE_DIR="${CLAUDE_STATE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/state}"
-UMBRAL=50; EXCEPTO=(); SOLO=()
-usage() { echo "usage: cajaritos-compactar.sh [--umbral N] [--excepto <name>]... [--solo <name>]..."; }
+UMBRAL=50; EXCEPTO=(); SOLO=(); MODELO=""
+usage() { echo "usage: cajaritos-compactar.sh [--umbral N] [--excepto <name>]... [--solo <name>]... [--modelo M]"; }
 while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help) usage; awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     --umbral) UMBRAL="$2"; shift 2 ;;
     --excepto) EXCEPTO+=("$2"); shift 2 ;;
     --solo) SOLO+=("$2"); shift 2 ;;
+    --modelo) MODELO="$2"; shift 2 ;;
     *) usage >&2; exit 2 ;;
   esac
 done
@@ -48,8 +52,14 @@ while IFS=$'\t' read -r nombre id sid estado; do
   tmux new-window -d -t "$TMUX_SES" -n "$w" "claude attach $id"
   sleep 6
   tmux send-keys -t "$TMUX_SES:$w" '/compact'; sleep 1; tmux send-keys -t "$TMUX_SES:$w" Enter
-  for _ in $(seq 1 60); do sleep 5; u=$(jq -r '.used // 100' "$f" 2>/dev/null); [ "$u" -lt 20 ] 2>/dev/null && break; done
+  compactada=0
+  for _ in $(seq 1 60); do sleep 5; u=$(jq -r '.used // 100' "$f" 2>/dev/null); [ "$u" -lt 20 ] 2>/dev/null && { compactada=1; break; }; done
+  cambio=""
+  if [ -n "$MODELO" ] && [ "$compactada" = 1 ]; then
+    tmux send-keys -t "$TMUX_SES:$w" "/model $MODELO"; sleep 1; tmux send-keys -t "$TMUX_SES:$w" Enter; sleep 3
+    cambio=", model $MODELO"
+  fi
   tmux kill-window -t "$TMUX_SES:$w" 2>/dev/null
   sleep 2
-  echo "$nombre: ${antes}% -> $(jq -r '.used' "$f")% ($(claude agents --json | jq -r --arg s "$sid" '.[]|select(.sessionId==$s)|.status'))"
+  echo "$nombre: ${antes}% -> $(jq -r '.used' "$f")% ($(claude agents --json | jq -r --arg s "$sid" '.[]|select(.sessionId==$s)|.status')$cambio)"
 done
