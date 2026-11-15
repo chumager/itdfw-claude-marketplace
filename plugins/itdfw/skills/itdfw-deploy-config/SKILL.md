@@ -318,7 +318,7 @@ permiso a nadie y sin tocar el core — es el mismo criterio que las options de 
 | Sesión / auth | `session` `Expire` `masterPassword` `authorizationZones` |
 | Correo | `emailTransport` `masterEmail` `recoveryEmail` `errorRecipients` `recaptcha` |
 | Licencia | `instanceId` `machineLockedMessage` |
-| Operación | `logLevel` `logs` `Locale` `withDefault` `plugins` |
+| Operación | `logLevel` `logs` `Locale` `withDefault` `plugins` `test` (ver §«El modo test») |
 | Formularios | `genericPlaceholder` — objeto por **type** (`{generic: "Ingrese un valor", Email: "correo@dominio.cl"}`), leído con `configMerge` (el site pisa por llave); `toInput` lo pone en todo input que no declare `placeholder` ni lo traiga su type, y sin la llave usa `"Enter data"`. Fijo por site → `.itdfw.js`; por deploy → el yaml. El front lo traduce como cualquier texto (back desde 22-sep-2026; versión al publicar) |
 
 🔴 **`Procs` multiplica por SITE, y el peso son los modelos.** Cada carpeta del `documentRoot` es un host (el FW no
@@ -353,6 +353,19 @@ este límite; desde 7.3.6 el nombre del archivo subido llega en UTF-8 (`defParam
 | `instanceId` | arranca pero responde **423** `MACHINE_LOCK_VIOLATION` a todo (`No machine fingerprint configured`) | es el fingerprint **de la máquina**: en la misma máquina se reusa el de otro deploy; en una nueva se genera con el flujo de licencia |
 
 Un deploy sin `html/index.html` arranca igual en modo **HEADLESS** (solo API) — lo avisa con un WARN, no es error.
+
+### 🔴 El modo test: la llave `test`, y por qué no sale a producción
+
+`test` es una llave del site: va en la **raíz** de su `.itdfw.js` o en el yaml (`sites.<host>.test`), con la
+precedencia de siempre (el `.itdfw.js` del site gana). El back la lee con `configGet("test")`.
+
+| Dónde | Qué pasa con `test` encendida |
+|---|---|
+| el back, al arrancar | el **primer worker** del site registra un **WARN** `TEST` en desarrollo y un **ERROR** `TEST` en producción (`onDev` falso). En producción solo las pruebas finales previas a un release corren así: la llave se saca antes de publicar |
+| `guard` (pre-push) y `publish` de `itdfw-deps` | **frenan** si el `.itdfw.js` de algún site del workspace trae `test` activo, o si no se puede importar (no se sabe si la trae). Solo se lee el `.itdfw.js`, que viaja con el repo; el yaml es de cada máquina y no se revisa |
+
+Hoy esa llave solo la leen el aviso del back y esos dos controles: no abre ni cierra nada por sí misma. Es una
+**definición**, no una regla del código: quien la deja encendida lo ve en el log y el publish lo frena.
 
 ## 6. Agregar un site a un deploy existente
 
