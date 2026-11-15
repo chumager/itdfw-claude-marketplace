@@ -1,5 +1,10 @@
 # Test discipline — green/red, onDev, e2e, validación externa
 
+> 🔴 **Quién escribe qué (desde 2026-11-15):** el e2e es de QA; quien implementa entrega headless y el scope del
+> e2e en prosa (SKILL.md, § "Quién prueba qué"). Donde esta referencia dice "el e2e del plugin" o "el spec del
+> componente", describe **cómo es** ese e2e (estructura, parámetros, login, capturas); **lo escribe y lo corre QA**.
+> Los specs que ya viven en `plugins/*/test/e2e` y `fronts/*/test` siguen donde están y son de QA.
+
 ## Green + Red (no solo green)
 
 Un test que solo prueba el camino feliz miente por omisión. El patrón del FW:

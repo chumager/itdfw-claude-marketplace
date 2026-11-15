@@ -51,8 +51,24 @@ verificación real, no "compila y se ve bien".
       goteado — locale, moneda, request. Un test unitario del objeto de valor NO la ejerce: el objeto
       formatea bien aunque el pipe que le entrega el locale esté roto. Y es barata: `toPDF` devuelve un
       `{text, ...style}` plano → se afirma sobre el objeto, **sin renderizar el archivo**.
-- [ ] **Validación externa** — el "Done" no se da sobre tu propio testing: e2e real / browser / datos reales.
-      Lo que vos probás prueba que TU modelo mental anda, no que el sistema anda.
+- [ ] **Validación externa** — el "Done" no se da sobre tu propio testing: e2e real / browser / datos reales,
+      y ese e2e lo escribe y lo corre QA, no quien implementó (§ "Quién prueba qué"). Lo que vos probás prueba que
+      TU modelo mental anda, no que el sistema anda.
+
+## 🔴 Quién prueba qué
+
+| Quién | Qué prueba |
+|---|---|
+| quien implementa (el PMO y sus esclavos) | **headless**: lo que declara en su TDD, su back y su lógica |
+| QA | **todo e2e**, por complejo que sea: el recorrido completo por pantalla contra el back real, la UI/UX y las capturas, sin repetir lo headless |
+
+- Ni el PMO ni el designer ni core escriben ni commitean un spec e2e: quien prueba lo propio en pantalla prueba lo
+  que él entendió. Si QA necesita definiciones o un scope inicial, se le dan **en prosa** (casos, datos, qué
+  observar), no como spec. Un spec e2e que ya tenías escrito se le entrega a QA como insumo.
+- Los specs e2e que ya viven en `plugins/*/test/e2e` y `fronts/*/test` siguen donde están, pero son de QA: no se
+  borran ni se reescriben de golpe.
+- El control propio de quien implementa (una sonda o una captura en su tmp antes de entregar) se permite: no se
+  commitea y no reemplaza nada de QA.
 
 ## Tabla: hiciste X → se espera Y
 
@@ -60,7 +76,7 @@ verificación real, no "compila y se ve bien".
 |---|---|
 | **custom type / Value Object** | `cast`/`parse`/`toBSON`/`toJSON` **green + red** (molde: `itdfw-mongoose-types/templates/*.test.js`) · 🔴 **+ la VERTICAL: un caso de descarga XLS y uno de PDF** |
 | **FWPlugin / plugin con EE, hooks, globals, cache, closures-con-doc** | **memleak** (`WeakRef`+`gc()`+canario) + green/red de la lógica |
-| **componente front** | e2e (**spec de `@playwright/test` por consola, con la unidad; 🔴 JAMÁS por un MCP de browser**: devuelve la página entera por llamada y quema el límite semanal; el spec queda, la sesión MCP no — rule `e2e-programatico-nunca-mcp`) + render por cada `mode`/`viewType` · 🔴 **+ la VERTICAL: un caso de descarga XLS y uno de PDF** · 🔴 **+ RECORRIDO DE USUARIO** (rule `sombrero-de-usuario`): entrar/SALIR de cada estado, anónimo Y logueado, claro Y oscuro, al ancho del celu real (~360 px), pulgar, sin red / vacío / nombre largo. La captura no es la prueba; la prueba es haberla usado |
+| **componente front** | headless de su lógica, lo que declara el TDD · 🔴 **el e2e de pantalla es de QA, no de quien implementa**: se le entrega el scope en prosa (casos, datos, qué observar: render por cada `mode`/`viewType`, entrar/SALIR de cada estado, anónimo Y logueado, claro Y oscuro, al ancho del celu real ~360 px, pulgar, sin red / vacío / nombre largo) y QA arma y corre el spec (`@playwright/test` por consola; **🔴 JAMÁS por un MCP de browser**: devuelve la página entera por llamada y quema el límite semanal; el spec queda, la sesión MCP no — rule `e2e-programatico-nunca-mcp`). El recorrido de usuario (rule `sombrero-de-usuario`) lo hace QA · 🔴 **+ la VERTICAL: un caso de descarga XLS y uno de PDF** |
 | **endpoint / API** | el verbo correcto gateado (401/403/404 según la tríada), ext obligatoria |
 | **mongoose plugin (global/filtered/named)** | que el modelo objetivo lo reciba (o NO, si no aplica) + idempotencia del re-cast |
 | **cualquier cosa** | completitud critic + logs con niveles + validación externa |

@@ -224,6 +224,12 @@ existen".)
 página entera al contexto por llamada y no deja prueba). Un TDD cuyo ejecutor "pantalla" diga "Playwright" se
 lee como spec programático, jamás como sesión interactiva (rule `e2e-programatico-nunca-mcp`).
 
+🔴 **Quién escribe cada prueba:** el TDD del PMO declara **sus** pruebas, las headless (su back y su lógica). Los
+casos de pantalla (el recorrido completo contra el back real, la UI/UX, las capturas) los escribe y los corre **QA**,
+a partir de las filas del TDD y de un scope en prosa que el PMO le da (casos, datos, qué observar): el PMO no los
+escribe como spec, porque quien prueba lo propio en pantalla prueba lo que él entendió. Una fila de pantalla del TDD
+dice **qué debe verse**; el spec es de QA (`itdfw-completeness`, § "Quién prueba qué").
+
 Tabla por nivel. Cada fila: **el caso en lenguaje de dominio · qué cubre · el resultado esperado**.
 
 **Niveles, y no se evalúa uno si el anterior no está verde:**
