@@ -117,7 +117,7 @@ Cómo se escriben, para que el gallinero se ordene solo:
 - **El helper `site` de `tests/back/`** entrega `admin()`, `as(user, token)`, `url(path)`, `request()`, `json()`. El
   **transporte** (headless client, `fetch`, curl, Playwright) lo elige cada test; el runner no sabe de eso.
 - 🔴 **Browser = spec programático de `@playwright/test`** (`npx playwright test <ruta> --reporter=line`), que vive
-  con la unidad (`plugins/<x>/test/e2e/`, `fronts/itdfw-naiveui/test/`, fuera del tarball). **Nunca un MCP de
+  con la unidad (`plugins/<x>/test/e2e/`, `fronts/*/test/`, fuera del tarball). **Nunca un MCP de
   browser** (`plugin_playwright`, `playwright-headless`): cada llamada trae la página entera al contexto y no deja
   nada reutilizable. Patrón: un spec de NUI que afirma la consola (el de `menu`). La consola del browser se afirma dentro
   del spec (`page.on("console")`).
