@@ -123,6 +123,11 @@ datos de mercado llevan su fecha y su fuente, y nada de eso entra al TDD sin pas
 
 ## Lo que recibe el PMO, y lo que hace con eso
 
+- 🔴 **El PMO es quien lo mueve.** Si su trabajo trae o modifica front de cliente, él pide el estudio a `designer` y el
+  análisis a `Comercial` donde corresponda, y lo analiza con ellos antes de escribir. Un TDD con front de cliente que
+  llega a implementarse sin la alternativa elegida y el enlace al estudio en su cabecera se devuelve (checklist de
+  conformidad de `tdd-narrativo`).
+
 - Escribe el TDD **sobre la alternativa elegida**. La narrativa y la rebanada 1 la nombran; el estudio queda enlazado
   desde la cabecera del TDD, no copiado.
 - Lo que la alternativa pide y el FW no tiene se lleva como necesidad a quien corresponda, antes de fijarlo en el modelo.
