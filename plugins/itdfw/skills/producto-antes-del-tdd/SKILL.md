@@ -49,7 +49,12 @@ Antes de empezar se dice en una línea cuál de los dos casos es. Si no se sabe,
 | Lo que se hace | Estudio |
 |---|---|
 | un site o un producto nuevo | completo, como sigue |
-| una pantalla nueva de cliente en algo que ya opera | corto: `designer` mira cómo lo resuelven uno o dos competidores y lo deja en la sección UI/UX del TDD, sin alternativas ni página aparte |
+| una pantalla nueva de cliente en algo que ya opera | corto, y siempre doble: cómo lo resuelven uno o dos competidores **y** cómo lo resuelve ya el FW con sus piezas genéricas. Va en la sección UI/UX del TDD, sin página aparte |
+
+🔴 **El análisis es doble en los dos casos: la competencia y lo que el FW ya da.** La primera alternativa es siempre la
+**barata**: el producto (o la pantalla) hecho con lo que el FW provee hoy, sin diseño propio. Las demás muestran el
+estudio extra y lo que cuesta sobre esa base. Así el dueño decide el costo **por etapas**: se parte operando con lo que
+el FW da mientras se diseña la versión de vitrina.
 
 🔴 **El estudio completo cabe en un par de horas, no en días.** `designer` lo parte en un árbol de tareas (un
 competidor por rama, una alternativa por rama) y las reparte en subagentes en paralelo; él arma y decide. Lo que no se
@@ -72,8 +77,9 @@ Una página para decidir (no un `.md` árido), con estas partes, en este orden:
 2. **Por cada uno**: su árbol de capacidades, y sus virtudes y defectos **de UI/UX y de capacidades** (no comerciales).
    Cada virtud o defecto apunta a una captura.
 3. **Lo que agregamos nosotros**: qué hacemos que ellos no, o qué hacemos distinto y por qué.
-4. **Dos o tres alternativas** para el producto propio: cada una con su recorrido principal, su árbol de capacidades y
-   lo que cuesta (qué piezas del FW usa y qué habría que construir).
+4. **Dos o tres alternativas** para el producto propio, la primera siempre la barata (solo lo que el FW ya da): cada
+   una con su recorrido principal, su árbol de capacidades y lo que cuesta sobre la anterior (qué piezas del FW usa y
+   qué habría que construir), para poder implementarlas por etapas.
 5. **La recomendación**, con su porqué en una línea.
 
 - **Sin competidor directo**: se estudia lo que el cliente usa hoy para lo mismo (una planilla, WhatsApp, un cuaderno).
