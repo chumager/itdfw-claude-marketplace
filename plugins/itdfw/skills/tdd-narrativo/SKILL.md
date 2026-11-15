@@ -172,29 +172,12 @@ lee en diez segundos y lo que jcmunoz revisa primero.
 
 ### 2b' · 🔴 Componentes y puntas también llevan su AST de diseño — no solo los modelos
 
-Lo de arriba deja bien definidos los MODELOS. Pero un **componente** o una **punta** que solo aparece en flujos y
-casos queda como *"necesidad que la implementa el que quiera como quiera"*: el implementador decide el árbol, y el
-dueño termina **leyendo código** para poder opinar (jcmunoz 2026-09-18, `ItdT` del traductor: el componente nació a
-rebotes —regex, ellipsis, botón, popover, líneas— porque el TDD nunca declaró su forma; *"sin AST de diseño no
-podemos dar el vamos a algo"*). Un requerimiento de diseño sin su AST no es diseño.
+Un **componente** o una **punta** que solo aparece en flujos y casos deja al implementador decidir el árbol, y el dueño termina leyendo código para opinar (*"sin AST de diseño no podemos dar el vamos a algo"*). Un requerimiento de diseño sin su AST no es diseño.
 
-**Componente** (`Itd*`): una tabla y un árbol, ANTES de codear:
+- **Componente `Itd*`** — una tabla y un árbol ANTES de codear: **props** (nombre · tipo · default · qué significa en dominio), **cadena** (qué capa lo declara y cuál lo extiende, con el `name` de cada una), **métodos por capa** (cuál declara cada capa y **cuál pisa**), **render** (quién lo declara, una sola capa, y qué llama), **lo que NO hace**, y 🔴 **qué pieza del FW ES**: un conjunto de campos con guardar ES un form (`GenericForm` + definición de inputs + controller), no un componente nuevo.
+- **Punta** (`APP/…`, `options.API`) — `path · verbo · acceso · params (nombre, obligatorio, normalización) · body · respuesta (shape exacto y status posibles) · errores (código por causa)`. Sin la respuesta escrita, el front adivina el shape.
 
-| Qué | Cómo se declara |
-|---|---|
-| props | nombre · tipo · default · qué significa (en dominio, no "boolean") |
-| cadena | qué capa lo declara y qué capa lo **extiende** (core → front-lib → plugin), con el `name` de cada una |
-| métodos por capa | qué método declara cada capa y **cuál pisa** (una tabla: método · capa que lo declara · capa que lo pisa) |
-| render | quién declara el `render` (una sola capa) y qué llama (`content()`, `renderX()`); las demás capas NO lo redeclaran |
-| lo que NO hace | explícito: qué decisión NO toma (ej. "no detecta HTML: pinta `innerHTML` siempre") |
-| 🔴 qué pieza del FW ES | la PRIMERA fila si el componente tiene campos: ¿es un **form** (`GenericForm` + definición de inputs + controller), una grilla, una vista? En ITDFW un conjunto de campos con guardar ES un form. El editor del traductor (18-sep) nació como modal a mano con `renderGI` por campo porque el brief describió la UI y nadie preguntó "¿esto es un form?" |
-
-**Punta** (`APP/…`, `options.API`): `path · verbo · acceso · params (nombre, obligatorio, normalización) · body ·
-respuesta (shape exacto, y los `status` que puede traer) · errores (qué código para qué causa)`. Sin la respuesta
-escrita, el front adivina el shape y el TDD no puede decir qué lo haría fallar.
-
-⟹ Lo que un cajarito implemente que no esté en ese árbol es **hallazgo**, igual que un campo fuera de la tabla del
-modelo. Y si al implementar el árbol resulta mal, se corrige el TDD primero, no el código.
+⟹ Lo que un cajarito implemente fuera de ese árbol es **hallazgo**; si el árbol resulta mal, se corrige el TDD primero, no el código. La tabla completa y el caso de `ItdT` (2026-09-18): [references/design-ast.md](references/design-ast.md).
 
 ### 2c · 🔴 Cada sección se escribe CON SU SKILL cargado — este skill no los reemplaza
 
@@ -278,56 +261,15 @@ de la red"*).
 
 #### 🔴 Componentes y tipos propios: la vertical se prueba COMPLETA, hasta XLS y PDF
 
-Un tipo o un componente no termina en la pantalla. El mismo valor **se descarga en planilla y se
-imprime en documento**, y esas dos son salidas de primera clase, no un extra.
-
-⟹ **Todo TDD de componente o tipo propio incluye, obligatoriamente, un caso de descarga XLS y uno de
-generación PDF.** Sin eso el nivel 1 NO está cubierto: falta el tramo final de la vertical.
-
-**Por qué justo ahí y no en otro lado:** es la única salida **irreversible** —un contrato o una
-planilla que ya salió al cliente no se corrige— y es la que **más depende de contexto goteado** (el
-locale, la moneda, el request). Un test unitario del objeto de valor no lo ejerce: el objeto formatea
-bien aunque el pipe que le entrega el locale esté roto. Es exactamente el hueco que hay que cerrar.
-
-**Y son baratas**: `toPDF` devuelve un `{text, ...style}` plano → se afirma sobre el objeto, **sin
-renderizar el archivo**. Mínimo: un valor normal con dos locales distintos, y el valor vacío.
+**Todo TDD de componente o tipo propio incluye, obligatoriamente, un caso de descarga XLS y uno de generación PDF**; sin eso el nivel 1 NO está cubierto (falta el tramo final de la vertical). Es la única salida **irreversible** y la que **más depende de contexto goteado** (locale, moneda, request). Es barata: `toPDF` devuelve un `{text, ...style}` plano y se afirma sobre el objeto, **sin renderizar el archivo**; mínimo, un valor normal con dos locales y el valor vacío.
 
 #### 🔴 Una prueba que se corre A MANO no es una prueba: es un ritual
 
-Al definir cada caso hay que decir **cómo se ejecuta solo**. Si la respuesta es *"se deja todo en modo
-debug, se arma un caso grande y se van mirando los edges"*, ese caso **está mal definido** y no se
-aprueba así — porque **nadie repite un ritual de una hora**. Se corre una vez, se anota el resultado, y no
-se vuelve a correr nunca.
+Cada caso dice **cómo se ejecuta solo**. Si el resultado esperado es un **NÚMERO o un CONTEO** (cuántos componentes reaccionaron, cuántos requests, cuántos ms), el caso se define desde el principio como **ejecutor automático**: el test ata el número a su régimen, y si el régimen cambia se cae ese día. Un número medido a mano **caduca callado**.
 
-🔴 **Y ahí viene el daño, que no es no-probar sino algo peor: el número CADUCA callado.** Una medición vale
-solo mientras viva el régimen en que se midió. El sistema cambia después, y el resultado se sigue citando
-como vigente porque re-medirlo cuesta una hora. Queda una certeza fósil: creemos que está probado, y está
-probado *otro* sistema.
+#### 🔴 Las pruebas son un GRAFO, no un árbol
 
-⟹ **Si el resultado esperado de un caso es un NÚMERO o un CONTEO** —cuántos componentes reaccionaron,
-cuántos requests salieron, cuántos ms tardó, "¿se despertó alguien más?"— **el caso se define desde el
-principio como ejecutor automático**. El test es lo que ata el número a su régimen: si el régimen cambia,
-se cae ese día y no dos años después.
-
-Litmus al escribir la fila: *¿el resultado es un número o un "¿reaccionó alguien más?"* → es ejecutor
-automático, no inspección. (El costo suele ser mucho menor de lo que parece: la infra de prueba y los logs
-que dicen quién reaccionó ya existen; falta la aserción.)
-
-#### 🔴 Las pruebas son un GRAFO, no un árbol (jcmunoz 2-oct-2026)
-
-"Tengo este requerimiento, le hago un test" produce un árbol con duplicados. La pregunta va al revés: **con mi set
-de pruebas, ¿queda todo el contrato encadenado o hay nodos colgando?**
-
-| Regla | Qué significa |
-|---|---|
-| cada test declara **qué cubre** | los nodos del contrato que recorre (de diseño, sistema y funcionales); un test cubre varios nodos y un nodo puede quedar cubierto por varios tests |
-| se agrega un test solo para un **nodo colgando** | la revisión busca los nodos sin cobertura, ve a qué corresponden, y recién ahí escribe uno |
-| **no se prueba en una prueba la base de las demás** | si N specs recorren un mecanismo, un spec dedicado a él no aporta: si el mecanismo se rompe, caen todos; si cae uno solo y a ratos, es entorno o el spec (rule `e2e-siempre-chrome-real-y-al-dia`, paso 0) |
-| **dos pruebas con intent distinto que hacen lo mismo son una** | se saca la redundante; no se fusionan en una nueva |
-
-Caso: `itd-t-shared` (translate) probaba "redefinir → PUT → `mutate({force})` → aviso del SW → repintar", que ya
-recorrían `nullify`, `attr-href`, `grid-width`, `not-translatable` y `status-colours`. Falló 2 de 4, se le culpó a un
-cambio ajeno sin correlación, y a mano funcionaba siempre. Se sacó.
+La pregunta es si **con el set de pruebas queda todo el contrato encadenado o hay nodos colgando**. Cada test declara **qué nodos cubre**; se agrega uno solo para un **nodo colgando**; **no se prueba en una prueba la base de las demás**; **dos pruebas con intent distinto que hacen lo mismo son una** (se saca la redundante, no se fusionan). La tabla completa y el caso `itd-t-shared`: [references/tests-detail.md](references/tests-detail.md).
 
 ### 5 · Recién ahí, el código
 
@@ -413,26 +355,7 @@ Perseguir el 100% en un feature es el mismo error que no probar el must.
 
 ## 🔴 Escenarios que no existen
 
-El fallo más caro no es un test que falla: es un test **de algo que no debería pasar nunca**. Cuesta
-código, cuesta mantenimiento, y encima blinda una conducta equivocada.
-
-Antes de escribir un caso, dos preguntas:
-
-1. **¿Quién pediría esto y por qué?** Si no hay respuesta con nombre y motivo, el caso no existe.
-2. **¿Qué gana el usuario si esto ocurre?** Si la respuesta es "nada" o "queda peor", no es una
-   funcionalidad: es un desatino.
-
-Caso real (2026-08-06): *"el usuario cancela la recuperación de red"*. Suena razonable — hasta que
-se pregunta qué gana: **ya pidió lo que pidió, y cancelar lo deja mirando una interfaz rota**. No
-había opción que ofrecer: el aviso es un **stop**, no un diálogo. El test existía, pasaba en verde, y
-blindaba un comportamiento que nadie quería.
-
-🔴 **Las dos preguntas aplican también a los huecos que UNO propone.** El mismo día, auditando ese
-módulo, se propusieron tres "escenarios faltantes" —navegar con vuelos en curso, dos pestañas, F5 a
-media recuperación— y los tres se cayeron a la primera pregunta: el bloqueo de UI ya impide navegar,
-dos pestañas convergen solas por SWR sin perder coherencia, y un F5 en una SPA es *"recarga la app"*,
-una decisión del usuario que no hay que administrar. **Proponer un hueco sin filtrarlo es el mismo
-error que escribir el test de más, con el disfraz de rigor.**
+El fallo más caro es un test **de algo que no debería pasar nunca**: cuesta código, mantenimiento, y blinda una conducta equivocada. Antes de escribir un caso: **1. ¿Quién pediría esto y por qué?** (sin nombre y motivo, el caso no existe). **2. ¿Qué gana el usuario si esto ocurre?** ("nada" o "queda peor" es un desatino, no una funcionalidad). 🔴 Las dos preguntas aplican también a los huecos que UNO propone: proponer un hueco sin filtrarlo es el mismo error que escribir el test de más. El caso real (2026-08-06) y la auditoría que lo ilustra: [references/scenarios-that-dont-exist.md](references/scenarios-that-dont-exist.md).
 
 ## 🔴 Checklist de conformidad — para quien RECIBE un TDD (cajaritos incluidos)
 
@@ -541,63 +464,4 @@ sin el skill y la arquitectura escritos, el TDD no está cerrado, está abandona
 
 ## Plantilla del `TDD.md`
 
-```markdown
-# <módulo> — TDD por niveles
-> Regla de escalamiento: un nivel no se evalúa si el anterior no está verde.
-> Modo: <NUEVO (reimplementa, cero parches, consulta) | REFACTOR con cobertura completa (firmas cambian si el contrato cambia; toda la suite) | INCREMENTAL (firmas y edges intactos; toda la suite + lista de casos que cambian)>
-> Destino al cerrar: <se queda como spec del módulo | skill `<área>` + `architecture/<ruta>` + tests → este archivo a `history/`>
-> Este archivo es SOLO el contrato. El porqué de cada decisión: `TDD-bitacora.md`. Cada corrida: `TDD-corridas.md`.
-
-## 🔴 Rebanada 1 — con esto avanzamos
-| # | Qué | Terminado cuando (operando) |
-<fuera de la rebanada 1, una línea cada uno>
-
-## El scope
-<tabla front/back o el que corresponda: actor, concurrencia, quién mira, vida, red>
-<consecuencias prácticas para estos tests>
-
-## Requisitos y qué NO vamos a construir
-<MUST / SHOULD / MAY, declarados ANTES de mirar candidatos>
-<si el dominio es una norma externa: qué RFC/spec, versión vigente con fecha, y el choque con lo que
- implementan de verdad los clientes con los que vamos a hablar>
-| Requisito | must/should/may | ¿alguien lo provee? | Veredicto: adoptar / adaptar / implementar | Por qué |
-
-## Modelo
-### Entidades
-| Campo | Tipo | Ref / refPath | Único / índice | Quién escribe | Se proyecta |
-### Puntas
-| Path | Verbo | Acceso | Por qué ese acceso | Quién la llama | Modelo que toca |
-| Params (obligatorio · normalización) | Body | Respuesta (shape y status posibles) | Errores (código · causa) |
-<el criterio de acceso lo da `itdfw-api-system`; acá solo se declara cuál y por qué>
-
-### Componentes                <!-- §2b': uno por componente Itd* que el módulo declara o extiende -->
-| Prop | Tipo | Default | Qué significa |
-| Capa (name) | Extiende a | Métodos que declara | Métodos que pisa |
-<quién declara el render y qué llama; y la lista de lo que el componente NO hace>
-
-### Relaciones
-```mermaid
-erDiagram
-```
-
-## Diferencial y defectos heredados        <!-- SOLO si el módulo ya opera (§2f) -->
-| Pieza | Estado real | Qué hace este módulo con ella |
-| Qué está mal hoy | Cómo se sabe (probado corriendo / sospecha + prueba que la destapa) | Arreglar o heredar |
-
-## UI/UX — lo que ve la persona        <!-- SOLO si el módulo tiene front; la escribe designer -->
-<pantallas, maquetas, cómo se entra y se sale de cada estado, en el celular. QA escribe el recorrido a partir de esto>
-
-## Ejecutores
-<quién dispara cada flujo>
-
-## Nivel 0..3
-| Caso (en dominio) | Qué cubre | Estado |
-
-## Huecos conocidos
-| Falta | Nivel | Por qué importa |
-
-## Decisiones que estos tests blindan
-
-## Puesta en operación        <!-- sin los 4 campos el TDD está PROBADO, no OPERANDO -->
-| Commit | Versión | Deploy | Uso (quién, qué vio) |
-```
+La plantilla (cabecera con regla de escalamiento, modo y destino; Rebanada 1; scope; requisitos y qué NO vamos a construir; Modelo con Entidades, Puntas, Componentes y Relaciones; Diferencial y defectos heredados; UI/UX; Ejecutores; Nivel 0..3; Huecos; Decisiones; Puesta en operación) vive en [references/template.md](references/template.md). Cópiala y llénala en ese orden.
