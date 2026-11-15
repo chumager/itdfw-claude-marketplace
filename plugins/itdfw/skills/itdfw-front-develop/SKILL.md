@@ -18,42 +18,7 @@ Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) apli
 - 🔴 **Idioma del código: inglés.** Identificadores, funciones, variables, props, archivos y comentarios en inglés
   camelCase; nombres de componentes `Itd*`. Solo los textos visibles al usuario van en español, y por el sistema de
   traducción, nunca hardcodeados. (Un site entero escrito en español, 2026-09-13, no lo frenó ningún skill.)
-- 🔴 **Traducción: los globales `t` y `rt` (core ≥ 7.1.0), no `$t` ni `<itd-wc-t>`.**
-  `t(context, subcontext, text, {data})` **declara una Query y devuelve un ref reactivo** (se lee `.value`): se
-  llama en `created`/`setup`, **nunca en el render** (smart-fetch corta "a Query cannot be declared inside render()";
-  detalle en `references/translation-front.md`). Sirve para lo que no se dibuja como texto (título de columna, `Alert`, opciones de un select,
-  labels de ECharts). `rt(context, subcontext, text, props)` devuelve el **VNode** de `ItdT` para JSX (title de
-  `ContentWrapper`, labels de `GenericInputWrapper`, botones del form). Sin el plugin `translate` los dos son espejo
-  (devuelven el texto). El web component `<itd-wc-t>` **salió del core en 7.1.0**: un site que lo use lo migra a
-  `rt()`; el WC vive solo dentro del plugin `translate`.
-  🔴 **Lo que NO se traduce: datos.** El nombre de un documento o cualquier valor que el usuario escribe en la BD
-  pasa crudo. 🔴 **Excepción: `name`/`description` de una función del perfil son SEMIESTÁTICOS** (jcmunoz
-  28-sep-2026, corrige la regla del 17-sep): nacen de la declaración del modelo o la punta y se escriben una vez;
-  quedan editables porque un perfil puede recibir un acceso acotado a un administrador (deja de ser "Administración
-  de X" y pasa a ser "Visor de X"). Uno es el *intent* (lo declarado) y el otro el que define al final (lo que el
-  perfil fija), y **los dos se traducen siempre**, sobre su valor, con la coordenada `Interface` ·
-  `name-<path>` / `description-<path>` (lo que llega son interfaces, no puntas). `checkLogin` los entrega crudos y
-  declara esas coordenadas (`optionsTranslation`); quien los pinta (el select del menú, los atajos, el shell) traduce
-  con ellas. Un select traduce sus opciones con la `optionsTranslation` que le declara quien las manda
-  (`references/translation-front.md` §Opciones de un select). Nadie pasa los `name` de los modelos a español para
-  "arreglar" el menú.
-  🔴 **El `text` puede ser COMPUESTO, no solo un string** (core `init.js`, verificado 18-sep-2026). Tres formas:
-
-  | Forma | Qué hace |
-  |---|---|
-  | `"texto"` | se traduce con `(context, subcontext)` y se rellena con `data` vía Mustache |
-  | `[a, b, c]` | traduce cada item y los **une con el `separator`** del nivel que contiene el array (default `", "`) |
-  | `{text, context?, subcontext?, data?, separator?, onlyTranslated?}` | descriptor: traduce `text` con lo que declare, heredando lo que no declare |
-
-  Las tres se **anidan**: un array puede traer descriptores, y un descriptor puede traer otro array.
-  **La herencia es por `??`, el más cercano gana**, y el default de `separator` solo aplica en la raíz — un
-  descriptor hijo que no declara `context` usa el del padre, y así con `subcontext`, `data`, `separator` y
-  `onlyTranslated`. Cada nivel pasa por `unref`, así que acepta refs y sigue siendo reactivo. Un `text` nulo
-  devuelve `""` en vez de reventar. Sirve para un mensaje armado de partes con contextos distintos (un error
-  del back + una aclaración de la UI) sin concatenar strings ya traducidos, que es lo que rompe el orden en
-  otros idiomas. `ItdT` con un array pinta exactamente ese join, porque su `content()` llama a `t`.
-  ⚠️ El relleno final es **Mustache sobre `data`**: si el `data` no trae la key, `{{loQueSea}}` sale vacío
-  (hallazgo #201, 18-sep: `{{input.label}}` vacío en los mensajes de validación).
+- 🔴 **Traducción: los globales `t` y `rt` (core ≥ 7.1.0), no `$t` ni `<itd-wc-t>`.** `t(context, subcontext, text, {data})` **declara una Query y devuelve un ref reactivo** (se lee `.value`): se llama en `created`/`setup`, **nunca en el render** (smart-fetch corta "a Query cannot be declared inside render()"); sirve para lo que no se dibuja como texto (título de columna, `Alert`, opciones de un select, labels de ECharts). `rt(context, subcontext, text, props)` devuelve el **VNode** de `ItdT` para JSX (title de `ContentWrapper`, labels de `GenericInputWrapper`, botones del form). Sin el plugin `translate` los dos son espejo. 🔴 **Los datos no se traducen** (el nombre de un documento, lo que el usuario escribe): pasan crudos; excepción: `name`/`description` de una función del perfil son semiestáticos y **se traducen siempre**, sobre su valor, con la coordenada `Interface` · `name-<path>`/`description-<path>`. 🔴 El `text` puede ser un string, un arreglo (se une con el `separator`) o un descriptor `{text, context?, subcontext?, data?, separator?, onlyTranslated?}`, anidables; la herencia es por `??` y el más cercano gana. El relleno final es Mustache sobre `data`. Detalle: [references/core-rules-detail.md](references/core-rules-detail.md) §Traducción y `references/translation-front.md`.
 - **`index.html` en cascada (site → DEFAULT → front → core)**: el nivel que lo pone gana el `root` y trae su `src/main.js` al
   lado; `public/` sí se suma entre niveles. El splash inicial es `#app:empty` en el `index.html` del core, con `#app`
   sin NADA adentro (ni un espacio). El build dice cuál ganó: `[itdfw] index: <root>`. Detalle: `itdfw-front-app` →
@@ -63,42 +28,13 @@ Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) apli
 - **Quitar partes del shell** (`nav`, `side`, `drawer`, `footer`): por **ruta** (caso dinámico) con `meta.shell`
   (`false` = ninguna, arreglo = solo esas; lo resuelven `hasSink`/`inShell` de `injections/App.js`, core ≥ 24-oct-2026);
   para **todo un site** (caso fijo) basta pisar el componente en la cascada del site con un `render() { return null; }`.
-- **🔴🔴 REGLA DE ORO — CLONE GUARDS (2026-07-13)**: todo dato que CRUZA una frontera viaja CLONADO,
-  jamás por referencia compartida — y el clonador ES el helper **`GI.clone(v)`** (Blob/File pasan por
-  ref — no son deep-clonables; el resto `cloneDeep`): memorias de comparación (`vModelLastEmitted`,
-  old-values de guards), asignación de `input`/config a estado local, transferencia de objetos entre
-  componentes (definir el dueño, clonar en la frontera). JAMÁS `cloneDeep` pelado en una frontera —
-  saltarse la regla del Blob rompe campos File. El getter del VSV y vModelEmit/Sync ya lo usan. Una ref compartida entre dos dueños "se pierde en las pasadas": guards
-  que se auto-actualizan (el GF no emitía JAMÁS — auth muerto), inputs que quedan reactivos y suben la
-  cadena (sobrecargas en todos lados). Red flag: un `=` de objeto cruzando frontera sin clone; ante un
-  bug raro de reactividad/transferencia, probar IDENTIDAD COMPARTIDA antes que nada. Excepción
-  DELIBERADA: la mutación in-place del contenedor del GF (performance) — legítima porque sus observadores
-  comparan contra snapshots CLONADOS (ambos lados se sostienen mutuamente).
+- **🔴🔴 REGLA DE ORO — CLONE GUARDS**: todo dato que CRUZA una frontera viaja CLONADO, jamás por referencia compartida, y el clonador ES **`GI.clone(v)`** (Blob/File pasan por ref; el resto `cloneDeep`). JAMÁS `cloneDeep` pelado en una frontera (rompe campos File). Ante un bug raro de reactividad o transferencia, prueba IDENTIDAD COMPARTIDA antes que nada. Excepción deliberada: la mutación in-place del contenedor del GF. Detalle: [references/core-rules-detail.md](references/core-rules-detail.md) §Clone guards.
 - **🔴 NO romper la CADENA al override** — pisar una función heredable (cadena `GI→GF→hoja` o `core→front→site`) sin llamar al original deja huérfanas a las hojas; el síntoma aparece lejos de la causa. Sobrecarga el `defaultX`, no el wrapper `X`. Aplica al tocar cualquier método heredable. [override-chain.md](references/override-chain.md), [value-pipeline.md](references/value-pipeline.md).
 - **🔴 En el front, la UBICACIÓN es la declaración** — un nivel de la cascada (core / front-lib / DEFAULT / app / **y la carpeta de framework de un FWPlugin**) aporta cosas por **dónde las pone**, sin registrar nada: `router.js` en la raíz → sus rutas entran al router; `store/modules/*.js` y `store/plugins/*.js` → al store; `components/X` · `views/X` · `mixins/` · `controllers/` · `injections/` → resuelven por nombre (🔴 `loaders/` NO: van por función, deliberadamente fuera de la cascada para que nadie los pise). La cascada es *first-return* con la app arriba ⟹ **nombrar igual PISA al de abajo, en silencio** (en rutas hay un `console.warn` por `name` duplicado, pero igual gana el último). Es la contracara del back, donde declaras keys y el espejo de carpetas es solo coherencia. Detalle y tabla completa: skill **`itdfw-fwplugin`** §"En el FRONT el espejo es IMPERATIVO".
-- **🔴 Un `watch` NO se pisa con `extends`: Vue lo MERGEA** (`mergeWatchOptions` → `mergeAsArray` por key: corren el
-  handler del padre Y el del hijo). Lo mismo para los hooks de ciclo de vida. Para REEMPLAZAR un watcher desde un
-  nivel de arriba (site, plugin), se extiende una **copia superficial del objeto del padre sin esa key**
-  (`const base = {...Parent, watch: {...Parent.watch}}; delete base.watch.x; export default {extends: base, watch: {x: …}}`).
-  Los `methods` y `computed` sí se pisan (gana el hijo). Y si lo que hay que pisar vive INLINE en un `render()`
-  monolítico, el seam mínimo (`renderX()`) se agrega en la capa dueña sin cambiar conducta y recién ahí se pisa
-  (caso `ViewNUI.renderDeleteModal`, 21-sep-2026). Gap #45.
+- **🔴 Un `watch` NO se pisa con `extends`: Vue lo MERGEA** (corren el handler del padre Y el del hijo; igual los hooks de ciclo de vida). Para REEMPLAZAR uno desde un nivel de arriba se extiende una **copia superficial del objeto del padre sin esa key**; `methods` y `computed` sí se pisan. Si lo que hay que pisar vive INLINE en un `render()` monolítico, primero se agrega el seam mínimo (`renderX()`) en la capa dueña. Detalle y receta: [references/core-rules-detail.md](references/core-rules-detail.md) §watch.
 - **GI ya lo hace**: GI maneja render, value flow, validation, events, lazy, state. Verifica defaults antes de override.
-- 🔴🔴 **REGLA DE ORO: un valor con type (monto, fecha, duración, porcentaje, teléfono, HTML…) pasa por la base de
-  lógica del core de su type; la pintura es libre.** Se puede reimplementar o pisar el componente desde cualquier capa
-  (decide la precedencia en la cascada), siempre extendiendo esa base. En una vista propia: `renderGI` en modo
-  `detail`. Nunca un `Intl.NumberFormat` o un formateo a mano: la base (saneo, locale, moneda, máscara, VO) es lo que
-  da las capacidades, y saltársela rompe en silencio reglas ya establecidas (rule `datos-por-sus-componentes`). Monto: `this.renderGI({name, key, type: "Currency", component: "ItdCurrency", currency: "CLP"}, valor,
-  null, {viewType: "detail"})` (el componente declara `$renderGI: true`). Caso: la carta del restorán formateaba con
-  `Intl` fijo en es-CL y al elegir otro idioma los precios no cambiaban (25-oct-2026).
-- 🔴 **Todo HTML que se inyecta pasa por `ItdHtml` en modo `detail`**, **nunca `innerHTML` ni `v-html` directo**.
-  Se monta con `this.renderGI({name, key, type: "Html", component: "ItdHtml"}, valor, null, {viewType: "detail"})`
-  (el componente declara `$vModel` y `$renderGI`). Sin `plain`: esa opción aplica `all: initial` y le quita al
-  contenido su formato. `ItdHtml.sanitizeHtml` sanea con DOMPurify (quita scripts, `on*` y links
-  `javascript:`, conserva el formato) y deja pasar intacto el texto sin etiquetas, así que no hay que preguntarse si lo
-  que llega es texto o HTML. El back además sanea el type `Html` al guardarlo (setter con `sanitize-html`). Vale para
-  la ayuda de un modelo, alertas, acciones, traducciones y cualquier texto que venga del back o de un usuario.
-  Origen: 20-oct-2026, XSS por campos Html y por textos redefinibles.
+- 🔴🔴 **REGLA DE ORO: un valor con type (monto, fecha, duración, porcentaje, teléfono, HTML…) pasa por la base de lógica del core de su type; la pintura es libre.** En una vista propia: `renderGI` en modo `detail`, p. ej. `this.renderGI({name, key, type: "Currency", component: "ItdCurrency", currency: "CLP"}, valor, null, {viewType: "detail"})`. Nunca un `Intl.NumberFormat` ni un formateo a mano (rule `datos-por-sus-componentes`). Detalle y caso: [references/core-rules-detail.md](references/core-rules-detail.md) §Valor con type.
+- 🔴 **Todo HTML que se inyecta pasa por `ItdHtml` en modo `detail`**, nunca `innerHTML` ni `v-html`: `this.renderGI({name, key, type: "Html", component: "ItdHtml"}, valor, null, {viewType: "detail"})`, **sin `plain`**. `ItdHtml.sanitizeHtml` sanea con DOMPurify y el back también sanea el type `Html`. Vale para cualquier texto que venga del back o de un usuario. Detalle y origen: [references/core-rules-detail.md](references/core-rules-detail.md) §HTML.
 - **🔴 FLUJO DE VALORES SELLADO (2026-07-13)** — los gates del ciclo raw→VSV→VSR→emisión (forceDisplay, corte de eco, assignVSR puro, snapshot de emisión, lazy ortogonal) están CONGELADOS: solo cambios idempotentes pasan; NO tocar sin tema MUY fuerte. Operación: [value-pipeline.md](references/value-pipeline.md); declaración canónica: la doc de arquitectura «value-flow-sealed».
 - **🔴 Contrato VO↔GI** — si el campo tiene un Value Object, se ENCHUFA (`data.VO` + pseudoDoc `this.doc`) y el GI delega los hooks espejo 1:1 con fallback nativo + warn onDev. 🔴 Hooks de clase SOLO SIN externalidades (los valores deben existir REALMENTE en doc y GI — `_currency` sí; `locale`/`mask` JAMÁS: son del USUARIO, nunca se parchan al pseudoDoc); externalidades → **WRAPPER del VO** en el componente (`class extends VO` + `setLocale(vm.staticLocale)` — snapshot PLANO, nunca el getter reactivo: getter-tubo). SSoT del flujo = VSR (nada de revertir display). La herencia por similitud MUERE cuando el VO suple la implementación. [vo-gi-contract.md](references/vo-gi-contract.md).
 - **🔴 Contrato de capacidades por viewType (`support`)** — la tabla `data.viewTypes` (keys homologadas 1:1 a la punta: validateSelf/assignVSR/formBus) es la SSoT de qué puede hacer cada modo. LA PUNTA discierne (`support(cap, silent?)`: forma rota EXPLOTA siempre; capability false → false + weeo default); el CONSUMER llama PELADO — NUNCA `if (viewType === ...)` en un componente (whitelist ad-hoc = invariante replicado). [viewtype-contract.md](references/viewtype-contract.md).
@@ -113,22 +49,13 @@ Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) apli
   del GI — discierne solo: form → `rootBus.getValue` / grilla-view (sin bus) → `row[field]`. NUNCA bus
   pelado (en view no existe → computed explota mudo) ni row pelado (en form la fila no es la fuente viva).
   Nació del canon localCurrency; consagrada en ItdQuotes (celda muda cazada 2026-07-17).
-- **🔴 `contextType` + `hasFormBus`** (buses SOLO dentro de un form) — usa el computed SSoT `hasFormBus` (doble trap viewType + localContextType) para CUALQUIER condicional de bus, nunca `mode === "input"`. 🔴 **Los 3 buses (`root`/`parent`/`form`) son TRANSITIVOS por provide**: un GF los recastea (pasa los que tiene; si no los pisa, los hereda) y el GI recibe el provide generado → **si hay `formBus`, SIEMPRE hay `rootBus`/`parentBus`**. ⟹ un dato que vive en el ROOT (ej. `_currency`) se lee del **`rootBus`**, NUNCA del `formBus`: en un **embedded** (que es un GF con formBus PROPIO) el `formBus` local no tiene ese dato. (arrayForm no-GF "funcionaba" de casualidad: su formBus ES el del root.) Aplica al suscribir/usar formBus/rootBus. [mixins-model-context.md](references/mixins-model-context.md).
+- **🔴 `contextType` + `hasFormBus`** (buses SOLO dentro de un form): usa el computed `hasFormBus` para CUALQUIER condicional de bus, nunca `mode === "input"`. Los 3 buses (`root`/`parent`/`form`) son **transitivos**: si hay `formBus` siempre hay `rootBus`/`parentBus`; un dato del ROOT (ej. `_currency`) se lee del **`rootBus`**, nunca del `formBus` (en un embedded, que es un GF con formBus PROPIO, el local no lo tiene). [mixins-model-context.md](references/mixins-model-context.md); detalle: [references/core-rules-detail.md](references/core-rules-detail.md) §buses.
 - **🔴 `size` es PROP transitiva — un componente NO fija su tamaño**: `localSize = forceSize ?? localConfig?.size ?? size` (componente → back → prop, con el default del front; el core no opina). Baja por DOS vías: el GF en `renderFormInput`, y el loader **`renderGI`** para los hijos rendidos a mano (Address, doubleCheck) que nacen fuera de esa cadena. Imponerlo por construcción = `forceSize` (hermano de `forceLazy`).
 - **Patrón `localX`**: UN computed `local + Pascal(prop)` componiendo métodos puros, sin cascadas. [local-pascal-pattern.md](references/local-pascal-pattern.md).
 - **Siempre localImport**: loaders solo via localImport. Direct import solo si nada de la cadena necesita loader. [data-props.md](references/data-props.md), [cascade-inheritance.md](references/cascade-inheritance.md).
-- **🔴 Quien EXTIENDE una base de `lib/` la carga con `applyLoaders`** — `const Base = await import("core/lib/X.jsx").applyLoaders().get("default")` (canon: GI NUI, 2026-07-05). Los loaders que la base DECLARA ($vModel, $emitter, $validateSelf…) se aplican A SU objeto (singleton de módulo → todo el universo hereda; el mixin queda en el nivel de precedencia correcto → un computed del front pisa legítimo al mixin del loader). Import directo pelado deja los loaders huérfanos (con hoist:false nadie los aplica); el hoist:true viejo los aplicaba en la HOJA y su mixin pisaba los computeds del front — así murió por meses la regla lazyFormatter⟹"value" (sobrevivía solo por estáticos `$vModelChildProp` por componente, vestigio junto al `delete $validateSelf` del NUI — ambos eliminados).
+- **🔴 Quien EXTIENDE una base de `lib/` la carga con `applyLoaders`** — `const Base = await import("core/lib/X.jsx").applyLoaders().get("default")` (canon: GI NUI): los loaders que la base declara (`$vModel`, `$emitter`, `$validateSelf`…) se aplican a su objeto; un import directo pelado los deja huérfanos. Detalle: [references/core-rules-detail.md](references/core-rules-detail.md) §applyLoaders.
 - **Setup vs Options API**: `setup` corre antes de `created` → `this` no existe; nada que dependa de `this` vive ahí. Aplica al escribir setup/composables o loaders. [setup-lazy-async.md](references/setup-lazy-async.md), [anti-patterns.md](references/anti-patterns.md).
-- **🔴 DERIVAR datos: el CONTENEDOR CRUDO, NUNCA `validateSelfValue`** — el getter del VSV **CLONA** para
-  ser comparable (plugin `validateSelf`), y **clonar LEE TODAS LAS LLAVES** → quien lo lee queda
-  dependiente del objeto ENTERO → una tecla en cualquier campo re-rinde a TODOS los hijos. El crudo se lee
-  **por llave** y el proxy de Vue 3 (`WeakMap<objeto, Map<llave, Dep>>`) despierta solo al dueño.
-  🔴 Se accede por su DECLARACIÓN: **`this[this.$options.$validateSelfValue]`** — `localValue` es solo el
-  DEFAULT de esa opción (`:218`), es declarable por componente; escribir `this.localValue` a mano es bug
-  latente. **VSV = COMPARAR/emitir/guardar (el todo como unidad); contenedor = DERIVAR (un dato de
-  adentro).** Litmus: *¿necesito el objeto entero comparable, o UN dato?* Caso #115: 32 renders y 106 ms
-  por tecla → 1 render y 1–3 ms.
-  la doc de arquitectura «derivacion-vsv-vs-localvalue».
+- **🔴 DERIVAR datos: el CONTENEDOR CRUDO, NUNCA `validateSelfValue`** — el getter del VSV **clona** (lee todas las llaves) y una tecla en cualquier campo re-rinde a TODOS los hijos. El crudo se lee **por llave**, accediendo por su declaración, `this[this.$options.$validateSelfValue]` (no `this.localValue` a mano). **VSV = comparar/emitir/guardar; contenedor = derivar.** Litmus: *¿necesito el objeto entero comparable, o UN dato?* Detalle, el caso #115 y la doc de arquitectura: [references/core-rules-detail.md](references/core-rules-detail.md) §Derivar.
 - **🔴 NO asumir dato-on-create (paradigma lazy/async)**: "creado ⟹ dato disponible" está ROTO (formBundle SWR lazy). `setup`/`created` no debe leer value/options/form esperando que ya esté; declara la punta y lee vía reactividad. Revisa esos 2 hooks al tocar cualquier componente. Incluye la 🪄 magia negra de `formBus.getValue` (reactivo en vivo / muerto si snapshoteas) y cross-field reactivo. [setup-lazy-async.md](references/setup-lazy-async.md), [value-pipeline.md](references/value-pipeline.md).
 - **🔴 Prefijo `Itd`** — `name:` del componente Vue SIEMPRE `Itd*`; declaración back (`component:"X"`) prefijada SOLO si colisiona con HTML built-in (Code/Select/Form/Input/Button…). Aplica al nombrar componentes o declarar `component` en schemas. [itd-prefix-resolve-tag.md](references/itd-prefix-resolve-tag.md).
 
@@ -311,6 +238,7 @@ No-input components que viven en `views/` y participan del shell de App. Mismo p
 
 ## References (cuándo leer)
 
+- [core-rules-detail.md](references/core-rules-detail.md) — detalle de las reglas core: traducción (`t`/`rt`, `text` compuesto), clone guards, `watch` con `extends`, valor con type, HTML inyectado, buses, `applyLoaders`, derivar del contenedor crudo
 - [vo-gi-contract.md](references/vo-gi-contract.md) — 🔴 contrato VO↔GI: data.VO + pseudoDoc, dispatch espejo 1:1, voOptions, reactividad del doc (push vs getter-tubo), por qué mata la herencia por similitud
 - [viewtype-contract.md](references/viewtype-contract.md) — 🔴 contrato de capacidades por viewType: tabla data.viewTypes, support/supportOrThrow (weeo en el auxiliar, silent por punta), puntas disciernen/consumers pelados, fallback por componente, deps de loader en su mixin
 - [controllers.md](references/controllers.md) — 🔴 sistema de controllers: controller (propiedades de inputs) vs generalController (modifica el FORM: componentes/estructura); corren en created bindeados a this; ubicación = traza del origen; disabled de SCHEMA ≠ disabled de UI (disableFields); catálogo
@@ -353,3 +281,4 @@ No declares "listo"/"funciona" sin pasar por la **puerta de salida** del FW: tes
 si tocaste algo con retención (EE/hooks/globals/cache → `WeakRef`+gc+canario), completitud (*¿qué más toqué que
 no probé?*), logs con niveles (front `$log`/`$logDebug`, back `Log.XXX`+`logLevel`), y validación **externa** (el
 "Done" no se da sobre tu propio testing). Es un **servicio**, no un browser → cero memleaks. Skill **`itdfw-completeness`**.
+
