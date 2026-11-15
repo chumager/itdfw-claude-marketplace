@@ -119,7 +119,7 @@ Cómo se escriben, para que el gallinero se ordene solo:
 - 🔴 **Browser = spec programático de `@playwright/test`** (`npx playwright test <ruta> --reporter=line`), que vive
   con la unidad (`plugins/<x>/test/e2e/`, `fronts/itdfw-naiveui/test/`, fuera del tarball). **Nunca un MCP de
   browser** (`plugin_playwright`, `playwright-headless`): cada llamada trae la página entera al contexto y no deja
-  nada reutilizable. Patrón: `fronts/itdfw-naiveui/test/nav-items.spec.js`. La consola del browser se afirma dentro
+  nada reutilizable. Patrón: `fronts/itdfw-naiveui/test/menu.spec.js`. La consola del browser se afirma dentro
   del spec (`page.on("console")`).
 - **Fixtures del core**: puntas `onDev` en `back/itdfw/src/SITE/APP/test.js` (`test/exec`, `test/anonFn*`,
   `test/readonlyUser`). Nacen perfiladas: el test las asigna al admin del runner con `MCP/assignFunction` antes de

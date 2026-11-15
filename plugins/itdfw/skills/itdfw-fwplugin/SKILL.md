@@ -264,8 +264,8 @@ Detalle del pack, flags de registro y cómo escribir loaders → skill **`itdfw-
 ⟹ Un plugin puede traer **un vertical de front completo** (rutas + vistas + componentes + store + init)
 sin que la app toque una línea, y sin declarar más que la carpeta.
 
-*(Verificado e2e el 2026-08-15: `plugins/conversation/vue/router.js` + `vue/views/Chat.jsx` → la ruta
-`/Chat` renderizó la vista del plugin sin tocar el site.)*
+*(Verificado e2e el 2026-08-15 con el plugin `conversation`, cuyo `vue/` ya no existe: una ruta y una vista del
+plugin se renderizaron sin tocar el site. Ejemplo vivo hoy: `plugins/openid/vue/router.js` + `vue/views/OpenIDConsent.jsx`.)*
 
 ## Dónde vive y cómo se enchufa
 

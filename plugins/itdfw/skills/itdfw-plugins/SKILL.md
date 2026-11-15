@@ -348,7 +348,7 @@ provee, con citas archivo:línea): `claude-docs/current/plugin-capabilities-cata
 Motor: `back/itdfw/src/SITE/mongooseSchema/index.js` — `#addPluginFromObject:195` (clasifica),
 `setPlugin:670` + `#applyPlugin:653` (NAMED), `#filteredPlugins` + `#addSchemaFromObject:585` (FILTERED),
 `#globalPlugins` + `db.plugin:434` (GLOBAL). Ejemplos: `mongoosePlugins/Banco.js` (filtered),
-`plugins/itdfw-duration/index.js` `requestVariant` (named), `NationalId.js` del sitio (global re-cast).
+`plugins/duration/index.js` `requestVariant` (named), `NationalId.js` del sitio (global re-cast).
 
 ---
 

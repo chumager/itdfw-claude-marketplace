@@ -40,7 +40,7 @@ Chain (si forceLazy es undefined): OR de `this.lazy` → `$attrs.lazy` (arrastre
 - Front components: `fronts/itdfw-site-base/src/components/`
 - Back type defaults: `back/itdfw/src/SITE/mongooseTypes/z99base.js`
 - ValidateSelf plugin: `libs/itdfw-site-vue-core/src/plugins/validateSelf.js`
-- GenericInput: `libs/itdfw-site-vue-core/src/components/GenericInput.jsx`
+- GenericInput: `libs/itdfw-site-vue-core/src/lib/GenericInput.jsx`
 
 ## localImport Cascade
 
