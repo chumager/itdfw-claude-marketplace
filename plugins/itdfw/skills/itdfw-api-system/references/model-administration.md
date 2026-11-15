@@ -83,7 +83,7 @@ GET: {
 - ✅ El front quiere SWR-cachear el resultado (cache + revalidation via Service Worker).
 - ❌ Mutaciones side-effect-ful (POST/PUT que mutan state real — el espejo GET solo aplica a lecturas declarativas).
 
-**Espejos = optimización opt-in, NO contrato base.** Si el dev quiere forzar request directo (bypass cache), simplemente no declara el espejo. El smart-cache strategy futuro (`claude-docs/TODOs/ideas/01-SMART-CACHE-STRATEGY.md`) hace esto automático según headers RFC 5861 — los espejos quedan vestigiales en ese mundo.
+**Espejos = optimización opt-in, NO contrato base.** Si el dev quiere forzar request directo (bypass cache), simplemente no declara el espejo. El smart-cache strategy futuro (el TODO «01-SMART-CACHE-STRATEGY») hace esto automático según headers RFC 5861 — los espejos quedan vestigiales en ese mundo.
 
 ## Filtro de emisión: `send` vs `hidden` (qué VALUE viaja al front)
 
@@ -109,7 +109,7 @@ un 413 por tamaño del cuerpo, horas persiguiendo el silencio equivocado).
 - **ENTRADA** (front→back, guardar) → filtra **solo `hidden`**. El password (`send:false`) **SÍ se guarda** (es además la puerta anti-escalada de `level`). Los `pick*` de infra (`pickView`/`pickCreate`/`pickUpdate`/`pickProfile`) sirven a esta dirección.
 - **SALIDA** (back→front, emitir value) → `send` es **override de `hidden`**. El FW centraliza este filtro en **`pickData(ctx, req)`** (FrontEnd.js), que los callers de emisión usan (`tableData`, `formData` PUT, `myProfile`). Recibe el ctx escalar del contexto destino.
 
-> 🔴 Si declaras `send:false` y el value igual llega al front, el caller de emisión no está usando `pickData` (usa un `pick*` de infra, que solo filtra hidden). Mecanismo + tabla de verdad: `claude-docs/architecture/back/output-send-filter.md` (ex-Hallazgo #87).
+> 🔴 Si declaras `send:false` y el value igual llega al front, el caller de emisión no está usando `pickData` (usa un `pick*` de infra, que solo filtra hidden). Mecanismo + tabla de verdad: la doc de arquitectura «output-send-filter» (ex-Hallazgo #87).
 
 ## 3 modos nativos de implementación del contrato
 
@@ -164,7 +164,7 @@ Un dev puede pisar `setup()` en una extensión. **Requisito**: el return debe ma
 
 ```js
 import {ref} from "vue";
-import View from "fronts/itdfw-naiveui/src/views/View.jsx";
+import View from "<la vista View de tu front>";
 
 export default {
   extends: View,
@@ -203,7 +203,7 @@ methods: {
 }
 ```
 
-Patrón aplicado en `fronts/itdfw-naiveui/src/views/View.jsx` con items/count para el contrato segmentado.
+Patrón aplicado en la vista `View` de NUI con items/count para el contrato segmentado.
 
 ## Checklist: implementar un modelo de administración nuevo
 

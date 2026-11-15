@@ -29,11 +29,11 @@ Este skill es una referencia larga y se lee por el lado por el que uno ya sabe e
 
 ITDFW exposes HTTP via four implementation levels that all collapse into a single `pool.API` registry consumed by `execEndpoint`. URL shape is `/APP/<func>.<ext>` where `<func>` is the registered key in `pool.API`.
 
-**Crítico — cómo se construye `<func>` para archivos de `APP/`**: el loader `api.loadAPI` (`addToTreeGeneric` en `back/itdfw/src/AAA/lib/api.js`) hace `path.join(filename_sin_ext, exportedKey)`. **El filename del archivo entra como prefijo automático del path**. Un export `setVersion` en `APP/AAA.js` queda registrado como `pool.API["AAA/setVersion"]` y se accede en `/APP/AAA/setVersion.<ext>`. Si estuviera en `APP/payment/webpay.js` quedaría en `/APP/payment/webpay/<key>.<ext>`. **El filename ES literalmente el scope**, no es solo agrupación lógica — viaja al path.
+**Crítico — cómo se construye `<func>` para archivos de `APP/`**: el loader `api.loadAPI` (`addToTreeGeneric` en el loader de APIs del core) hace `path.join(filename_sin_ext, exportedKey)`. **El filename del archivo entra como prefijo automático del path**. Un export `setVersion` en `APP/AAA.js` queda registrado como `pool.API["AAA/setVersion"]` y se accede en `/APP/AAA/setVersion.<ext>`. Si estuviera en `APP/payment/webpay.js` quedaría en `/APP/payment/webpay/<key>.<ext>`. **El filename ES literalmente el scope**, no es solo agrupación lógica — viaja al path.
 🔴 **Dos escapes para acortar** (`addToTreeGeneric`, no estaban en este skill hasta 2026-09-09): (a) a nivel de
 ARCHIVO, un archivo llamado **`APP.js`** no pone prefijo: sus exports quedan en `/APP/<punta>` en vez de
 `/APP/APP/<punta>`; (b) a nivel de PUNTA, la propiedad **`__name`** en el objeto exportado **reemplaza la KEY
-del export, no el prefijo del archivo**: `api.js:153` hace `path.join(name, funcName)` con `funcName = __name || key`,
+del export, no el prefijo del archivo**: el loader hace `path.join(name, funcName)` con `funcName = __name || key`,
 así que `__name: "x/y"` en `APP/bank.js` queda en `/APP/bank/x/y`. El único escape del prefijo es llamar al archivo
 `APP.js` (gap #39, cazado 20-sep-2026 armando el banco de smart-fetch: se creía que `__name` fijaba el path literal).
 ⚠️ Esto es SOLO para archivos cargados por `loadAPI` (la carpeta
@@ -72,7 +72,7 @@ Canonical example of `options.API`: `AAA/myProfile` in `User.js` — every authe
 
 ## Level 1 — APP/ file (free endpoints)
 
-Files in `back/itdfw/src/SITE/APP/*.js` (and equivalent in DEFAULT/site cascade) export an object whose keys become endpoint names. **El filename del archivo se concatena como prefijo del path** (ver Overview).
+Files in the `APP/` folder of the cascade (core `SITE/`, DEFAULT, site) export an object whose keys become endpoint names. **El filename del archivo se concatena como prefijo del path** (ver Overview).
 
 ```js
 // APP/AAA.js — el filename "AAA" entra al path
@@ -99,7 +99,7 @@ Use cases: cross-model RPC, dev tooling (`Slow`, `logLevel`), session lifecycle 
 
 Verbs `GET|POST|PUT|DELETE` declared on the schema's options. AAA's `Schema.on("model")` binds every handler with `value.bind(Model)` so `this === Model` (`AAA.js`, `Schema.on("model")`). Permissions are gated by `Model.canSee(req)` via the AAA model route — same gate as the auto-CRUD.
 
-Canonical example: `mongoosePlugins/FrontEnd.js:1196-1412` registers all the model-aware endpoints (`tableForm`, `formFilter`, `tableData`, `formSpecs`, `formCreate`, `formUpdate`, etc.) via `schema.checkAndLoadEndpoint({GET:{...}, POST:{...}, ...})`. Helper `checkAndLoadEndpoint` only sets the extension if not already present — letting later plugins/schemas override.
+Canonical example: the `FrontEnd` mongoose plugin registers all the model-aware endpoints (`tableForm`, `formFilter`, `tableData`, `formSpecs`, `formCreate`, `formUpdate`, etc.) via `schema.checkAndLoadEndpoint({GET:{...}, POST:{...}, ...})`. Helper `checkAndLoadEndpoint` only sets the extension if not already present — letting later plugins/schemas override.
 
 URL: `/APP/AAA/<ModelName>.<ext>` (e.g. `/APP/AAA/User.json?type=update`).
 
@@ -121,7 +121,7 @@ When to choose this over an APP/ file: the logic is intrinsically about the Mode
 
 ## Level 4 — `mongooseTypes/<Type>.js options.API` (Type-attached, inherited by all consumers)
 
-Custom Mongoose types declared in `back/itdfw/src/SITE/mongooseTypes/*.js` can ship their own `options.API`. The endpoint is registered at type-load time and any schema using that type gets the API gratis — no need to redeclare in each model. This is the **lowest encapsulation level**: the API lives with the data definition itself.
+Custom Mongoose types declared in the `mongooseTypes/` folder of the cascade can ship their own `options.API`. The endpoint is registered at type-load time and any schema using that type gets the API gratis — no need to redeclare in each model. This is the **lowest encapsulation level**: the API lives with the data definition itself.
 
 Canonical example: `mongooseTypes/Password.js`:
 
@@ -230,7 +230,7 @@ real: `AAA/recovery` en `User.js`):
 **Desde una punta, las funciones del que llama** son las mismas que ve su menú: `const user = await
 req.getUser()` (null si anónimo) y `(await user.userData(req)).functions` — `path` ya prefijado
 (`/APP/AAA/User`), con `hidden`, `route.children[].meta.type` (View/Create/Update). Caso real: el ref-función
-`User.intent` de `plugins/typesafe` (gap #41, 2026-09-20).
+`User.intent` del plugin `typesafe` (gap #41, 2026-09-20).
 
 **Lo que recibe el front al autenticarse** (`checkLogin` → `{user, userData, forceLink}`; verificado en vivo:
 34 de 38 funciones con `route`, las 4 sin `route` no son pantallas). Cada función: `path`, `name`,
@@ -312,7 +312,7 @@ throw new HTTPError("sucursal no encontrada", 404, {placeId, code: "PLACE_NOT_FO
 
 Nadie más loguea errores: ni `execEndpoint` (hasta 7.3.8 duplicaba con "UNCONTROLLED ERROR"), ni el JWT (un 401
 no es error del sistema). Ejecutor permanente: punta onDev `test/errorTerminal` (`?status=418|500`, `&viaJson=1`)
-en `SITE/APP/test.js`. Detalle: `claude-docs/architecture/back/error-terminal.md` (#193).
+en `SITE/APP/test.js`. Detalle: la doc de arquitectura «error-terminal» (#193).
 
 ## Los 3 niveles de llamada de una punta — composición vs estructura
 
@@ -393,7 +393,7 @@ internos (saveRefs).
 
 `hasAccess(req)` en `AAA.js`. Orden (el detalle real, paso a paso, está en la sección siguiente):
 
-1. **`x-itd-access` header** — firma cifrada `${url};${method};${dateString}` (la emite `directRequest` en server.js para llamadas worker→worker, god-access). `hasAccess` valida las **3 partes**: `url` == `req.fullURL`, `method` == `req.method`, y `dateString` < **5 s** (anti-replay). El token queda atado a punta+verbo+tiempo → robarlo no sirve para otra punta, otro verbo, ni pasada la ventana. Migración a JWT pendiente → `claude-docs/TODOs/features/backend/directaccess-jwt.md`.
+1. **`x-itd-access` header** — firma cifrada `${url};${method};${dateString}` (la emite `directRequest` en el server para llamadas worker→worker, god-access). `hasAccess` valida las **3 partes**: `url` == `req.fullURL`, `method` == `req.method`, y `dateString` < **5 s** (anti-replay). El token queda atado a punta+verbo+tiempo → robarlo no sirve para otra punta, otro verbo, ni pasada la ventana. Migración a JWT pendiente (TODO «directaccess-jwt»).
 2. **`req.auth` (JWT)** — `req.db[auth.model].canSee(req)`.
 3. **Session** (`req.session.auth`) — `req.db[session.model].canSee(req)`.
 4. **Anonymous** — `Profile.canSee(req)` if Profile model exists; otherwise endpoint's `isAnonymous` (boolean | function | "auth").
@@ -408,7 +408,7 @@ curso conserva su `params.func`, `method` y `requestedMethod`. `func` es obligat
 ya pasó su gate, preguntar por sí misma no significa nada); sin `verb` vale el de la petición.
 Sirve desde cualquier código que tenga un `req` (punta, ref, hook con `setReq`): mostrar u ocultar una acción,
 decidir qué ofrecer. Los comparadores de `Profile` leen `req.requestedFunc ?? req.params.func` y
-`req.requestedMethod ?? req.method`. Ejecutor: `tests/back/hasAccess.test.js` (punta onDev `test/hasAccess`).
+`req.requestedMethod ?? req.method`. Ejecutor: la prueba de back `hasAccess` (punta onDev `test/hasAccess`).
 
 `isAnonymous: "auth"`: cualquier usuario **autenticado** pasa sin asignación; un anónimo no (`Profile.getAnonymousFunctions` la cuenta solo si `req.isAuth`, y sin modelo `Profile` queda cerrada). Úsalo en puntas tipo `myProfile`; la punta puede además leer `req.session`/`req.auth`.
 
@@ -421,7 +421,7 @@ distingue la vía; para eso está `req.sessAuth`, no `req.session.auth` a mano. 
 **`req.browserAuth`** = `sessAuth && sameOrigin`: sesión por cookie pedida desde una página de este mismo origen (el
 front en un browser). 🔴 Un ref o punta que paga un servicio externo (IA, SMS, mapas) lee `req.browserAuth` y decide
 su propio respaldo cuando es false (rechazar, cuota, cache): el FW no decide por él.
-Ejecutor: `tests/back/reqFlags.test.js`.
+Ejecutor: la prueba de back `reqFlags`.
 
 🔴 **El `Authorization` NO es siempre del FW** (2026-09-09): web-push firma `vapid t=…, k=…` (RFC 8292) y un
 cliente OIDC o MCP manda su propio `Bearer`. `expressjwt` está montado global y con 3+ partes lanzaba 500
@@ -429,7 +429,7 @@ cliente OIDC o MCP manda su propio `Bearer`. `expressjwt` está montado global y
 `AAA.js` y usado por el autenticador `FWJWT`, filtra por partes, esquema `Bearer` y **`model` en el payload** —esa
 es la firma de que el token es nuestro, y el headless client lo manda siempre— y devuelve `undefined` para lo
 ajeno, que sigue su camino. ⟹ una punta anónima **sí puede** recibir un webhook firmado de un tercero.
-Detalle: `claude-docs/architecture/back/jwt-gate.md`.
+Detalle: la doc de arquitectura «jwt-gate».
 
 ### 🔴 El acceso paso a paso — quién decide de verdad (verificado contra el código, 2026-11-09)
 
@@ -499,7 +499,7 @@ nav**, y tiene su propia punta **`File/getLogo?_id=`**: anónima, **con clausura
 siendo cacheable un año, `public`; cambiar el logo cambia el id y la URL) pero solo sirve si ese id ES el
 `Home.homeLogo` de la Config; cualquier otro id, 404. Un anónimo alcanza exactamente un archivo. Sin id en la URL
 se perdía el cache (una URL fija no se puede invalidar), y con `getFile` abierto se abría el recurso completo para
-una capacidad de una línea — lo que prohíbe la rule `access-vs-capability`. Ejecutor: `tests/back/getLogo.test.js`.
+una capacidad de una línea — lo que prohíbe la rule `access-vs-capability`. Ejecutor: la prueba de back `getLogo`.
 
 🔴 **Por qué este error no se nota NUNCA:** `getFile` cachea un año cuando le pasan id. El usuario anónimo pide
 el logo, falla, se autentica, lo pide de nuevo, funciona — y queda cacheado. El error existe durante cinco
@@ -568,7 +568,7 @@ dedicada). Si se quiere una ruta/portal propio (ej. `/Member`), la ruta lleva **
 su branch en el store está comentado (deuda). Para login normal el mecanismo es `meta.redirect`.
 
 > Detalle de cómo construir el MODELO autenticable (clon, perfil forzado, multitenant): ver
-> `claude-docs/current/principios-modelos.md` §1.
+> Doc «principios-modelos» §1.
 
 ## Registro público de un modelo (registrable = clon de User + flag)
 
@@ -593,7 +593,7 @@ Para hacer registrable un modelo (que DEBE ser clon de User):
 `case "register"`) fue eliminado 2026-06-09 — si aparece en un corpus viejo (código legacy), NO imitarlo.
 Capas pendientes del flujo: verificación de correo (doble opt-in, patrón recovery) + captcha (Config).
 
-> Enseñanza completa: `claude-docs/current/principios-modelos.md` §6. Ruta real: `bitacora-register-20260609.md`.
+> Enseñanza completa: doc «principios-modelos» §6. Ruta real: la bitácora del register (2026-06-09).
 
 ## URL → handler
 
@@ -624,8 +624,8 @@ Un plugin que expone una punta para un tercero que NO puede mandar el token (web
 predicado**, lo más acotado posible — nunca por verbo ni por prefijo ancho:
 ```js
 /*global skipCSRF*/
-skipCSRF.push(req => !!req.headers["x-telegram-bot-api-secret-token"]);   // plugins/telegram: por header propio
-skipCSRF.push(req => req.path.includes("/MCP/"));                          // plugins/mcp: por path, y va con JWT igual
+skipCSRF.push(req => !!req.headers["x-telegram-bot-api-secret-token"]);   // plugin telegram: por header propio
+skipCSRF.push(req => req.path.includes("/MCP/"));                          // plugin mcp: por path, y va con JWT igual
 ```
 El error CSRF en el log de un flujo normal **no es falla**: es el trapping de flujos de la replicación
 (diseño). Solo se investiga si la punta es la que se está llamando a mano.
@@ -643,7 +643,7 @@ corrieron y la coordinación entre procesos.
 
 | Anti-pattern | Fix |
 |--------------|-----|
-| Giant `switch (req.query.type)` inside `.json` (form/specs/value bundled per type) | Split into separate extensions (`tableForm`, `formSpecs`, `formCreate`) — see `//FIX` markers in `FrontEnd.js:1247-1407` |
+| Giant `switch (req.query.type)` inside `.json` (form/specs/value bundled per type) | Split into separate extensions (`tableForm`, `formSpecs`, `formCreate`) — see the `//FIX` markers in the `FrontEnd` plugin |
 | Prefixing API key with `APP/` | Router already mounts `/APP/`. Use bare key: `getRef`, `AAA/myProfile` |
 | Putting per-user logic in `options.<VERB>` and then bypassing perms inside | Wrong level — use `options.API` with own `isAnonymous` |
 | Putting Model-introspecting logic in APP/ and importing the Model manually | Use `options.API` to get `this === Model` binding for free |
@@ -680,7 +680,7 @@ archivo `APP/`, key `API` de un FWPlugin, `options.API` de un schema (además co
 un type, y `DBAPI` (en la BD: corre en cada compilación, y si tira, la compilación queda `FAILED` y la punta no se
 publica). `key` es la clave con que quedó en `pool.API` (con el prefijo del archivo ya puesto): una fábrica de puntas
 no necesita que le repitan su nombre. Puede ser `async`; un error se loguea y no detiene a las demás. Regresión:
-`tests/back/apiInitKey.test.js` (K1-K4; el del FWPlugin lo cubre el plugin `conversation`).
+la prueba de back `apiInitKey` (K1-K4; el del FWPlugin lo cubre el plugin `conversation`).
 
 ## 🔴 La política de cache se DECLARA en la punta: atributo `cache` (back ≥ 7.4.0, gap #40)
 
@@ -707,7 +707,7 @@ cache: req => ({tableData: {maxAge: 0, swr: 60}, tableFields: {maxAge: 300}})[re
 
 Regla: *si quieres el default, devuelve `undefined`*. Solo GET/HEAD reciben el header; otros verbos lo ignoran, por
 eso el mapa va por ext y no por verbo. Una punta libre que quiera su política ajustable sin código registra su
-`setConfigDefinition` y la lee desde la Config dentro de esa función. Ejecutor: `tests/back/cacheHeaders.test.js`
+`setConfigDefinition` y la lee desde la Config dentro de esa función. Ejecutor: la prueba de back `cacheHeaders`
 (`test/cacheByExt.{fields,data,count}`).
 
 | `cache` | Header que sale |
@@ -737,7 +737,7 @@ revisa el día que WHATWG e IETF se pongan de acuerdo · valores en segundos.
 (el front ya manda el forzado cuando hay `forceLocale`), la config del site es el fallback. Un cliente sin header (el
 MCP, un curl) cae al `Locale` del site: si quiere otro idioma, manda `x-locale`. Antes del 22-sep-2026 el getter
 prefería la config y anulaba el header en todo deploy con `Locale` (gap #56).
-Ejecutor permanente: `tests/back/cacheHeaders.test.js` sobre las puntas `test/cache*` de `SITE/APP/test.js`.
+Ejecutor permanente: la prueba de back `cacheHeaders` sobre las puntas `test/cache*` de `SITE/APP/test.js`.
 
 ## 🔴 Archivos: la punta DEBE declarar `hasFiles` (capa de seguridad)
 
@@ -750,7 +750,7 @@ con 403** `not allowed to upload file to <url>`. No hay subida "por defecto".
 | `schema.options.API` / `APP/` (punta custom) | **hay que declararlo** (`hasFiles: true` o la lista de paths). Nadie lo deriva por ti — aunque la punta escriba en un modelo que sí tiene `File` |
 
 El front manda los archivos como **multipart** con el path del campo como `fieldname` + el JSON en el text field
-`__data` (`Form.jsx`, `ItdRegister.jsx`; ver `architecture/back/multipart-flow.md`); `setData` los lee de `req.files`.
+`__data` (el form y el registro; ver la doc «multipart-flow»); `setData` los lee de `req.files`.
 🔴 Si el front manda JSON con el `Blob` adentro, el archivo llega como OBJETO: `saveRefs` lo toma por "ref con payload",
 llama `File.FWcreate` y revienta con `req.files undefined`. Caso real 2026-08-27: punta `myFolder` de un deploy.
 
@@ -770,23 +770,23 @@ llama `File.FWcreate` y revienta con `req.files undefined`. Caso real 2026-08-27
 
 Y para nivel 3 (`schema.options.API`), también vale revisar la convención: `"AAA/myProfile"` es vestigial, podría declararse simplemente `"myProfile"` (decisión de migración pendiente).
 
-Migración completa documentada en `claude-docs/TODOs/migration/aaa-prefix-cleanup.md`.
+Migración completa documentada en el TODO «aaa-prefix-cleanup».
 
 ## Hallazgos (code review for jcmunoz)
 
-- `FrontEnd.js:1247-1407` — `//FIX` markers acknowledge the `switch(type)` antipattern (combos `form+specs+value` in `?type=create|update|register|check`). Pending split into discrete extensions.
-- `AAA.js:420-425` — commented block transferring `schema.statics` to `route.meta` (saved 57KB payload). Confirm definitive removal.
-- `User.js:285-330` — `myProfile` exists in `options.API` while a duplicate (commented) lives in `APP/AAA.js:205-241`. Decide canonical home.
+- Plugin `FrontEnd` — `//FIX` markers acknowledge the `switch(type)` antipattern (combos `form+specs+value` in `?type=create|update|register|check`). Pending split into discrete extensions.
+- `AAA` — commented block transferring `schema.statics` to `route.meta` (saved 57KB payload). Confirm definitive removal.
+- `User` — `myProfile` exists in `options.API` while a duplicate (commented) lives in `APP/AAA`. Decide canonical home.
 - `execEndpoint` swallows missing methods silently (no `case "undefined"` for the outer `typeof API[func][method]` switch) — `POST` to a `GET-only` endpoint hits no branch and returns nothing. Worth an explicit 405.
 
 ## References
 
-- `back/itdfw/src/AAA/AAA.js` — `start()`, `Schema.on("model")` binding (385-491), `execEndpoint` (107-152), `hasAccess` (656-710).
-- `back/itdfw/src/SITE/mongoosePlugins/FrontEnd.js:1196-1412` — canonical Level 2 example.
-- `back/itdfw/src/SITE/mongooseSchema/User.js:168-331` — canonical Level 3 (`options.API`) examples.
-- `back/itdfw/src/SITE/mongooseTypes/Password.js` — canonical Level 4 (type-attached `options.API` con `checkStrength`).
-- `back/itdfw/src/SITE/APP/AAA.js`, `WebPay.js`, `Log.js` — Level 1 examples.
-- `back/itdfw/src/SITE/mongooseDB/checkAndLoad.js` — `checkAndLoadEndpoint` helper.
+- The core `AAA` — `start()`, `Schema.on("model")` binding, `execEndpoint`, `hasAccess`.
+- The `FrontEnd` mongoose plugin — canonical Level 2 example.
+- The `User` schema — canonical Level 3 (`options.API`) examples.
+- The `Password` type — canonical Level 4 (type-attached `options.API` con `checkStrength`).
+- The `AAA`, `WebPay` and `Log` files of `APP/` — Level 1 examples.
+- The `mongooseDB` layer — `checkAndLoadEndpoint` helper.
 - REQUIRED skill `itdfw-fwplugin` for plugin-injected endpoints (FWPlugin `API` key).
 - Related: skill `itdfw-mongoose-types` for types referenced by endpoint payloads.
 
