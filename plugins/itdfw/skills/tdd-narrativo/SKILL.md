@@ -40,6 +40,28 @@ Y antes de escribir el MODELO, tres puertas que evitan que salga contaminado:
 🔴 **El gate NO es el orden: es la aprobación.** Escribir el TDD antes y aprobarlo uno mismo deja el
 problema intacto. Nada de código hasta que jcmunoz haya leído y dado el visto bueno.
 
+### 🔴 El camino de un TDD hasta implementarse
+
+```
+PMO escribe → CTO → designer → documentador → QA → aprobación de jcmunoz → se implementa
+```
+
+| Quién | Qué mira | Cómo participa |
+|---|---|---|
+| **CTO** | alto nivel: el contrato, la rebanada 1, la arquitectura | opina; no escribe el TDD |
+| **designer** | la pantalla, si el módulo tiene front | escribe la sección **UI/UX** del TDD (pantallas, maquetas, cómo se entra y se sale de cada estado, en el celular); no define qué se prueba |
+| **documentador** | **correctitud** contra el código: que lo que el TDD afirma exista, que no se contradiga y que sus referencias resuelvan. No entra en completitud | devuelve hallazgos al dueño (con `archivo:línea`); no edita el TDD |
+| **QA** | solo el TDD y el problema, nunca el código | aprueba o rechaza el **set de pruebas**; si rechaza, el caso concreto que falta o sobra; no edita el TDD |
+
+- 🔴 **Sin la aprobación de QA no hay aprobación de jcmunoz.** Los comentarios de los revisores no obligan al PMO: él
+  defiende lo establecido, y los hallazgos los resuelve jcmunoz con él.
+- 🔴 **Toda corrección posterior al TDD** (de jcmunoz o interna) vuelve a pasar por el documentador y por QA. El
+  documentador lee **primero el historial** del TDD (`TDD-bitacora.md` y el git log) y revisa solo lo que ese historial
+  muestra que le toca; QA recibe el diff con las filas de casos tocadas.
+- **Un fix también se escribe**: en `TDD-pendientes.md` o fusionado al TDD. Nada queda sin documentar.
+- **Sin burocracia**: cada revisor hace una pasada, responde en la hora y cada rechazo trae el caso concreto, no un
+  "revísalo". Un hallazgo es un error o "no verificable con lo que está escrito".
+
 ### 0 · El pipe — cómo se hace verdad cada fila (proporcional al módulo)
 
 El resto de este skill dice QUÉ lleva el `TDD.md`. Esta sección dice CÓMO se llega a que cada fila sea
@@ -454,7 +476,7 @@ arrastrando píxeles y conteos de cada corrida. jcmunoz: *"mi impresión duró m
 | **`TDD.md`** | **solo el contrato**: narrativa corta, scope, modelo y AST **sin historia**, ejecutores, pruebas con estado en UNA palabra (✅ ⬜ ⛔), huecos, decisiones en una línea cada una, rebanada, puesta en operación | jcmunoz, para aprobar; el implementador, para conformidad | solo cuando cambia el contrato. Objetivo ≤ 300 líneas |
 | **`TDD-bitacora.md`** | el porqué fechado de cada decisión, las citas, lo que se descartó y por qué | quien necesite entender un porqué | se **agrega** al final; nunca se reescribe hacia atrás |
 | **`TDD-corridas.md`** | una fila por corrida: fecha · qué · rojo primero · verde · números | quien dude de si algo se probó y cuándo | se agrega una fila por corrida |
-| **`TDD-pendientes.md`** | las rebanadas declaradas y **no tomadas**: una por bloque, con qué y por qué, sin diseño fino; y 🔴 **un TDD en borrador que espera aprobación** (un TDD sin pendientes no aparece en ninguna búsqueda: es lo mismo que dejarlo en `ideas/`) | quien busque trabajo pendiente: **existir el archivo ES la señal** (`find -name "TDD*pendientes.md"`), sin leer contratos | cuando un cajarito toma una rebanada, **sale de acá y entra al contrato**; si queda vacío, se borra |
+| **`TDD-pendientes.md`** | las rebanadas declaradas y **no tomadas**: una por bloque, con qué y por qué, sin diseño fino; y 🔴 **un TDD en borrador que espera aprobación** (un TDD sin pendientes no aparece en ninguna búsqueda: es lo mismo que dejarlo en `ideas/`) | quien busque trabajo pendiente: **existir el archivo ES la señal** (`find -name "TDD*pendientes.md"`), sin leer contratos | cuando un cajarito toma una rebanada, **sale de acá y entra al contrato**; si queda vacío, se borra. 🔴 Un fix también se escribe acá o se fusiona al TDD: nada queda sin documentar |
 
 🔴 **El contrato no carga pendientes** (jcmunoz 5-oct-2026): si las rebanadas futuras viven dentro del `TDD.md`, saber
 qué falta exige leer cada TDD completo, y saber cuáles TDD tienen algo exige leerlos todos.
@@ -561,6 +583,9 @@ erDiagram
 ## Diferencial y defectos heredados        <!-- SOLO si el módulo ya opera (§2f) -->
 | Pieza | Estado real | Qué hace este módulo con ella |
 | Qué está mal hoy | Cómo se sabe (probado corriendo / sospecha + prueba que la destapa) | Arreglar o heredar |
+
+## UI/UX — lo que ve la persona        <!-- SOLO si el módulo tiene front; la escribe designer -->
+<pantallas, maquetas, cómo se entra y se sale de cada estado, en el celular. QA escribe el recorrido a partir de esto>
 
 ## Ejecutores
 <quién dispara cada flujo>
