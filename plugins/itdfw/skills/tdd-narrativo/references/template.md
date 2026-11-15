@@ -9,6 +9,7 @@
 > Regla de escalamiento: un nivel no se evalúa si el anterior no está verde.
 > Modo: <NUEVO (reimplementa, cero parches, consulta) | REFACTOR con cobertura completa (firmas cambian si el contrato cambia; toda la suite) | INCREMENTAL (firmas y edges intactos; toda la suite + lista de casos que cambian)>
 > Destino al cerrar: <se queda como spec del módulo | skill `<área>` + `architecture/<ruta>` + tests → este archivo a `history/`>
+> Producto (solo si hay front de cliente final, skill `producto-antes-del-tdd`): <la alternativa elegida, en una línea> · estudio: <enlace>
 > Este archivo es SOLO el contrato. El porqué de cada decisión: `TDD-bitacora.md`. Cada corrida: `TDD-corridas.md`.
 
 ## 🔴 Rebanada 1 — con esto avanzamos

@@ -46,6 +46,8 @@ problema intacto. Nada de código hasta que jcmunoz haya leído y dado el visto 
 PMO escribe → CTO → designer → documentador → QA → aprobación de jcmunoz → se implementa
 ```
 
+**Antes de este camino, si lo que se construye lo ve un cliente final** (un site nuevo, o un plugin con pantallas de front de cliente), el PMO no parte por el TDD: `designer` estudia el producto de la competencia y presenta alternativas, el dueño elige una y sobre ella escribe el PMO (skill **`producto-antes-del-tdd`**). Las pantallas de back office no pasan por ahí. Cuando hubo estudio, la cabecera del TDD lleva la alternativa elegida y el enlace al estudio.
+
 | Quién | Qué mira | Cómo participa |
 |---|---|---|
 | **CTO** | alto nivel: el contrato, la rebanada 1, la arquitectura | opina; no escribe el TDD |
