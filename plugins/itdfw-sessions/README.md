@@ -1,6 +1,6 @@
 # itdfw-sessions: talk to Claude Code sessions from outside, and between them
 
-Fourteen small shell scripts for people who run several Claude Code sessions at once (some of them background sessions that
+Fifteen small shell scripts and one hooks module (`vuelta`) for people who run several Claude Code sessions at once (some of them background sessions that
 nobody watches) and want a cron, a script or another session to talk to them. They have nothing to do with the ITDFW
 framework: the plugin lives in this marketplace because we use them to run our own sessions.
 
