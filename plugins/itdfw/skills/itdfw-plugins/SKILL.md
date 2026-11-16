@@ -92,9 +92,7 @@ function mongoosePlugins(/*db*/) {
   return { plugin(schema) { /* … usa db por closure … */ } };
 }
 ```
-🔴 **Falla real (2026-06-28)**: se movió `FWdelete` (usa `db.connection.transaction`) a `delete.js`, cuyo
-factory tenía `(/*db*/)` comentado y SIN `const {db}=this` → `db is not defined` en runtime. Fix: agregar
-`const {db} = this`. (Asumir `db` global es el error — `db` viene de `this`/arg, no es global.)
+Caso real del 2026-06-28 (`FWdelete` movido a `delete.js`, `db is not defined`): [references/binding-detail.md](references/binding-detail.md).
 
 **2. La INNER `plugin(schema, options)`** (la prop `plugin` del objeto retornado). La llama **Mongoose** vía
 `schema.plugin(fn, opts)` → `fn(schema, opts)`:
@@ -126,23 +124,11 @@ DEFAULT / App pueden pisar el core), **sin que el pisado se entere**. Casos:
 por spread, cambiando solo lo que quieres. Patrón CONFIRMADO y en producción (plugin tenant `NationalId`):
 
 ```js
-// global: promueve el campo genérico `nationalId: String` al type local Rut, sin tocar el modelo.
-export default function plugin() {
-  return {
-    plugin(schema) {
-      schema.eachPath((path, schemaType) => {
-        if (path === "nationalId") {
-          schema.add({
-            [path]: {
-              ...schemaType.options,   // ⟸ conserva required/unique/immutable/filter/pos/...
-              type: "Rut",             // ⟸ String → Rut (cast + validación + component locales)
-              name: "RUT"
-            }
-          });
-        }
-      });
-    }
-  };
+// global: promueve `nationalId: String` al type local Rut sin tocar el modelo (completo: references/recast.md)
+plugin(schema) {
+  schema.eachPath((path, st) => {
+    if (path === "nationalId") schema.add({[path]: {...st.options, type: "Rut", name: "RUT"}}); // conserva required/unique/…
+  });
 }
 ```
 
@@ -157,15 +143,7 @@ heredar de SchemaString → `instance === "String"` y re-matchearía un path ya 
 la iteración**: junta los matches en un array dentro del `eachPath` y haz los `schema.add` DESPUÉS del recorrido.
 Para un path puntual por nombre (como `nationalId`) no hace falta — `add` directo dentro del `eachPath`.
 
-```js
-plugin(schema) {
-  const toPromote = [];
-  schema.eachPath((path, st) => {
-    if (path === "phone" && st.options?.type !== "Phone") toPromote.push([path, st.options]);
-  });
-  for (const [path, options] of toPromote) schema.add({[path]: {...options, type: "Phone"}});
-}
-```
+El código del recorrido en dos pasos: [references/recast.md](references/recast.md).
 
 **Inyectar un virtual/método en un modelo ajeno** → modo NAMED (arriba). El modelo no lo declara.
 **Pisar un virtual del core** → re-declararlo (`schema.virtual("x").get(...)`) desde un plugin que corra
@@ -183,33 +161,17 @@ Verificado 2026-08-15: **ningún plugin del monorepo lo importa** en su código.
 El único uso defendible es un **test unitario** que monta su propia conexión aislada del FW → entonces va
 en `devDependencies`, jamás en `dependencies` (si no, arrastras una copia entera de mongoose al deploy).
 
-🔴 **Y la versión NO es la última: es el MAJOR que tiene el FW** (`"mongoose": "^9.0.0"`, no `"^9.9.2"`).
-Un rango pineado por sobre el del back hace que pnpm instale una **segunda copia** en el proceso. Con dos
-copias, `Schema.prototype` son dos objetos distintos: los parches que el FW instala (`eachVirtualPath`…)
-existen en una y **no** en la otra, y cualquier plugin del core que recorra `childSchemas` explota. Misma
-regla para `libs/*`.
+🔴 **Y la versión NO es la última: es el MAJOR que tiene el FW** (`"mongoose": "^9.0.0"`, no `"^9.9.2"`): un rango por
+sobre el del back instala una **segunda copia**, con otro `Schema.prototype` sin los parches del FW (`eachVirtualPath`…),
+y los plugins del core que recorren `childSchemas` explotan. Misma regla para `libs/*`.
 
-Mecánica de pnpm que hay que conocer (aprendida a golpes, 2026-08-15):
-
-| Comando | Rango declarado | Resolución (lock) |
-|---|---|---|
-| `pnpm add <pkg>` | intacto | intacta si el rango ya se satisface — **no mueve nada** |
-| `pnpm add <pkg>@latest` | **intacto** | sube ✅ **este es el que quieres** |
-| `pnpm update <pkg> --latest` | **lo REESCRIBE** al resuelto ❌ | sube |
-| `pnpm install` | intacto | solo obedece al lock |
-
-⟹ Para subir sin romper la convención: **`pnpm add <pkg>@latest`**. Y ojo: con rango amplio y una
-resolución vieja congelada en el lock, `install` te deja pegado en la versión antigua para siempre
-(caso real: `^9.0.0` clavado en 9.6.2 mientras el back iba en 9.9.2). Verifica con `pnpm why <pkg>` →
-debe decir **`Found 1 version`**.
+Para subir sin romper la convención: **`pnpm add <pkg>@latest`** (no `pnpm update <pkg> --latest`, que reescribe el
+rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La tabla y el caso: [references/pnpm-mechanics.md](references/pnpm-mechanics.md).
 
 ## Detalles que importan
 
-- **Dos funciones, dos bindings (no confundir)** — ver "Binding & parámetros": la **factory** (`export
-  default` función) se llama `.call(schemaInstance, db)` → `this` = instancia Schema del FW (db/pool/init/…);
-  la **inner `plugin(schema, options)`** la llama Mongoose → recibe `(schema, options)` y **`this` NO está
-  bindeado** (opera sobre `schema`, cierra sobre `db` del scope de la factory). En methods/virtuals/statics,
-  `this` = doc/model en runtime.
+- **Dos funciones, dos bindings (no confundir)** — ver "Binding & parámetros". En methods/virtuals/statics, `this` =
+  doc/model en runtime.
 - **`checkAndLoadMethod` / `checkAndLoadVirtual` / `checkAndLoadStatic`**: idempotentes (no pisan si ya existe).
   Prefiérelos a `schema.method/virtual/static` directos — respetan la cadena del FW.
 - **El orden de los FWPlugins en el `.itdfw.js` NO importa para un NAMED**: `process()` registra TODOS los plugins
@@ -223,42 +185,17 @@ debe decir **`Found 1 version`**.
   🔴 NO confíes en el orden alfabético de carpeta para dependencias de carga — declara `pos`.
 - **`noGlobalPlugin`**: un schema puede excluirse de TODOS los globales (`schema.get("noGlobalPlugin")`).
 - 🔴 **Prefind de ALCANCE (filtrar TODAS las lecturas: soft-delete, tenant, vencidos, `query` del schema) →
-  `schema.preSearch(fn)`** (`mongooseDB/preSearch.js`, 2026-09-04), NUNCA el par `pre(/find/)` + `pre(/^count/)` a
-  mano. La lista de qué es una lectura vive UNA vez (`[/find/, /^count/, "distinct"]`); escribirla por plugin es como
-  nació #173: cuatro copias y a las cuatro les faltó `distinct` (en `zones` eso cruza tenants). `aggregate` va aparte
-  (su `this` es un Aggregate, `pipeline().unshift`). Los cuatro (`delete`, `expire`, `zones`, `queryFilter`) ya lo usan; regresión en las pruebas `presearch*` de back.
-- 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`** (jcmunoz 9-oct-2026). Un plugin que
-  recorta lecturas y no recorta el aggregate deja ese camino abierto: el `$search` elige ids con `$limit` sin ese
-  recorte y el `find` final (que sí lo tiene) devuelve vacío o incompleto, o un aggregate de reporte muestra lo que el
-  `find` esconde. El hook va al inicio del pipeline (`unshift({$match: …})`) sin pensar en etapas primeras: el plugin
-  global del core **`preAggregate`** (`mongoosePlugins/preAggregate.js`, `pos: "$"`, corre último) pone primera TODA
-  etapa que Mongo exige primera (`FIRST_STAGES`, medida en mongod 9.0.2: `$search`, `$searchMeta`, `$vectorSearch`,
-  `$rankFusion`, `$scoreFusion`, `$geoNear`, `$changeStream`, `$collStats`, `$indexStats`, `$planCacheStats`,
-  `$listSearchIndexes`, y el `$match` con `$text`). **La posición separa lo de los plugins de lo del dev**: nadie
-  puede escribir antes de una etapa primera, así que lo que está antes son los recortes y lo que está después es del
-  dev. Tres casos: `EXCLUSIVE` (devuelven metadatos o eventos: `$searchMeta`, `$collStats`, `$indexStats`,
-  `$planCacheStats`, `$listSearchIndexes`, `$changeStream`) → los recortes se **descartan** (su `$match` filtraría la
-  salida) y la cola del dev queda; `$geoNear` y el `$match` con `$text` → los recortes se **funden** dentro
-  (`$geoNear.query`, el `$and` del `$match`; con índices parciales sobre `active`, sin el filtro adentro `$geoNear` no
-  encuentra índice); el resto (`$search`, `$vectorSearch`, `$rankFusion`…) → la etapa sube y los recortes quedan
-  detrás. 🔴 **Contrato estricto**: un RECORTE entra con `unshift`; lo que un plugin agregue con `push` cae en la cola
-  del dev y debe ser inocuo sobre metadatos (un `$unset` sí, un `$match` no). Los cuatro (`zones`, `queryFilter`,
-  `delete`, `expire`) cumplen el par; regresión en la prueba de back `aggregateCuts` (D1-D4, E1). Un aggregate que
-  lea `req` en un hook necesita `aggregate.localData = {req}` (así lo hace `ITDSearch`).
-  **Todos los `pre("aggregate")` del core** (los `mongoosePlugins/` del core): `allowDiskUse` (solo la opción, no
-  toca el pipeline), los cuatro recortes (`zones`, `queryFilter` —async, lee el `req` de `localData`—, `delete`,
-  `expire`) y `preAggregate` al final. Corren en el orden en que se aplican los plugins; entre los recortes el orden da
-  lo mismo (cada uno antepone un `$match` y el resultado es su AND), lo único que importa es que `preAggregate` corra
-  último, y eso lo asegura su `pos: "$"`.
-- 🔴 **Un plugin NO cuelga un `post("find")`** (jcmunoz 22-oct-2026). Lo que corre después de leer asume qué campos
-  trajo la consulta, y el que consulta decide eso: `formOptions` trae solo el campo del nombre (`select`), un reporte
-  trae otros, un `aggregate` no pasa por ahí. Un `post("find")` que completa, renombra o agrega datos a los documentos
-  falla en silencio con la primera proyección, y además corre sobre TODA lectura del modelo. Lo que un plugin agrega
-  a una salida se engancha en quien la produce, envolviéndola por la salida (caso: `zones` envuelve `formOptions` y
-  agrega la zona con una sola consulta sobre los `value`; ver el TDD de zones-refs). Los recortes de lectura
-  van antes (`preSearch` + su par en `pre("aggregate")`), nunca después. Al proyectar un `aggregate` y rehidratar,
-  la proyección nombra `_id: 1`: `Model.hydrate(doc, {campo: 1})` deja `_id` en `undefined` (mongoose 9.11, medido
-  22-oct-2026), aunque Mongo sí lo haya devuelto.
+  `schema.preSearch(fn)`**, NUNCA el par `pre(/find/)` + `pre(/^count/)` a mano: la lista de qué es una lectura vive UNA
+  vez (así nació #173: cuatro copias sin `distinct`). `aggregate` va aparte.
+- 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`** (jcmunoz 9-oct-2026), al inicio del
+  pipeline con `unshift({$match: …})`. El plugin global del core **`preAggregate`** (`pos: "$"`, corre último) pone
+  primera toda etapa que Mongo exige primera. **Contrato estricto**: un RECORTE entra con `unshift`; lo que un plugin
+  agregue con `push` cae en la cola del dev y debe ser inocuo sobre metadatos. Las etapas primeras, los tres casos y
+  `localData`: [references/read-cuts.md](references/read-cuts.md).
+- 🔴 **Un plugin NO cuelga un `post("find")`** (jcmunoz 22-oct-2026): lo que corre después de leer asume los campos que
+  decide quien consulta, y falla en silencio con la primera proyección. Lo que un plugin agrega a una salida se engancha
+  en quien la produce, envolviéndola (caso: `zones` envuelve `formOptions`); los recortes van antes. Detalle, y el `_id`
+  al rehidratar un `aggregate`: [references/read-cuts.md](references/read-cuts.md).
 - 🔴 **Extender las QUERIES → `schema.query.X = function () {…}`, NUNCA `Query.prototype`/`db.Query.prototype`.**
   `Query` es un singleton de Mongoose compartido por todas las conexiones del proceso: mutarlo contamina a todos los
   sites (la cicatriz que forzó 1 site = 1 worker). `schema.query` son los query helpers de Mongoose, por schema y
@@ -300,10 +237,9 @@ export default db => ({name: "x", schema: "User", plugin(schema) {
 Un sub-schema literal nace **sin las extensiones que el FW instala en `db.Schema.prototype`**
 (`eachVirtualPath`…), y cualquier plugin del core que recorra `childSchemas` explota.
 
-🔴 **Peor desde un plugin que desde un modelo**: un NAMED sobre `User` contamina a User **y a todo lo que
-lo clona** (Member, DelegatedUser…) → cae la autenticación → **todas las puntas dan 500**. El error
-(`eachVirtualPath is not a function` en `02hasFiles`) apunta a un archivo del core y **no menciona tu
-plugin ni tu campo**. Caso real 2026-08-14: media hora de bisección sacando modelos uno a uno.
+🔴 **Peor desde un plugin que desde un modelo**: un NAMED sobre `User` contamina a User **y a todo lo que lo clona** →
+cae la autenticación → **todas las puntas dan 500**, y el error (`eachVirtualPath is not a function` en `02hasFiles`)
+**no menciona tu plugin ni tu campo**. El caso real: [references/boot-crash.md](references/boot-crash.md).
 
 ⟹ Si ves ese error, sospecha del último `schema.add` con campo anidado, **empezando por los plugins**.
 Detalle completo: `itdfw-models` §3b.
@@ -330,25 +266,20 @@ docArray: **`itdfw-models` §4c**.
 | Asumir orden de carga entre GLOBALes | `pos` explícito; el alfabético no es contrato. |
 | `schema.method` directo y pisar la cadena | `checkAndLoadMethod` (idempotente). |
 | Referenciar un type custom inexistente (`type:"Phone"` sin el type) | Registrar el type primero (`itdfw-mongoose-types`). |
-| Usar `db` en la factory sin capturarlo (`db is not defined`) | `const {db} = this` (la factory está bindeada) o nombrar el param `function (db){}`. Ver "Binding & parámetros". |
-| Asumir `this` = schema en la inner `plugin()` | La inner recibe `(schema, options)`, `this` NO bindeado. El `this`=Schema-instance es de la FACTORY. |
+| Usar `db` en la factory sin capturarlo (`db is not defined`) | `const {db} = this` o el param `function (db){}` (§Binding) |
+| Asumir `this` = schema en la inner `plugin()` | Recibe `(schema, options)`, `this` NO bindeado (§Binding) |
 
 ## Capacidades del core que ya puedes USAR (no reinventes)
 
-Antes de escribir lógica, mira qué PROVEE ya el core: virtuals `_update`/`_delete`/`_selectable`/`docLink`,
-`hidden` por contexto, `toInput`/`toFilter`/`toXLS`/`toPDF`, `getSchemaType`, `getLink`/`ITDName`,
-`isRoot`/`isChild`, `lean`/`autopopulate`/`fetchAll`, auditoría (`__history`), soft-delete (`active`),
-multitenant (`_zone`), `weakEntity`, `autoincrement`, `pos`… Estas capacidades son las que permiten moldear
-sin sobre-ingeniería — ya están hechas. **Catálogo de USO** (quieres Z → opción exacta → ejemplo → quién la
-provee, con citas archivo:línea): el catálogo de capacidades de plugins («plugin-capabilities-catalog»). 🌫️ La mayoría son del
-**FW en general** (las consume también quien escribe un MODELO, ver `itdfw-models`), no solo de plugins.
+Antes de escribir lógica, mira qué PROVEE ya el core: virtuals `_update`/`_delete`/`_selectable`/`docLink`, `hidden`
+por contexto, `toInput`/`toFilter`/`toXLS`/`toPDF`, auditoría (`__history`), soft-delete (`active`), multitenant
+(`_zone`), `weakEntity`, `autoincrement`, `pos`… **Catálogo de USO** (quieres Z → opción exacta → ejemplo → quién la
+provee): el «plugin-capabilities-catalog». La lista completa:
+[references/core-capabilities.md](references/core-capabilities.md).
 
 ## Referencias de código
 
-Motor: el de schemas del core — `#addPluginFromObject` (clasifica),
-`setPlugin` + `#applyPlugin` (NAMED), `#filteredPlugins` + `#addSchemaFromObject` (FILTERED),
-`#globalPlugins` + `db.plugin` (GLOBAL). Ejemplos: el mongoose plugin `Banco` (filtered),
-el plugin `duration`, `requestVariant` (named), `NationalId.js` del sitio (global re-cast).
+El motor y los ejemplos de cada modo: [references/code-refs.md](references/code-refs.md).
 
 ---
 
@@ -358,3 +289,4 @@ No declares "listo"/"funciona" sin pasar por la **puerta de salida** del FW: tes
 si tocaste algo con retención (EE/hooks/globals/cache → `WeakRef`+gc+canario), completitud (*¿qué más toqué que
 no probé?*), logs con niveles (front `$log`/`$logDebug`, back `Log.XXX`+`logLevel`), y validación **externa** (el
 "Done" no se da sobre tu propio testing). Es un **servicio**, no un browser → cero memleaks. Skill **`itdfw-completeness`**.
+
