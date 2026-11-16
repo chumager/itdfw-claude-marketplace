@@ -148,6 +148,31 @@ cajarito-despertar.sh "<name>"; echo "exit=$?"     # 0 alive · 1 did not wake �
 
 In `claude agents`, `✻`/`✽` means alive and `∙` finished; "Pinned" is a mark of the conversation, not of the state.
 
+## An answer goes back to the session that asked (`vuelta`)
+
+When one session asks another for something, the receiver tends to report the result to the person in its own chat and
+never tell the session that asked. If the person is away, the asker waits forever. `vuelta` is a hooks module
+(`hooks/vuelta.ts`, loaded by `hooks/hooks.json`) with a small ledger (`bin/vuelta.sh`) that keeps that loop closed:
+
+| Moment | What happens |
+|---|---|
+| a message from a session arrives | a debt opens (the receiver owes the sender) and one line is added to the message: who opened it and that the result goes back to them |
+| the receiver sends that session a message | the debt closes, and the message carries a short-lived mark so that, on arrival, it reads as a reply and opens no opposite debt |
+| a turn ends with a debt still open | one reminder is submitted as a new prompt; after `VUELTA_MAX` reminders (default 1) the debt is closed as failed and logged |
+
+- A sender written `<kind>:<name>` (`cron:briefing`, `hook:hilo`, `broadcast:<user>`) is not a session: it opens no debt.
+- `vuelta.sh list` shows every open debt; `<state-dir>/vuelta/log.jsonl` keeps what was opened, answered and failed.
+- To turn it off, disable the plugin's hooks; the scripts do not depend on it.
+
+Known edges, kept on purpose (the worst case is what happened before the module existed: a message that nobody answers):
+
+- **Every message from a session asks for an answer**, also a plain report. There is no "no answer needed".
+- **A first answer closes the debt.** "I will look at it" counts as the answer; if the result never follows, nothing
+  reminds the receiver. And a result sent after the mark expired (`VUELTA_TOKEN_TTL`, 120 s) opens a debt on the
+  session that had asked.
+- **Each reminder is a whole turn** of the reminded session, at the size of its context. That is why the default is one.
+- An answer given in a room (`room say`) is not seen as an answer.
+
 ## How to verify
 
 ```sh
@@ -165,6 +190,7 @@ files, a fake unix socket (`node:net`) that records what a session would receive
 | `test/screen-usage.test.mjs` | `session-fg.sh` (ACTIVE / VISIBLE / BG from a fake transcript and fake panes), `claude-usage-watch.sh` (against a stub `claude -p`) and `examples/statusline-state.sh` |
 | `test/cartera.test.mjs` | `cartera.sh`: every subcommand, the state files, the old-format migration |
 | `test/hilo.test.mjs` | the four `hilo-*` scripts: what the capture keeps and drops, the last-N and per-message cut, the hand-back message and its 24 h summary rule, the ready mark, who is asked and who is not woken |
+| `test/vuelta.test.mjs` | the ledger (`vuelta.sh`): a request opens a debt, the answer closes it and arrives as a reply, no endless ping-pong between two sessions, two askers tracked apart, a recipient given by name, by `[ref]` or by socket address, the reminder count and the give-up, `list`, bad usage. The hooks module itself (the added line, the external senders, the reminder prompt) runs only inside Claude Code and is not exercised here |
 | `test/help.test.mjs` | every script answers `--help` with its header, exit 0 |
 | `test/env-file.test.mjs` | the local config file: absent, present, `XDG_CONFIG_HOME` / `CLAUDE_SESSIONS_ENV`, the environment wins, a line that tries to run something is not executed, only `KEY=value` lines count, through a symlink, and that every script loads it on start |
 
