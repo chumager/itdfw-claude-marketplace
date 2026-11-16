@@ -30,9 +30,9 @@ copiar nada a su `DEFAULT`.
 | `plugins` | Mongoose plugins (global/filtered/specific) | leer `mongoosePlugins/` existentes |
 | `db` | Utilidades sobre el objeto `db` | leer `mongooseDB/` existentes |
 | `libs` | Librerías compartidas → `pool.libs` | abajo (§libs) |
-| `auth` | Autenticadores: `{name, claims, authenticate, pos?}` o un arreglo de ellos. `claims(req)` es **síncrono** y barato (corre en cada petición del deploy); `authenticate(req)` devuelve `{model, user}` o `undefined`, o lanza si la credencial es suya y está mala. No escribe `req.auth`: lo escribe `User.auth`. Van después de la sesión y del JWT del FW, en orden de registro; `pos` `"^"` los pone antes de la sesión y `"$"` al final. Uno malformado se loguea y se omite | **`itdfw-api-system`** → "El acceso paso a paso" |
-| `wellKnown` | Aportes a `/.well-known/<nombre>`: un objeto `{<nombre>: {type, final?, content}}`; `content` es un valor o `(req, acumulado) => contenido`. **Se reparte y valida en el arranque** (la utilidad `wellKnown` del core) hacia `pool.wellKnown`: los aportes de un mismo nombre deben coincidir en `type` y en clase de `content` (arreglo, string u objeto; una función queda exenta), y si no el nombre queda inválido, se loguea y la ruta responde 404 con el motivo. **Al pedirse** (`server.js`, `/.well-known/:name`) las partes se mezclan (arreglos se concatenan, strings se unen con salto de línea, objetos en profundidad; mezclar clases lanza 500), y las `final: true` corren al último | `wellKnown` (utilidad del core) |
-| `captcha` | Proveedores de captcha: `{name, publicSpec(req, ctx), verify(req, token, ctx), challenge?(req, ctx), external: boolean}` o un arreglo. **El core no trae ninguno.** Se registran en el arranque por nombre en `pool.captchaProviders` (el mismo nombre reemplaza; uno inválido se loguea y se omite). **Solo se usan** cuando el `formSpecs` de un modelo declara `captcha` para ese tipo (`create`, `update`, `register`, `profile`…): `FWcreate` y `FWupdate` llaman `assertCaptcha`, que verifica el header `x-itd-captcha` (una llamada worker→worker con `x-itd-access` se exime). Aplica un solo proveedor: el de la Config `Captcha` (nivel 0), si no el del archivo (`captcha.provider`), si no el único registrado, y debe estar en `captcha.allow` (por omisión `["altcha"]`) o responde 503. Una prueba mala es 400, y un servicio externo que no contesta en 3 s falla cerrado con 503. Ejemplo: el plugin `captcha-altcha` | `captcha` (utilidad del core) |
+| `auth` | Autenticadores `{name, claims, authenticate, pos?}` o un arreglo: `claims(req)` es **síncrono** y barato; `authenticate(req)` devuelve `{model, user}` o `undefined`, o lanza si la credencial es suya y está mala. No escribe `req.auth`. Orden y `pos`: [references/keys-detail.md](references/keys-detail.md) | **`itdfw-api-system`** → "El acceso paso a paso" |
+| `wellKnown` | Aportes a `/.well-known/<nombre>`: `{<nombre>: {type, final?, content}}`, validados en el arranque y mezclados al pedirse. Las reglas: [references/keys-detail.md](references/keys-detail.md) | `wellKnown` (utilidad del core) |
+| `captcha` | Proveedores `{name, publicSpec(req, ctx), verify(req, token, ctx), challenge?(req, ctx), external: boolean}` o un arreglo. **El core no trae ninguno.** **Solo se usan** cuando el `formSpecs` de un modelo declara `captcha` para ese tipo. Cuál aplica, los códigos de error y el ejemplo: [references/keys-detail.md](references/keys-detail.md) | `captcha` (utilidad del core) |
 | `refs` | Fuentes de opciones de un select con nombre (`"plugin/nombre": (req, query) => [{value, text}]`) → `pool.refs`, que leen `getRef`/`getSimpleName`; el campo las pide con `myRef: "plugin/nombre"` | **`itdfw-models`** → `references/special-refs.md` §4 |
 | `vue2`/`vue3`/`react`/`svelte`/`solid`/`lit` | **Frontend** por framework | abajo (§frontend) — lo único exclusivo del FWPlugin |
 | `name` | Nombre para logging | — |
@@ -77,15 +77,11 @@ vue3); **`vue2`**/**`vue3`** solo cuando es específico de una versión (mismo c
 frameworks). El index apunta la key del framework a la carpeta:
 `vue: { <comp>: new URL('./vue', import.meta.url).pathname }`.
 
-🔴 **Es RECOMENDADA, no obligatoria**: salvo la carpeta del front, el motor solo lee las **keys del objeto**
-que exportás — podrías poner todo inline y funciona igual. Pero espejar el back es lo que mantiene el FWP
-legible y coherente con el resto del FW. Para arrancar bien, **copiá el template** (`assets/fwplugin-template/`),
-🔴 **incluido su `package.json`**: trae la whitelist `files` (rule `package-files-whitelist`) con las carpetas del
-espejo y `README.md`, y **sin `TDD*.md` ni `test/`**: el README es la cara del paquete, el TDD es la cocina y va en
-git pero no en el tarball (jcmunoz 17-sep-2026). Seis plugins nacidos antes de esa decisión declararon `TDD.md` a
-mano en `files` porque el template no traía `package.json`; el veto de `itdfw-deps.sh files` los cazó el 18-sep.
-Los FWP que viven INLINE en la carpeta `FWPlugins/` del core (Currency, PDF) están así por **migración desde el
-core** (se movieron/mergearon), NO porque sea el patrón a imitar.
+🔴 **Es RECOMENDADA, no obligatoria**: salvo la carpeta del front, el motor solo lee las **keys del objeto** que
+exportás. Para arrancar bien, **copiá el template** (`assets/fwplugin-template/`), 🔴 **incluido su `package.json`**:
+trae la whitelist `files` (rule `package-files-whitelist`) con las carpetas del espejo y `README.md`, y **sin `TDD*.md`
+ni `test/`**: el README es la cara del paquete, el TDD va en git pero no en el tarball. El caso que lo destapó y por qué
+Currency y PDF viven inline en el core: [references/folder-structure.md](references/folder-structure.md).
 
 ### 🔴 El scope se decide con `inFront`/`inBack` — NUNCA por el argumento
 
@@ -113,51 +109,25 @@ if (inBack)
 export default exp;
 ```
 
-🔴 **`let exp = {}`, nunca `let exp;`.** El módulo se importa en los dos scopes siempre: un plugin
-solo-back que hace `if (inBack) exp = {…}` deja **`undefined` en el front** → `Object.entries(undefined)`
-en el loader → **cae el front de todo deploy que lo tenga instalado**. Caso real 2026-08-26
-(el plugin `telegram`). Partir de `{}` es la línea que lo evita — el front recibe un objeto vacío y sigue.
-Y si el plugin solo-back no quiere que el front cargue sus dependencias (telegraf, libs del back), los
-imports van **dentro** de la rama (`await import(...)`), no arriba del archivo.
+🔴 **`let exp = {}`, nunca `let exp;`**: el módulo se importa en los dos scopes, y un plugin solo-back que deja
+`undefined` en el front hace caer el front de todo deploy que lo tenga (`Object.entries(undefined)` en el loader; caso
+real: el plugin `telegram`). Los imports solo-back van **dentro** de la rama (`await import(...)`). El caso:
+[references/scope-let-exp.md](references/scope-let-exp.md).
 
 #### 🔴🔴 El FWPlugin NO recibe `db` por argumento (y confundirlo lo deja MUDO)
 
-Verificado en el motor de schemas del core → `#expandPlugins`:
-
-```js
-if (typeof plugin === "function") {
-  result = await plugin.call(this);   // ← SOLO bindea `this`. NINGÚN argumento.
-  if (!result) continue;
-}
-```
-
-(igual para los FWPlugins descubiertos por archivo: `imported.call(this)`)
-
-**Por qué no lo pasa:** porque `this` **ya lo trae** — `Schema`'s constructor hace `this.db = db`. Bindear
-la instancia es entregar `db` (y `pool`, e `init`) de una. Pasarlo aparte sería redundante. Eso es todo.
-
-⟹ Escribir `export default function (db) { if (!db) return {}; ... }` hace que `db` sea **siempre
-`undefined`** → retorna `{}` → **el plugin carga y no aporta NADA, sin un solo error en el log**. No hay
-modelos, no hay índices, no hay warning: falla en silencio y se pierde media hora dudando del modelo.
-
-**De dónde viene la confusión:** el que SÍ recibe `db` por argumento es el **mongoosePlugin**, en
-`#addPluginFromObject` del mismo archivo:
-
-```js
-if (res.constructor.name === "AsyncFunction") res = await res.call(this, this.db);
-else res = res.call(this, this.db);
-```
+El motor invoca un FWPlugin función con `plugin.call(this)`, **sin argumentos**: `db`, `pool` e `init` salen de
+`this` (`const {db} = this`). Escribir `export default function (db) { if (!db) return {}; ... }` deja `db` **siempre
+`undefined`** → retorna `{}` → **el plugin carga y no aporta NADA, sin un solo error en el log**. La confusión viene
+del **mongoosePlugin**, que sí recibe `db` por argumento:
 
 | Qué | Cómo lo invoca el motor | Cómo obtiene db |
 |---|---|---|
 | **FWPlugin** (función) | `plugin.call(this)` | `const {db} = this` |
 | **mongoosePlugin** (función) | `res.call(this, this.db)` | argumento **o** `this` |
 
-Si el FWPlugin **no necesita lógica** (solo declara keys estáticas) → forma **objeto** directo, sin
-función y sin scope que resolver. La función es solo para los que SÍ necesitan runtime.
-
-*(Corregido 2026-08-14: el skill documentaba `function (db)` con detección por ausencia del argumento —
-le atribuía al FWPlugin la firma del mongoosePlugin. Cazado cuando el plugin `conversation` cargó mudo.)*
+Si el FWPlugin **no necesita lógica** → forma **objeto**. El código del motor, por qué no lo pasa y el caso que lo
+destapó: [references/no-db-argument.md](references/no-db-argument.md).
 
 ## 🪄 Frontend — el hook de framework de reactividad (lo ultra-power)
 
@@ -165,47 +135,27 @@ Lo que hace a un FWPlugin una capa COMPLETA: además de back, declara su **front
 key por framework de reactividad soportado, cada una mapea nombres lógicos → rutas de los componentes:
 
 ```js
-// índice del plugin (o key del FWPlugin) — self-declara sus paths con import.meta.url
+// self-declara sus paths con import.meta.url; los seis frameworks: references/front-mechanism.md
 export default {
-  vue2:   { currency: new URL('./vue2',   import.meta.url).pathname },
-  vue3:   { currency: new URL('./vue3',   import.meta.url).pathname },
-  react:  { currency: new URL('./react',  import.meta.url).pathname },
-  svelte: { currency: new URL('./svelte', import.meta.url).pathname },
-  solid:  { currency: new URL('./solid',  import.meta.url).pathname },
-  lit:    { currency: new URL('./lit',    import.meta.url).pathname }
+  vue2: { currency: new URL('./vue2', import.meta.url).pathname },
+  react: { currency: new URL('./react', import.meta.url).pathname }
 };
 ```
 
-**Frameworks soportados out-of-the-box**: `vue2`, `vue3`, `react`, `svelte`, `solid`, `lit`
-(extensible — se pueden agregar/override pasando un mapa de detección al plugin de Vite). El **valor de
-cada nombre lógico es un PATH a un DIRECTORIO** (ej. `./vue2`), no a archivos sueltos — el FW resuelve
-los componentes dentro de esa carpeta vía la cascada de `customImport`. El front por framework asume que
-existe una **front-library** montada para ese framework (cómo se arma un front nuevo → skill
-`itdfw-front-creation`); este skill solo cubre cómo el plugin la declara/enchufa.
+**Frameworks soportados**: `vue2`, `vue3`, `react`, `svelte`, `solid`, `lit` (extensible desde el plugin de Vite). El
+valor de cada nombre lógico es un **PATH a un DIRECTORIO**, no a archivos sueltos, y asume una **front-library** montada
+para ese framework (skill `itdfw-front-creation`).
 
-**Mecanismo** (`@chumager/itdfw-vite-plugin` + `.itdfw.js` del sitio):
-1. Vite detecta el framework activo desde sus propios plugins (el framework va primero en `plugins[]`).
-2. El plugin ITDFW extrae los aliases del framework detectado desde los plugins mergeados (`configArray('plugins')`).
-3. Genera el módulo virtual `virtual:itdfw-custom-import` con búsqueda en **cascada**:
-   `@/<comp>` (app) → `default/<comp>` (sitio) → `currency/<comp>` (plugins) → `itdfw/<comp>` (front, NUI) →
-   `core/<comp>` (el plugin de vite del framework, `basePaths` de `customImport`). **La app y el default mandan
-   siempre**; un plugin pisa al front y al core, nunca al site. Los merges (`init.js`, store) recorren al revés (core
-   primero) para que la app gane igual; `public/` se copia de abajo hacia arriba por lo mismo.
-4. El front consume agnóstico: `const C = await customImport('ItdCurrency')` — el mismo código corre en
-   cualquier framework; el plugin resuelve al binario correcto.
-
-⟹ un FWPlugin enchufa UI en el front sin que la app sepa nada, y framework-agnóstico. Es la pieza que
-permite que el plugin sea de verdad back2front.
+La cascada de `customImport`: `@/<comp>` (app) → `default/<comp>` (sitio) → `<plugin>/<comp>` → `itdfw/<comp>` (front,
+NUI) → `core/<comp>`. **La app y el default mandan siempre**; un plugin pisa al front y al core, nunca al site. El front
+consume agnóstico (`const C = await customImport('ItdCurrency')`). El mecanismo de Vite paso a paso:
+[references/front-mechanism.md](references/front-mechanism.md).
 
 ### 🔴🔴 En el FRONT el espejo es IMPERATIVO — la ubicación ES la declaración
 
-Acá está la **asimetría** con el back, y es de naturaleza, no de estilo:
-
-| | **Back** | **Front** |
-|---|---|---|
-| Cómo llega al motor | **DECLARAS** las keys del objeto (`schemas`, `types`, `plugins`, `API`) | **NO declaras nada**: se descubre por **ubicación** |
-| El espejo de carpetas | por **coherencia y orden** — recomendado, no obligatorio | **imperativo**: la carpeta ES el contrato |
-| Si te sales del molde | funciona igual (el motor lee las keys) | **no existe**: nadie lo va a encontrar |
+En el back **declarás** las keys del objeto y el espejo de carpetas es orden: recomendado, funciona igual si te
+salís. En el front **no declarás nada**: se descubre por **ubicación**, la carpeta ES el contrato, y lo que se sale del
+molde **no existe**. La tabla: [references/front-mirror.md](references/front-mirror.md).
 
 Una vez que el plugin declara su carpeta de framework (`vue: {miPlugin: <path a ./vue>}`), esa carpeta
 **entra a la cascada como un nivel más**, exactamente igual que el core, el DEFAULT o la app. Y de ahí
@@ -224,48 +174,24 @@ en adelante **el sistema absorbe lo que encuentre, por convención de ruta**:
 🔴 **`loaders/` NO está en esta lista, y es a propósito**: los loaders se cargan **por función**, no por
 cascada de carpeta — se dejaron fuera justamente para que **nadie te los pise**.
 
-Dos cosas del front de un plugin que no se adivinan (gap #42, 2026-09-20): **un ítem en las barras** se agrega
-desde el `vue/init.js` del plugin con `this.store.commit("app/setNavItem", {key, component, sink, position:
-"first" | "center" | "last", pos, when})`, donde `sink` es `"nav"`, `"side"`, `"drawer"`, un arreglo o una función
-del ancho; y la fuente del menú se enchufa con `commit("app/setMenu", {ref})` (modelo completo: skill `itdfw-nui` §5;
-ejemplo vivo: el plugin `typesafe-palette`). Un plugin que no deja elegir el sink de lo que agrega le quita
-la libertad al site. Y **una punta propia se llama** con `this.$http.get/post/put(url, body, {params})`, nunca con
-`fetch` ni `axios` importados.
+Desde el `vue/init.js` del plugin, **un ítem en las barras** se agrega con `this.store.commit("app/setNavItem", {key,
+component, sink, position, pos, when})` y la fuente del menú con `commit("app/setMenu", {ref})`; un plugin deja elegir
+el `sink` al site. **Una punta propia se llama** con `this.$http.get/post/put(url, body, {params})`, nunca con `fetch` ni
+`axios` importados. Los valores y el ejemplo vivo: [references/front-nav-http.md](references/front-nav-http.md).
 
-🔴 **Pisar es SILENCIOSO y es la gracia, no el bug**: la cascada es *first-return* con la app en la punta
-más alta, así que un plugin puede sobreescribir un componente del core solo por **nombrarlo igual**. Es la
-misma libertad que los mongoose-plugins tienen en el back (§"pisar/inyectar"). El único aviso es en
-rutas: si dos niveles declaran el mismo `name`, el loader emite un `console.warn`
-(*"[Router] X ya existe, interceptado por …"*) — pero igual gana el último.
+🔴 **Pisar es SILENCIOSO y es la gracia, no el bug**: la cascada es *first-return* con la app en la punta más alta,
+así que un plugin pisa un componente del core solo por **nombrarlo igual**. El único aviso es un `console.warn` en rutas
+con el mismo `name`, y gana el último.
 
 ### 🔴 `init.js` — el plugin no solo APORTA: puede REESCRIBIR el arranque
 
-El bootstrap descubre los `init.js` por la MISMA cascada (`customImportArray("init.js")`), así que el del
-plugin corre como un nivel más. Y un init recibe el **pack** (Proxy de bloques), lo que le permite:
-
-- **agregar** bloques: globals, mixins, componentes, plugins de Vue, métodos al prototype;
-- **registrar loaders** con `addLoader("$opcion", fn, pos, hoist)` — que modifican componentes **durante
-  el localImport, antes de que Vue los vea** (lo que un plugin de Vue no puede hacer);
-- 🔴 **modificar lo que registraron OTROS**, por nombre: `pack.before/after("nombre", [items])` (un bloque nuevo
-  antes o después del de ese nombre), `pack.replace("nombre", obj)` y `pack.delete("nombre")` (ese ítem, no el
-  bloque). Un nombre se declara **una vez**: redeclararlo para pisarlo hace caer el arranque; se usa `replace`, o un
-  bloque después que reescribe `this.nombre` (skill `itdfw-core-init`, `pack-proxy.md`).
-
-⟹ Es la contraparte front de la "black magic" de los mongoose-plugins, y `delete` está ahí **porque hace
-falta**: si un nivel de abajo registra algo que impone una restricción que no necesitas o que rompe tu
-código, sacarlo es la única salida. No es una función "por completitud" — es la que evita que quedes
-atrapado por lo que decidió otro. Se usa sabiendo lo que se hace.
-
-⟹ **`loaders/` queda fuera de la cascada de carpetas a propósito**: se registran por función desde un
-init, y así **nadie te los pisa** por el solo hecho de nombrar un archivo igual.
-
-Detalle del pack, flags de registro y cómo escribir loaders → skill **`itdfw-core-init`**.
-
-⟹ Un plugin puede traer **un vertical de front completo** (rutas + vistas + componentes + store + init)
-sin que la app toque una línea, y sin declarar más que la carpeta.
-
-*(Verificado e2e el 2026-08-15 con el plugin `conversation`, cuyo `vue/` ya no existe: una ruta y una vista del
-plugin se renderizaron sin tocar el site. Ejemplo vivo hoy: el plugin `openid` (su `vue/` con router y una vista).)*
+El `init.js` del plugin corre en el bootstrap como un nivel más de la cascada y recibe el **pack**: **agrega** bloques,
+**registra loaders** con `addLoader("$opcion", fn, pos, hoist)` y **modifica lo que registraron OTROS**, por nombre:
+`pack.before/after("nombre", [items])`, `pack.replace("nombre", obj)` y `pack.delete("nombre")`. Un nombre se declara
+**una vez**: redeclararlo para pisarlo hace caer el arranque; se usa `replace`. Así un plugin trae **un vertical de front
+completo** (rutas + vistas + componentes + store + init) sin que la app toque una línea. Detalle, por qué existe
+`delete` y la verificación e2e: [references/front-init.md](references/front-init.md). El pack y los loaders → skill
+**`itdfw-core-init`**.
 
 ## Dónde vive y cómo se enchufa
 
@@ -291,35 +217,23 @@ export default {
 - **(2) inline** — escribir la estructura literal directo en el array. Válido por sí mismo: p.ej. el
   dev necesita algo del scope local del `.itdfw.js`, o una pieza aún no se externalizó como módulo.
 
-🔴 El `{ vue: { currency: <path> } }` de un deploy con moneda es la forma (2) como **parche temporal** (no por
-diseño): Currency todavía vive DENTRO del back → Vite no puede descubrir su front → se declara a mano.
-Al externalizar Currency será un import directo como (1). No es "una forma de front" — es inline por
-decisión, que acá resuelve un front no-externalizado.
-
-**Por qué el front se declara acá y no en la config del back**: la config del back y la del default/app
-son **dos instancias distintas** de lo mismo (no se sobrecargan entre sí). El front de un plugin que
-vive en el back no puede inyectarse vía la config del back → se declara en el `.itdfw.js` del front.
+🔴 El `{ vue: { currency: <path> } }` de un deploy con moneda es la forma (2) como **parche temporal**, no por diseño.
+Por qué, y por qué el front se declara en el `.itdfw.js` y no en la config del back:
+[references/where-it-plugs.md](references/where-it-plugs.md). Los FWPlugins del core, con formato, keys y propósito:
+[references/existing-plugins.md](references/existing-plugins.md).
 
 ### 🔴 Plugin de INFRAESTRUCTURA vs plugin de PRODUCTO: la regla del core vale para el primero
 
 | Plugin | Ejemplos | Front |
 |---|---|---|
 | **de infraestructura** (lo usa cualquier site, con cualquier front) | translate, address, currency, chat | la regla de abajo: la funcionalidad nace en el core y el front cambia la piel |
-| **de producto** (una suite vendible que declara su front) | `restaurant` | se elige el front (NUI) y el render usa sus componentes: primero el **wrapper del FW** si existe (`ItdModal`, `ItdButton`, `Icon`…, revisar con el MCP `inventory`), y el componente pelado de NUI (`n-card`, `n-ellipsis`, `n-tag`…) solo si no hay wrapper; la **lógica de negocio** queda aparte, en un mixin o en una base Vue sin componentes |
+| **de producto** (una suite vendible que declara su front) | `restaurant` | se elige el front (NUI): primero el **wrapper del FW** si existe (`ItdModal`, `ItdButton`…), el componente pelado de NUI solo si no hay wrapper; la **lógica de negocio** aparte (mixin o base Vue sin componentes) |
 
-En un producto no se arma un render "core" con nativos para pisarlo después en NUI: es una semana de trabajo para
-tener un card pelado, y se pierde lo que NUI resuelve (expandir, modal, carrusel, tema). La lógica separada cubre el
-caso raro de cambiar de framework (jcmunoz 24-oct-2026: *"si vamos a usar nui hay que usar los providers que nos da
-nui, si no, ¿pa qué tenemos nui? ¿pa armar un card pelao?"*).
-
-### 🔴 La funcionalidad nace en el CORE; un front solo le cambia la piel (jcmunoz 5-oct-2026) — plugins de infraestructura
-
-- Lo que un plugin necesita del front (un modal, un switch, un color por estado) lo provee el **core**, aunque sea
-  feo: componente y lógica funcionan sin ningún front. Si el core no lo tiene, el plugin lo **declara como
-  necesidad** (gap); usar un componente de NUI u otro front en directo es la excepción declarada, no la vía.
-- Si NUI aporta algo especial, su versión **hereda** la del core y cambia la piel, no la lógica.
-- En un plugin con suite (`vue` + `nui`), la carpeta `nui` **hereda** de la de `vue` (o ambas comparten un mixin): la
-  lógica se escribe una vez. Una `nui` que reimplementa la lógica son dos plugins pegados, y es lock-in corrido.
+En un producto no se arma un render "core" con nativos para pisarlo después en NUI. En uno de infraestructura,
+**la funcionalidad nace en el CORE y un front solo le cambia la piel** (jcmunoz 5-oct-2026): lo que el plugin necesita
+del front lo provee el core, o lo declara como necesidad (gap); la versión NUI **hereda** la del core, y en un plugin con
+suite la carpeta `nui` hereda de la de `vue`. Las reglas completas y su porqué:
+[references/infra-vs-product.md](references/infra-vs-product.md).
 
 ### Plugin COMPUESTO — un arreglo de plugins
 
@@ -331,22 +245,15 @@ los transversales en un import). El orden importa: primero los que aportan types
 🔴 **Un plugin que DEPENDE de otro trae la base dentro de su export** (`export default [Base, lo propio]`) y la declara
 en su `package.json`: el site pone solo el hijo y no tiene por qué saber que la base existe (jcmunoz 27-sep-2026).
 
-| Con dos hijos de la misma base, la base entra DOS veces | Qué pasa |
-|---|---|
-| back | **no deduplica**: todo lo que la base registra se registra dos veces, y lo que no tolera la repetición tumba el arranque |
-| `setConfigDefinition(name, schema, level, canOverride)` | lanza `redefining X is not allowed` si la primera fue sin `canOverride` ⟹ **la base registra su Config con `canOverride: true`** |
-| `libs`, `API`, un NAMED reaplicado | sobreviven la repetición |
-| front | sí deduplica: la carpeta de framework de la base entra con el mismo nombre y una inyección suya se pinta una vez |
-
-Y la base expone un **guard** (`enabled`, con un interruptor `enabled` en su Config; no `active`, que es nombre
-reservado) para que un hijo apagado o sin configurar responda como flujo (`[]`) y no con un 5XX que termina en correo
-al admin. Medido 27-sep-2026 en un site de prueba con los plugins `typesafe` + `typesafe-icon`.
+Con **dos hijos de la misma base**, la base entra dos veces: el back **no deduplica** (lo que no tolera la repetición
+tumba el arranque; por eso **la base registra su Config con `canOverride: true`**), `libs`, `API` y un NAMED sobreviven,
+y el front sí deduplica. La base expone un **guard** (`enabled`) para que un hijo apagado o sin Config responda como
+flujo (`[]`) y no con un 5XX. La tabla y la medición: [references/composite-base-twice.md](references/composite-base-twice.md).
 
 ## libs — interconexión runtime
 
-`libs: { helper, ...lib }` → el motor hace `Object.assign(pool.libs, value)`. Quedan disponibles vía
-`pool.libs` para cualquier modelo/plugin del proceso. Es uno de los flujos de inyección al pool (el
-detalle del pool + `shareData`→req vive en `itdfw-models` → `schema-engine.md`).
+`libs: { helper, ...lib }` → `Object.assign(pool.libs, value)`: disponibles vía `pool.libs` para cualquier modelo o
+plugin del proceso (el pool y `shareData`→req: `itdfw-models` → `schema-engine.md`).
 
 ## API — solo lo propio del canal (detalle en itdfw-api-system)
 
@@ -364,20 +271,9 @@ el resto del sistema de puntas → **`itdfw-api-system`**.
 
 ## Timing / orden de carga
 
-`Schema.process()` → `#expandPlugins()` reparte las keys del FWPlugin a cada fase del motor: **db →
-types → plugins → schemas** (cada una cascada FW→DEFAULT→App). `pool.API`/`pool.libs` se mergean sobre
-la misma referencia. El detalle del motor (fases, espera por proxy, eventos, completitud) →
-`itdfw-models` → `schema-engine.md`.
-
-## Plugins existentes (referencia)
-
-| File | Formato | Keys | Propósito |
-|------|---------|------|-----------|
-| Currency.js | objeto | types, plugins, vue2 | type Currency + `hasCurrency` + formato + front Vue2 |
-| Config.js | función | db, plugins, schemas | modelo Config + getConfig + PubSub |
-| PDF.js | objeto | types, db, plugins, schemas | `db.createPDF` + schema Font + plugin toPDF |
-| Finance | función | libs, plugins | schemas de Fee (simple/dated/operational), IRR, gastos |
-| MCP.js | objeto | API | endpoint protocolo MCP (dev-only) |
+`Schema.process()` → `#expandPlugins()` reparte las keys a cada fase: **db → types → plugins → schemas** (cada una
+cascada FW→DEFAULT→App); `pool.API`/`pool.libs` se mergean sobre la misma referencia. Detalle del motor → `itdfw-models`
+→ `schema-engine.md` ([original](references/libs-timing.md)).
 
 ## Common Mistakes
 
@@ -390,7 +286,7 @@ la misma referencia. El detalle del motor (fases, espera por proxy, eventos, com
 | Olvidar `this.init()` para deps de schema | Schemas que dependen de otros DEBEN await init (ver schema-engine.md) |
 | `export default null` para deshabilitar | Usa `{}` — `null` rompe `Object.entries` |
 | Pensar que un FWPlugin es "solo backend" | Puede traer su front completo por framework (§frontend) y ser un vertical entero distribuible |
-| 🔴 `export default function (db)` en un FWPlugin | El motor lo llama `plugin.call(this)` **sin argumentos** → `db` es `undefined`, el plugin retorna vacío y **falla MUDO**. Se saca de `this` y el scope se decide con `inFront`/`inBack` |
+| 🔴 `export default function (db)` en un FWPlugin | `db` llega `undefined` y el plugin falla **MUDO**: se saca de `this`, y el scope se decide con `inFront`/`inBack` |
 
 ---
 
@@ -400,3 +296,4 @@ No declares "listo"/"funciona" sin pasar por la **puerta de salida** del FW: tes
 si tocaste algo con retención (EE/hooks/globals/cache → `WeakRef`+gc+canario), completitud (*¿qué más toqué que
 no probé?*), logs con niveles (front `$log`/`$logDebug`, back `Log.XXX`+`logLevel`), y validación **externa** (el
 "Done" no se da sobre tu propio testing). Es un **servicio**, no un browser → cero memleaks. Skill **`itdfw-completeness`**.
+
