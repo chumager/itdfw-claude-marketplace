@@ -162,7 +162,11 @@ never tell the session that asked. If the person is away, the asker waits foreve
 
 - A sender written `<kind>:<name>` (`cron:briefing`, `hook:hilo`, `broadcast:<user>`) is not a session: it opens no debt.
 - `vuelta.sh list` shows every open debt; `<state-dir>/vuelta/log.jsonl` keeps what was opened, answered and failed.
-- To turn it off, disable the plugin's hooks; the scripts do not depend on it.
+- To turn it off in every session at once, without reloading anything, create the file `<state-dir>/vuelta/off`: while
+  it exists the ledger opens, closes and reminds nothing. Remove the file to turn it back on.
+- **Install it in every session or in none.** A session without the module leaves no mark on its answers, so each of
+  its messages opens a new debt on a session that has it. Measured on 2026-11-16 with the module in some sessions only:
+  23 debts in eight minutes, pairs reopening every 20 to 40 seconds.
 
 Known edges, kept on purpose (the worst case is what happened before the module existed: a message that nobody answers):
 
