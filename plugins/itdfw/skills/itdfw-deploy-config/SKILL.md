@@ -183,123 +183,11 @@ el site termina con **los dos conjuntos**, no con el suyo pisando al otro.
 
 ## 5. `fastResponse` — la config que ES código
 
-La prueba de que el `.itdfw.js` no es un yaml con otra sintaxis. `fastResponse` declara respuestas HTTP de
-bajo nivel **sin rutas ni métodos**: se evalúa antes que la app, contra el `req` crudo.
+`fastResponse` declara respuestas HTTP de bajo nivel **sin rutas ni métodos**: se evalúa antes que la app, contra el `req` crudo; es la prueba de que el `.itdfw.js` no es un yaml con otra sintaxis. Resuelve dos problemas: **Open Graph en una SPA** (el `type: "tag"` inyecta los `<meta property="og:…">` según la URL o el User-Agent del crawler, sin tocar el build) y el **healthcheck de un balanceador** (ALB/ELB pega a `/` sin cabecera `Host`; un `fastResponse` con `cond: {"headers.user-agent": /^ELB-HealthChecker/}` y `response: {type: "string", data: "Pong"}` responde 200 sin la app). 🔴 **No agregues `path` a esa condición**: el balanceador se identifica por su User-Agent. El `req` llega **COMPLETO**, incluido `req.db`, así que la respuesta puede consultar la BD; dos condiciones se aplican en AND (sift).
 
-### 🔴 Los dos problemas que resuelve (y que casi nadie ve venir)
+🔴 **Para armar URLs absolutas, los getters del `req`, nunca a mano**: `req.baseURL` (`protocolo://host`, respeta `fakeHTTPS`), `req.fullURL`, `req.pathURL` y `req.sameOrigin`. Sobre `baseURL` se compone con `new URL(path, req.baseURL)`; nunca `${req.protocol}://${req.get("Host")}`.
 
-**1. Open Graph en una SPA.** Al compartir un link, el crawler de WhatsApp/Facebook/X pide el HTML y lee
-los `<meta property="og:…">`. Una SPA sirve **un solo `index.html`**, así que todos los links muestran la
-misma preview — y templetear el index para arreglarlo es caro. Con `fastResponse` se inyectan los tags
-correctos según la URL o el User-Agent del crawler, sin tocar el build. **Para eso existe `type: "tag"`.**
-
-**2. Healthcheck de un balanceador (ALB/ELB).** El balanceador pega a `/` **sin cabecera `Host`**, y un FW
-multi-site no tiene cómo saber qué servir → 404 → el target queda `unhealthy` aunque el servicio esté
-perfecto. Un `fastResponse` le contesta 200 sin involucrar a la app:
-
-```js
-{
-  name: "AWS ELB",
-  cond: {"headers.user-agent": /^ELB-HealthChecker/},   // SOLO el UA: no ates la cond al path
-  response: {type: "string", data: "Pong"}
-}
-```
-
-🔴 **No agregues `path` a esa condición.** El balanceador se identifica por su User-Agent; amarrar el match
-a un path lo rompe el día que alguien cambie el health check de ruta.
-
-Otros usos del mismo mecanismo: `robots.txt`, `.well-known`, metas de verificación de dominio.
-
-### 🔴 El `req` llega COMPLETO — incluido `req.db`
-
-Es lo que convierte a `fastResponse` en algo más que respuestas estáticas: la respuesta puede **consultar
-la base** y armarse con datos reales. El caso vivo del Open Graph:
-
-```js
-{
-  name: "facebook link",
-  cond: {
-    "headers.user-agent": /^facebookexternalhit/,
-    url: /^\/APP\/Empresa\/Proyecto\//          // dos condiciones → sift las aplica en AND
-  },
-  async response(req) {
-    const id = req.url.replace("/APP/Empresa/Proyecto/", "");
-    const proyecto = await req.db.Project.findById(id);      // ← la BD, disponible acá
-    const {background, impact, impact_value} = proyecto;
-    // req.baseURL da protocolo://host respetando fakeHTTPS; la punta es del MODELO File
-    const img = new URL(`/APP/File/getFile.json?xhr=true&_id=${background}`, req.baseURL).toString();
-    return {
-      type: "tag",
-      data: [
-        {tag: "meta", attributes: {property: "og:type", content: "article"}},
-        {tag: "meta", attributes: {property: "og:title", content: "Doble Impacto"}},
-        {tag: "meta", attributes: {property: "og:description", content: `${impact} - ${impact_value}`}},
-        {tag: "meta", attributes: {property: "og:image", content: img}}
-      ]
-    };
-  }
-}
-```
-
-⟹ Cada link compartido muestra la preview **de su propio contenido**, con la imagen y los datos que salen
-de la BD — en una SPA que sirve un único `index.html`.
-
-### 🔴 Para armar URLs absolutas: los getters del `req`, nunca a mano
-
-El `req` trae estos getters inyectados por el FW:
-
-| Getter | Qué entrega |
-|---|---|
-| `req.baseURL` | `protocolo://host` — **respeta `fakeHTTPS`** |
-| `req.fullURL` | la URL completa, con query |
-| `req.pathURL` | la URL sin query |
-| `req.sameOrigin` | boolean: el origen de `Referer` (si no viene, `Origin`) es el de `req.baseURL`; sin ninguno o mal formado, `false` |
-
-⟹ Sobre `baseURL` se compone con `new URL(path, req.baseURL)`.
-
-**Nunca `${req.protocol}://${req.get("Host")}`**: detrás de un proxy que termina el TLS, `req.protocol`
-dice `http` y `baseURL` dice `https` — que es lo que ve el mundo. Con la versión a mano, una `og:image`
-sale en `http` y el crawler la descarta.
-
-(El helper `getFileURL` es del **front** (`ItdFile.jsx`) y no aplica acá; y la punta de descarga es del
-modelo `File`, no de `AAA` — verifícala en vez de copiarla de un `.itdfw.js` viejo.)
-
-```js
-export default {
-  fastResponse: [
-    {
-      name: "robots",
-      cond: {path: "/robots.txt"},              // objeto → se filtra con sift (query estilo Mongo sobre el req)
-      response: "User-agent: *\nDisallow: /\n"
-    },
-    {
-      name: "verificacion",
-      cond: async req => req.hostname.endsWith(".ejemplo.cl"),   // o una función async
-      response: {
-        headers: {"X-Custom": "1"},
-        status: 200,
-        type: "tag",                            // genera markup: <meta name="..." content="..." />
-        data: [{tag: "meta", attributes: {name: "verify", content: "abc123"}}]
-      }
-    }
-  ]
-};
-```
-
-`cond`: objeto sift · función async · boolean. `response`: string · objeto `{headers, status, type, data}`
-· función async. Los `type` posibles: `object` (mergea al JSON), `string` (concatena al texto), `tag`
-(genera `<tag attr="val" />`).
-
-🔴 **Dos comportamientos que no se adivinan:**
-
-1. **ACUMULA, no corta en el primer match.** Recorre TODAS las entradas: los textos se concatenan y los
-   JSON se mergean. Por eso se lee con `configArray` — las del site y las de la raíz **se suman**, y
-   varias entradas pueden construir juntas una misma respuesta.
-2. **Si nada matchea, hace `next()`** — la request sigue su curso normal. Solo intercepta cuando alguna
-   condición dio verdadera.
-
-(Mezclar texto y JSON en la misma respuesta emite un warning y los concatena: es un error de quien
-configura, no un modo soportado.)
+Los ejemplos completos (Open Graph con datos de la BD), la tabla de getters y por qué no a mano: [references/fast-response.md](references/fast-response.md).
 
 ## 6. 🔴 El archivo es ABIERTO — no hay whitelist
 
@@ -311,48 +199,13 @@ permiso a nadie y sin tocar el core — es el mismo criterio que las options de 
 
 ### Lo que el FW lee hoy
 
-| Área | Llaves |
-|---|---|
-| Servidor / HTTP | `Hosts` `devHost` `devPort` (puerto de entrada en dev detrás de un proxy reverso; sin él, `Port`; ver `itdfw-front-app` §La URL de dev) `Port` `Protocol` `fakeHTTPS` `greenLock` `Procs` `env` `trustProxy` `headers` `cors` `alias` `fastResponse` `bodyParser` `csrf` `maxConcurrentRequests` `retryAfterSeconds` `defaultPage` `documentRoot` `apiPath` |
-| Base de datos | `mongoURL` `mongoOptions` `noLock` `mongoosePlugins` · `pubsubChannel: "<nombre>"`: el canal de `run`, `action`, `actionSelf` y SSE, en vez del nombre del site (por ejemplo, dominios distintos de un multitenant que comparten canal para repartir la carga, independiente de la BD) |
-| Sesión / auth | `session` `Expire` `masterPassword` `authorizationZones` |
-| Correo | `emailTransport` `masterEmail` `recoveryEmail` `errorRecipients` `recaptcha` |
-| Licencia | `instanceId` `machineLockedMessage` |
-| Operación | `logLevel` `logs` `Locale` `withDefault` `plugins` `test` (ver §«El modo test») |
-| Formularios | `genericPlaceholder` — objeto por **type** (`{generic: "Ingrese un valor", Email: "correo@dominio.cl"}`), leído con `configMerge` (el site pisa por llave); `toInput` lo pone en todo input que no declare `placeholder` ni lo traiga su type, y sin la llave usa `"Enter data"`. Fijo por site → `.itdfw.js`; por deploy → el yaml. El front lo traduce como cualquier texto (back desde 22-sep-2026; versión al publicar) |
+El inventario por área (servidor/HTTP, base de datos, sesión/auth, correo, licencia, operación, formularios), cada llave con su nota, está en [references/keys-catalog.md](references/keys-catalog.md). Lo que un deploy nuevo no puede olvidar:
 
-🔴 **`Procs` multiplica por SITE, y el peso son los modelos.** Cada carpeta del `documentRoot` es un host (el FW no
-resuelve DNS: escucha en la IP y solo mira el `Host` para enrutar), y cada host levanta `Procs` workers. Un worker
-pesa ~250 MB de base (los modelos de `DEFAULT/` + los del FW, 10-15 MB cada uno; las puntas y el proceso en sí son
-marginales) y cada modelo propio suma de verdad. Regla rápida: `RAM ≈ sites × Procs × 250 MB` + lo que más corra en
-la máquina. Caso real 2026-09-11 (demo, 4 GB): tres carpetas nuevas en la raíz × `Procs: 5` + tres Claude Code de
-~400 MB = thrashing y reboot. El arreglo fue `Procs: 2` y raíz limpia, no el FW. (Capacity planning fino queda
-para su propio skill.)
-
-Con valor por omisión aunque no los declares: `documentRoot` (`/var/www/itdfw`), `logs` (`/var/log/itdfw`),
-`logLevel` (`WARN`), `defaultPage` (`index.html`), `user` (`root`), `packageManager` (`pnpm`).
-
-**`bodyParser`** — tamaño máximo del cuerpo, por deploy o por site (desde back 7.3.5 hay UN parser por tipo, al
-inicio de la cadena; antes había dos y mandaba el primero con 100 kb → **413** en cualquier form gordo):
-
-```yaml
-bodyParser:
-  json: {limit: 10mb}                      # default 10mb
-  urlencoded: {limit: 10mb, extended: true} # default 10mb
-```
-
-Va en el archivo (nivel 1) porque el parser arranca antes de que carguen los modelos. `req.rawBody` existe siempre
-(los webhooks firmados verifican el HMAC sobre los bytes exactos). Los archivos van por multipart (`multer`), no por
-este límite; desde 7.3.6 el nombre del archivo subido llega en UTF-8 (`defParamCharset`), antes en latin1.
-
-🔴 **Dos llaves obligatorias para ARRANCAR que no se adivinan** (verificado 2026-09-03 armando `/etc/itdfw/dev.yaml`):
-
-| Llave | Sin ella | Qué poner en un deploy nuevo |
-|---|---|---|
-| `masterEmail` (con `from`) | muere antes de escuchar: `Cannot read properties of undefined (reading 'from')` — el appender de log por email se arma al inicio | si no manda correo, un transporte inerte basta: `{host: localhost, port: 25, secure: false, from: "…"}`. **No copies credenciales SES a un deploy que no las necesita** |
-| `instanceId` | arranca pero responde **423** `MACHINE_LOCK_VIOLATION` a todo (`No machine fingerprint configured`) | es el fingerprint **de la máquina**: en la misma máquina se reusa el de otro deploy; en una nueva se genera con el flujo de licencia |
-
-Un deploy sin `html/index.html` arranca igual en modo **HEADLESS** (solo API) — lo avisa con un WARN, no es error.
+- 🔴 **Dos llaves obligatorias para ARRANCAR** (no se adivinan): **`masterEmail`** (con `from`; sin ella el back muere antes de escuchar con `Cannot read properties of undefined (reading 'from')`; si no manda correo basta un transporte inerte) e **`instanceId`** (el fingerprint **de la máquina**; sin él arranca pero responde **423** `MACHINE_LOCK_VIOLATION` a todo).
+- 🔴 **`Procs` multiplica por SITE**: cada carpeta del `documentRoot` es un host y cada host levanta `Procs` workers; un worker pesa ~250 MB de base. **`RAM ≈ sites × Procs × 250 MB`** más lo que más corra en la máquina.
+- **Con valor por omisión**: `documentRoot` (`/var/www/itdfw`), `logs` (`/var/log/itdfw`), `logLevel` (`WARN`), `defaultPage` (`index.html`), `user` (`root`), `packageManager` (`pnpm`).
+- **`bodyParser`**: tamaño máximo del cuerpo, por deploy o por site (10 mb por tipo por omisión); va en el archivo (nivel 1) porque el parser arranca antes de que carguen los modelos.
+- Un deploy sin `html/index.html` arranca igual en modo **HEADLESS** (solo API), con un WARN.
 
 ### 🔴 El modo test: la llave `test`, y por qué no sale a producción
 
@@ -447,3 +300,4 @@ tenga esa pega, no se inventa acá.
 | **`itdfw-fwplugin`** | qué es un plugin de los que van en `plugins` |
 | **`itdfw-front-app`** | el CLI del front (`-c`/`-C`, `devHost`) y la cascada del front |
 | **`itdfw-models`** | dónde vive un modelo según `documentRoot` (DEFAULT vs site) |
+
