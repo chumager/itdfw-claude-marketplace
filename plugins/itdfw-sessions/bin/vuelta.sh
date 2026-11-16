@@ -28,6 +28,8 @@ home="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 dir="${CLAUDE_STATE_DIR:-$home/state}/vuelta"
 max="${VUELTA_MAX:-1}"
 mkdir -p "$dir/open"
+# the switch: with <state-dir>/vuelta/off present nothing is opened, closed or reminded, in every session at once
+[ -e "$dir/off" ] && case "${1:-}" in receive|sent|pending) exit 0 ;; esac
 
 key() { printf '%s' "$1" | tr '/' '_'; }                       # a session name as a file name
 log() { jq -cn --arg at "$(date -Is)" --arg e "$1" --arg o "$2" --arg a "$3" '{at: $at, event: $e, ower: $o, asker: $a}' >> "$dir/log.jsonl"; }
