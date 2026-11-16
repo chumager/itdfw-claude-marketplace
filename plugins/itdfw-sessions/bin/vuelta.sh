@@ -18,7 +18,7 @@
 #          <state-dir>/vuelta/answered/<asker>/<ower>  short-lived mark: the answer on its way reads as a reply
 #          <state-dir>/vuelta/log.jsonl                opened / answered / failed, one line each (append-only)
 # Env:     CLAUDE_STATE_DIR   default <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or $HOME/.claude
-#          VUELTA_MAX         reminders before giving up on a debt (default 3)
+#          VUELTA_MAX         reminders before giving up on a debt (default 1: each reminder is a whole turn)
 #          VUELTA_TOKEN_TTL   seconds an "answered" mark stays valid (default 120)
 # Exit:    0 · 2 bad usage
 _cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
@@ -26,7 +26,7 @@ set -u
 case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 home="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 dir="${CLAUDE_STATE_DIR:-$home/state}/vuelta"
-max="${VUELTA_MAX:-3}"
+max="${VUELTA_MAX:-1}"
 mkdir -p "$dir/open"
 
 key() { printf '%s' "$1" | tr '/' '_'; }                       # a session name as a file name

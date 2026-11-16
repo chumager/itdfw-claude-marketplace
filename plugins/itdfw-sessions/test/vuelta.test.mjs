@@ -69,7 +69,15 @@ describe("vuelta.sh: who owes an answer to whom", () => {
 
   it("a debt that cannot be paid is given up after VUELTA_MAX reminders and recorded as failed", async () => {
     await v("receive", "Y", "X")
-    for (let i = 0; i < 3; i++) assert.equal(await v("pending", "Y"), "X")
+    const three = {extraEnv: {VUELTA_MAX: "3"}}
+    for (let i = 0; i < 3; i++) assert.equal((await env.run(V, ["pending", "Y"], three)).stdout.trim(), "X")
+    assert.equal((await env.run(V, ["pending", "Y"], three)).stdout.trim(), "")
+    assert.deepEqual(events(), ["opened", "failed"])
+  })
+
+  it("by default one reminder is all a debt gets: the second look closes it as failed", async () => {
+    await v("receive", "Y", "X")
+    assert.equal(await v("pending", "Y"), "X")
     assert.equal(await v("pending", "Y"), "")
     assert.deepEqual(events(), ["opened", "failed"])
   })
