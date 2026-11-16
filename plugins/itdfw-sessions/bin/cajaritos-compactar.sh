@@ -14,8 +14,11 @@
 #          <state-dir>/ctx-<sessionId>.json, field `used` = context % of the session. Claude Code does not write it:
 #          a status line does (see examples/statusline-state.sh in this plugin)
 #          /tmp/claude-<uid>/*/<sessionId>/tasks (files touched in the last 10 minutes = active tasks)
-# Writes:  nothing on disk; opens and closes a tmux window `cmp-<id>` per compacted session (needs a tmux server).
-# Output:  one line per candidate: "<name>: <before>% -> <after>% (<status>)", or why it was skipped.
+# Writes:  nothing on disk; opens and closes a tmux window per compacted session (needs a tmux server). The window is
+#          labelled `cmp-<id>` but driven by its unique tmux id (@N), so a leftover window with that name cannot
+#          make the target ambiguous.
+# Output:  one line per candidate: "<name>: <before>% -> <after>% (<status>)", or why it was skipped (not idle, active
+#          tasks, or tmux returned no window id: nothing is sent and the next session goes on).
 # Env:     CLAUDE_STATE_DIR   where the ctx-<sessionId>.json files live (default: <claude-home>/state, with
 #                             <claude-home> = $CLAUDE_CONFIG_DIR or $HOME/.claude)
 # Exit:    0 done · 1 no tmux server (it cannot attach) · 2 bad usage
@@ -48,18 +51,21 @@ while IFS=$'\t' read -r nombre id sid estado; do
   if [ "$estado" != "idle" ]; then echo "$nombre: ${antes}% but it is $estado, skipping"; continue; fi
   tareas=$(find /tmp/claude-"$(id -u)"/*/"$sid"/tasks -type f -mmin -10 2>/dev/null | wc -l)
   if [ "$tareas" -gt 0 ]; then echo "$nombre: ${antes}% but it has active tasks, skipping"; continue; fi
+  # The name is only a label: a leftover window with the same name makes `session:name` ambiguous, so every later call
+  # targets the unique window id (@N) that new-window prints.
   w="cmp-$id"
-  tmux new-window -d -t "$TMUX_SES" -n "$w" "claude attach $id"
+  wid=$(tmux new-window -d -P -F '#{window_id}' -t "$TMUX_SES" -n "$w" "claude attach $id" 2>/dev/null)
+  case "$wid" in @*) ;; *) echo "$nombre: ${antes}% but tmux gave no window id, skipping"; continue ;; esac
   sleep 6
-  tmux send-keys -t "$TMUX_SES:$w" '/compact'; sleep 1; tmux send-keys -t "$TMUX_SES:$w" Enter
+  tmux send-keys -t "$wid" '/compact'; sleep 1; tmux send-keys -t "$wid" Enter
   compactada=0
   for _ in $(seq 1 60); do sleep 5; u=$(jq -r '.used // 100' "$f" 2>/dev/null); [ "$u" -lt 20 ] 2>/dev/null && { compactada=1; break; }; done
   cambio=""
   if [ -n "$MODELO" ] && [ "$compactada" = 1 ]; then
-    tmux send-keys -t "$TMUX_SES:$w" "/model $MODELO"; sleep 1; tmux send-keys -t "$TMUX_SES:$w" Enter; sleep 3
+    tmux send-keys -t "$wid" "/model $MODELO"; sleep 1; tmux send-keys -t "$wid" Enter; sleep 3
     cambio=", model $MODELO"
   fi
-  tmux kill-window -t "$TMUX_SES:$w" 2>/dev/null
+  tmux kill-window -t "$wid" 2>/dev/null
   sleep 2
   echo "$nombre: ${antes}% -> $(jq -r '.used' "$f")% ($(claude agents --json | jq -r --arg s "$sid" '.[]|select(.sessionId==$s)|.status')$cambio)"
 done

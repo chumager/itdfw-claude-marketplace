@@ -107,12 +107,16 @@ describe("cajaritos-compactar.sh", () => {
   const SCRIPT = join(BIN, "cajaritos-compactar.sh")
   const ctx = (sid, used) => writeFileSync(join(env.state, `ctx-${sid}.json`), JSON.stringify({used}))
   const ctxOf = sid => JSON.parse(readFileSync(join(env.state, `ctx-${sid}.json`), "utf8")).used
-  // tmux stub: one server named main; `send-keys ... Enter` makes the FAKE_COMPACT session drop to 12 %.
+  // tmux stub: `send-keys ... Enter` drops the FAKE_COMPACT session to 12 %; FAKE_DUP_NAME=1 makes any name target ambiguous.
   const TMUX_STUB = `
+target() { while [ $# -gt 0 ]; do [ "$1" = -t ] && { echo "$2"; return; }; shift; done; }
+ambiguous() { [ "\${FAKE_DUP_NAME:-0}" = 1 ] && case "$(target "$@")" in @*) return 1 ;; *) return 0 ;; esac; return 1; }
 case "$1" in
   list-sessions) [ "\${FAKE_NO_TMUX:-0}" = 1 ] || echo main ;;
-  new-window|kill-window) echo "tmux $*" >> "$FAKE_LOG" ;;
+  new-window) echo "tmux $*" >> "$FAKE_LOG"; [ "\${FAKE_NO_WINDOW_ID:-0}" = 1 ] || echo "@\${FAKE_WINDOW_ID:-72}" ;;
+  kill-window) echo "tmux $*" >> "$FAKE_LOG"; ambiguous "$@" && { echo "can't find window: $(target "$@")" >&2; exit 1; }; exit 0 ;;
   send-keys) echo "tmux $*" >> "$FAKE_LOG"
+             ambiguous "$@" && { echo "can't find window: $(target "$@")" >&2; exit 1; }
              if [ "\${@: -1}" = Enter ] && [ -n "\${FAKE_COMPACT_FILE:-}" ]; then echo '{"used":12}' > "$FAKE_COMPACT_FILE"; fi ;;
 esac`
   const base = () => ({FAKE_AGENTS: agentsFile()})
@@ -127,11 +131,44 @@ esac`
     assert.equal(r.code, 0)
     assert.equal(r.stdout.trim(), "alpha: 70% -> 12% (idle)")
     const calls = env.calls()
-    assert.ok(calls.includes("tmux new-window -d -t main -n cmp-a1 claude attach a1"))
-    assert.ok(calls.includes("tmux send-keys -t main:cmp-a1 /compact"))
-    assert.ok(calls.includes("tmux send-keys -t main:cmp-a1 Enter"))
-    assert.ok(calls.includes("tmux kill-window -t main:cmp-a1"))
+    assert.ok(calls.includes("tmux new-window -d -P -F #{window_id} -t main -n cmp-a1 claude attach a1"))
+    assert.ok(calls.includes("tmux send-keys -t @72 /compact"))
+    assert.ok(calls.includes("tmux send-keys -t @72 Enter"))
+    assert.ok(calls.includes("tmux kill-window -t @72"))
     assert.equal(ctxOf("sA"), 12)
+  })
+
+  it("talks to the window by the id new-window returned, never by session:name", async () => {
+    setAgents([{name: "alpha", id: "a1", sessionId: "sA", status: "idle"}])
+    ctx("sA", 70)
+    const r = await env.run(SCRIPT, ["--modelo", "opus"], {extraEnv: {...base(), FAKE_WINDOW_ID: "91", FAKE_COMPACT_FILE: join(env.state, "ctx-sA.json")}})
+    assert.equal(r.stdout.trim(), "alpha: 70% -> 12% (idle, model opus)")
+    const targeted = env.calls().filter(c => /^tmux (send-keys|kill-window) /.test(c))
+    assert.equal(targeted.length, 5)
+    for (const c of targeted) assert.match(c, /^tmux (send-keys|kill-window) -t @91( |$)/)
+    assert.equal(env.calls().some(c => c.includes("main:cmp-")), false)
+  })
+
+  it("compacts even when a leftover window already has the same name (name targets are ambiguous, the id is not)", async () => {
+    setAgents([{name: "alpha", id: "a1", sessionId: "sA", status: "idle"}])
+    ctx("sA", 70)
+    const r = await env.run(SCRIPT, [], {extraEnv: {...base(), FAKE_DUP_NAME: "1", FAKE_COMPACT_FILE: join(env.state, "ctx-sA.json")}})
+    assert.equal(r.stdout.trim(), "alpha: 70% -> 12% (idle)")
+    assert.equal(ctxOf("sA"), 12)
+    assert.ok(env.calls().includes("tmux kill-window -t @72"))
+  })
+
+  it("reports the session and moves on, sending no keys, when new-window returns no id", async () => {
+    setAgents([
+      {name: "alpha", id: "a1", sessionId: "sA", status: "idle"},
+      {name: "beta", id: "b1", sessionId: "sB", status: "idle"},
+    ])
+    ctx("sA", 70); ctx("sB", 70)
+    const r = await env.run(SCRIPT, [], {extraEnv: {...base(), FAKE_NO_WINDOW_ID: "1"}})
+    assert.equal(r.code, 0)
+    assert.equal(r.stdout.trim(), "alpha: 70% but tmux gave no window id, skipping\nbeta: 70% but tmux gave no window id, skipping")
+    assert.equal(env.calls().filter(c => c.startsWith("tmux new-window")).length, 2)
+    assert.equal(env.calls().some(c => /^tmux (send-keys|kill-window)/.test(c)), false)
   })
 
   it("leaves alone the sessions under the threshold, with no ctx file, or not alive", async () => {
@@ -202,9 +239,9 @@ esac`
     const r = await env.run(SCRIPT, ["--modelo", "opus"], {extraEnv: {...base(), FAKE_COMPACT_FILE: join(env.state, "ctx-sA.json")}})
     assert.equal(r.stdout.trim(), "alpha: 70% -> 12% (idle, model opus)")
     const calls = env.calls()
-    const model = calls.indexOf("tmux send-keys -t main:cmp-a1 /model opus")
-    assert.ok(model > calls.indexOf("tmux send-keys -t main:cmp-a1 /compact"))
-    assert.ok(model < calls.indexOf("tmux kill-window -t main:cmp-a1"))
+    const model = calls.indexOf("tmux send-keys -t @72 /model opus")
+    assert.ok(model > calls.indexOf("tmux send-keys -t @72 /compact"))
+    assert.ok(model < calls.indexOf("tmux kill-window -t @72"))
   })
 
   it("--modelo leaves the model alone when the compaction did not bring the % down", async () => {
