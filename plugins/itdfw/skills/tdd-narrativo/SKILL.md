@@ -7,17 +7,10 @@ description: Use when WRITING, READING or IMPLEMENTING a TDD.md — any agent th
 
 ## El problema que esto resuelve
 
-**Un TDD escrito DESPUÉS de codificar no prueba el requerimiento: prueba lo que el dev entendió del
-requerimiento.** Si entendió mal, el test hereda el mismo error y **siempre pasa** — el verde es una
-tautología, porque código y test comparten el origen equivocado. Solo se pone rojo si se metieron mal
-los dedos, nunca si se entendió mal el problema.
-
-Es el error que cometen TODOS los devs, y con un agente escribiendo el código es peor: **jcmunoz no
-lee el código**. Si además el agente define solo qué se prueba, no hay ningún punto donde el
-malentendido pueda salir a la luz.
-
-⟹ **El SSoT es el `TDD.md` de cada módulo.** Es lo que jcmunoz lee y aprueba. El código es el
-entregable automatizable; el contrato es el TDD.
+**Un TDD escrito DESPUÉS de codificar no prueba el requerimiento: prueba lo que el dev entendió.** Si entendió mal, el
+test hereda el error y **siempre pasa**: el verde es una tautología. Y **jcmunoz no lee el código** ⟹ **el SSoT es el
+`TDD.md` de cada módulo**, que él lee y aprueba; el código es el entregable automatizable. El porqué completo:
+[references/why.md](references/why.md).
 
 ## El orden es OBLIGATORIO
 
@@ -66,35 +59,21 @@ PMO escribe → CTO → designer → documentador → QA → aprobación de jcmu
 
 ### 0 · El pipe — cómo se hace verdad cada fila (proporcional al módulo)
 
-El resto de este skill dice QUÉ lleva el `TDD.md`. Esta sección dice CÓMO se llega a que cada fila sea
-verdad y no apariencia — "el texto se ve en pantalla" no es lo mismo que "la propiedad prometida se
-cumple". Ver `feedback_verificado-es-la-propiedad-no-la-apariencia.md`.
-
-1. **Interrogatorio de propiedades al dueño.** Por cada promesa del módulo, tres preguntas:
-   *¿qué propiedad la define? ¿qué prueba la haría FALLAR si no se cumpliera? ¿cómo se ve entrada /
-   esperado / real?* Sin respuesta a la segunda pregunta no hay caso de prueba — hay una feature sin
-   contrato.
-2. **Dummy primero.** Si el módulo tiene una parte difícil (red, BD, un tercero), el contrato se
-   implementa COMPLETO sin ella y pasa todos los casos; la parte difícil se aísla detrás de una hoja
-   reemplazable (ej. `translate`: la función `resolve`).
-3. **Banco vivo.** Si el ejecutor es "pantalla", exige una VISTA con los casos visibles — entrada
-   (la llamada como código), esperado literal, qué debe pasar después, y el real (attrs del DOM cuando
-   aplica). Un título tipo "atributos correctos" no se verifica, se mira — y el que mira completa con lo
-   que imagina.
-4. **Un eslabón a la vez, con el dueño mirando.** La arquitectura emerge de los casos, no al revés — el
-   corte core/plugin y la forma de una integración externa salen de implementar caso por caso, no de
-   diseñarlos de antemano.
+1. **Interrogatorio de propiedades al dueño.** Por cada promesa: *¿qué propiedad la define? ¿qué prueba la haría
+   FALLAR si no se cumpliera? ¿cómo se ve entrada / esperado / real?* Sin respuesta a la segunda no hay caso de prueba.
+2. **Dummy primero.** El contrato se implementa COMPLETO sin la parte difícil (red, BD, un tercero), aislada detrás de
+   una hoja reemplazable.
+3. **Banco vivo.** Si el ejecutor es "pantalla", una VISTA con los casos visibles: entrada, esperado literal, qué pasa
+   después y el real.
+4. **Un eslabón a la vez, con el dueño mirando.** La arquitectura emerge de los casos, no al revés.
 5. **Cuando cambia una propiedad, se reescribe la NARRATIVA**, no solo el estado de los tests.
 
-Caso canónico: el TDD del plugin `translate` (16-sep-2026) — el helper `/t-test` con `caseBlock` por caso.
+Detalle y el caso canónico (el TDD del plugin `translate`): [references/pipe.md](references/pipe.md).
 
 ### 0b · 🔴 El MODO del TDD se declara en la cabecera: nuevo, refactor o incremental
 
-Son **tres formas distintas de tratar el código**, y un cajarito que no sabe cuál es asume la más conservadora
-("esto ya funciona, no lo toco") y de ahí salen los wrappers y los parches sobre piezas recién hechas (BackEnd del
-banco de smart-fetch, 20-sep-2026). jcmunoz, 21-sep: *"decirle 'esto es nuevo, no parches, reimplementa y si te
-pillas con obstáculos consulta' es muy distinto a 'esto está en producción, mantén firmas y edges, solo
-incrementales'"*.
+Son **tres formas distintas de tratar el código**; un cajarito que no sabe cuál es asume la más conservadora, y de ahí
+salen los wrappers y los parches sobre piezas recién hechas. El caso y la cita de jcmunoz: [references/cases-and-quotes.md](references/cases-and-quotes.md).
 
 | Modo | Qué manda | El brief al cajarito dice |
 |---|---|---|
@@ -111,17 +90,14 @@ Cada fila de pruebas nombra una propiedad que el módulo DEFINE. Lo que define o
 fetcher, el SW, el core), el framework reactivo, el browser o la red **no tiene caso**: el módulo es cliente y asume que
 eso funciona. Si una prueba propia cae por culpa del otro, se informa a su dueño, no se le arma un set. Tampoco entran
 edges que en operación normal no ocurren (un PUT que pasa y otro que cae es red caída). Litmus: *si esta fila falla,
-¿el arreglo va en ESTE módulo?* Si no, la fila sobra. (jcmunoz 25-sep-2026: el TDD de translate llegó a decenas de
-casos de ese tipo — red caída, slot con string fijo, workers, config tardía — y la cascada, que era de cuatro llamadas,
-nunca se había escrito.)
+¿el arreglo va en ESTE módulo?* Si no, la fila sobra. El caso de translate: [references/cases-and-quotes.md](references/cases-and-quotes.md).
 
 ### 0c · 🔴 Un e2e que no pasa se le PASA al dueño, no se reinterpreta
 
-Playwright no es 100 % fiable: el navegador real cambia entre versiones (Chrome 147 → 153 rompió el flujo de cache de
-smart-fetch), hay flakes de timing que dependen de la versión, y un arnés propio puede dar verde donde el servidor real
-no. Cuando un caso e2e no pasa y la causa no es un defecto verificado en el código, **se le entrega a jcmunoz con la
-evidencia** (spec, versión de Chrome, `error-context.md`, conteos) para que lo mire a mano. No se reescribe la aserción
-para que pase, no se lo declara flake sin medirlo, y no se apaga en silencio. (jcmunoz, 25-sep-2026.)
+Playwright no es 100 % fiable (el navegador cambia entre versiones, hay flakes de timing, un arnés propio da verde
+donde el servidor real no). Cuando un caso e2e no pasa y la causa no es un defecto verificado en el código, **se le
+entrega a jcmunoz con la evidencia** (spec, versión de Chrome, `error-context.md`, conteos). No se reescribe la aserción
+para que pase, no se declara flake sin medirlo y no se apaga en silencio. El caso: [references/cases-and-quotes.md](references/cases-and-quotes.md).
 
 ### 1 · Narrativa
 
@@ -149,9 +125,8 @@ significa "la red" en ese lado.
 
 ### 2b · Modelo — lo que existe, con qué campos, y qué punta lo toca
 
-🔴 **Sin esto el TDD define flujos y el cajarito inventa el modelo** (jcmunoz 2026-09-08: *"nunca se define un
-modelo, solo flujos; a veces mandas a hacer cosas y no tengo la más reputa idea de qué modelos se crearon ni qué se
-conectó ni contra qué"*). Un flujo se conversa; un modelo se **declara**. Tres piezas, obligatorias:
+🔴 **Sin esto el TDD define flujos y el cajarito inventa el modelo.** Un flujo se conversa; un modelo se **declara**.
+Tres piezas, obligatorias (la cita de jcmunoz: [references/cases-and-quotes.md](references/cases-and-quotes.md)):
 
 **Entidades** — por cada modelo (nuevo o extendido), **primero una o dos líneas con su ALCANCE**: qué es en
 el dominio, por qué existe, quién lo crea y cuánto vive (jcmunoz 2026-09-08: un modelo sin motivo escrito obliga
@@ -195,13 +170,8 @@ una punta ni cómo se define un type: cada una de esas cosas tiene dueño, y el 
 | el empaquetado del módulo | `itdfw-fwplugin` |
 | cómo se cierra y qué se prueba | `itdfw-completeness` |
 
-⟹ **Por qué no se copia el criterio acá**: un criterio duplicado se desincroniza en silencio. El día que
-la norma de acceso cambie en `itdfw-api-system`, una copia vieja en este archivo sigue instruyendo lo
-contrario y nadie se entera (hallazgo #127: rutas citadas que se movieron y quedaron muertas). El TDD
-**orquesta**; el conocimiento vive en un solo dueño.
-
-Vale para el que ESCRIBE el TDD y para el que lo IMPLEMENTA: el hook de skills los frena igual, pero la
-razón no es el hook — es que sin el skill del área se inventa el criterio.
+⟹ **El criterio no se copia acá**: duplicado, se desincroniza en silencio. El TDD **orquesta**; el conocimiento vive
+en un solo dueño, y vale para quien ESCRIBE el TDD y para quien lo IMPLEMENTA. Por qué: [references/cases-and-quotes.md](references/cases-and-quotes.md).
 
 ### 2d / 2e / 2f · Secciones condicionales → [`references/conditional-sections.md`](references/conditional-sections.md)
 
@@ -251,15 +221,10 @@ Tabla por nivel. Cada fila: **el caso en lenguaje de dominio · qué cubre · el
 **Por qué escalar así:** si el serial no funciona, el concurrente no tiene opciones. Arreglar
 concurrencia sobre un serial roto marea y termina rompiendo lo principal.
 
-🔴 **Una prueba de concurrencia FUERZA la carrera y AFIRMA que ocurrió.** Lanzar N cosas "a la vez" y mirar el
-resultado no prueba nada: que choquen depende del procesador, la red y la carga, y un verde así puede ser N
-operaciones que se serializaron solas. La carrera se fuerza con una **barrera** (cada participante entra a la zona
-crítica, espera hasta que estén todos adentro, y recién ahí actúa) y la prueba **afirma que hubo choque** (reintentos,
-conflictos, esperas) además del resultado. Esa aserción es la que la hace caer en rojo cuando el mecanismo falta.
-Caso canónico: la prueba de nivel 3 del plugin `autoincrement` (N3.3/N3.4): veinte transacciones abiertas tras una
-barrera, números 1..20 **y** cuerpos corridos > 20; sin la sesión en el contador da `bodies run 20` y cae (jcmunoz,
-7-oct-2026: *"la única forma de probar concurrencia es forzar el race, no depender de la capacidad del procesador ni
-de la red"*).
+🔴 **Una prueba de concurrencia FUERZA la carrera y AFIRMA que ocurrió.** Lanzar N cosas "a la vez" no prueba nada: un
+verde así pueden ser N operaciones que se serializaron solas. La carrera se fuerza con una **barrera** (todos entran a
+la zona crítica, esperan a estar todos y recién ahí actúan) y la prueba **afirma que hubo choque** (reintentos,
+conflictos, esperas) además del resultado. El caso canónico (`autoincrement`, N3.3/N3.4): [references/cases-and-quotes.md](references/cases-and-quotes.md).
 
 #### 🔴 Componentes y tipos propios: la vertical se prueba COMPLETA, hasta XLS y PDF
 
@@ -281,20 +246,15 @@ Y con la disciplina que hace no-decorativos a los tests:
   la única evidencia de que mide algo.
 - **Detector regalado**: si el test pasa a la primera SIN haber escrito el código, **el test está
   malo**. Sin excepciones.
-- **Un cambio, una corrida.** Meter cuatro cambios y correr al final deja sin saber cuál rompió qué
-  (caso real 2026-08-06: cuatro cambios juntos → cinco rojos → media hora deduciendo en vez de
-  aislar).
+- **Un cambio, una corrida.** Meter cuatro cambios y correr al final deja sin saber cuál rompió qué.
 - 🔴 **Un wrapper sobre algo que se está construyendo AHORA es PLR instantánea, sin mirar por qué.** Vale para
   implementación nueva y para refactor con cobertura completa por igual: si me pillo, o pillo al cajarito, poniendo un
   wrapper, un adaptador, un literal que copia getters, una marca (`Object.defineProperty`) o un `{...obj, metodo:
   otro}` sobre una pieza NUESTRA de esta misma pega, está 100 % malo. No se evalúa si "queda bueno": se devuelve
   al tiro, como una tilde que falta en una tesis. Sin una justificación 100 % correcta y escrita en el TDD, la
   firma se cambia, no se envuelve (rule `firma-nuestra-no-se-envuelve`).
-- 🔴 **Hay pasada de verificación de CÓDIGO, no solo de tests.** El "listo" exige leer el código contra el
-  contrato (firmas, capas, qué pisa a qué), aparte de la suite verde. Durante años solo verificamos tests y asumimos
-  el código: el plugin de cuotas del bloque financiero nació así y hubo que echar TODO pie atrás porque ninguna
-  decisión no documentada estaba buena, ni una; ese día nació este skill. El BackEnd del banco de smart-fetch
-  (20-sep-2026) volvió a pasar: 25/25 con tres parches adentro, cazados solo cuando jcmunoz abrió el archivo.
+- 🔴 **Hay pasada de verificación de CÓDIGO, no solo de tests.** El "listo" exige leer el código contra el contrato
+  (firmas, capas, qué pisa a qué), aparte de la suite verde. Los casos que lo destaparon: [references/cases-and-quotes.md](references/cases-and-quotes.md).
 - **La rebanada probada termina en COMMIT, y el bump se decide contra el registry.** Verde no es
   "listo": listo es commiteado (rule `commit-al-cerrar`, con `itdfw-deps.sh files` si tocó un
   publicable) y con la versión decidida por `drift`, no por el diff anterior (rule `bump-al-arreglar`).
@@ -302,10 +262,8 @@ Y con la disciplina que hace no-decorativos a los tests:
 
 ### 6 · 🔴 OPERANDO — el término real, que no es "está probado"
 
-jcmunoz, 2026-09-15: *"nuestro flujo termina con las pruebas, no tiene término real, tiene 'está probado', no
-'está implementado y funcionando'"*. La evidencia: el auth-chain (90 verdes, sin commit, en ningún deploy),
-`notifications` (11/11, nunca cargado a socios), `payments`, `wellKnown` — todos "terminados" según su TDD y
-ninguno operando. Un TDD que cierra en verde deja la cosa en el limbo.
+Un TDD que cierra en verde deja la cosa en el limbo (jcmunoz, 2026-09-15: *"nuestro flujo termina con las pruebas,
+no tiene término real"*; la evidencia: [references/cases-and-quotes.md](references/cases-and-quotes.md)).
 
 ⟹ El TDD lleva una sección final **"Puesta en operación"** con cuatro campos, y **no está cerrado hasta que los
 cuatro tienen valor**:
@@ -324,9 +282,7 @@ Sin los cuatro, el estado es **"probado"**, no **"operando"**, y el documento NO
 
 Un TDD **no se manda a implementar** sin una sección "Rebanada 1": el recorrido más chico que un usuario real hace
 esta semana de punta a punta, con lo demás reemplazado por algo tonto. Cada modelo, campo y punta del Modelo nombra
-en qué rebanada se usa; lo que no está en la 1 va a una lista de UNA línea, sin diseñar. Caso canónico:
-el TDD de un plugin propio (el diseño bottom-up llevaba dos horas creciendo; con la rebanada escrita, la
-implementación salió en 44 minutos, 56/56).
+en qué rebanada se usa; lo que no está en la 1 va a una lista de UNA línea, sin diseñar. El caso canónico: [references/cases-and-quotes.md](references/cases-and-quotes.md).
 
 ## 🔴 El TDD inicial NO puede ser completo — y no debe intentarlo
 
@@ -392,9 +348,7 @@ contra esa sección, no contra su memoria.
 ## 🔴 TRES archivos, no uno: contrato · bitácora · corridas
 
 Un TDD que junta el contrato con la historia de sus decisiones y con el resultado de cada corrida **se vuelve
-ilegible y caduca cada media hora**. El caso que lo prueba (19-sep-2026, plugin `translate`): 1.143 líneas, con la
-sección Modelo cargando el AST viejo y el nuevo, "Decisiones" como diario por fecha con citas, y cada fila de prueba
-arrastrando píxeles y conteos de cada corrida. jcmunoz: *"mi impresión duró menos de media hora y ya era inválida"*.
+ilegible y caduca cada media hora** (el caso de `translate`: [references/cases-and-quotes.md](references/cases-and-quotes.md)).
 
 | Archivo | Qué lleva | Quién lo lee | Cuándo cambia |
 |---|---|---|---|
@@ -406,11 +360,9 @@ arrastrando píxeles y conteos de cada corrida. jcmunoz: *"mi impresión duró m
 🔴 **El contrato no carga pendientes** (jcmunoz 5-oct-2026): si las rebanadas futuras viven dentro del `TDD.md`, saber
 qué falta exige leer cada TDD completo, y saber cuáles TDD tienen algo exige leerlos todos.
 
-**Por qué no es cosmética: el caché de lectura.** Cada lector (jcmunoz, la sesión, cada cajarito) carga el TDD en su
-contexto. Si un cajarito anota el resultado de una prueba **dentro** del contrato, cambia el archivo y **invalida la
-lectura de todos los demás**: hay que releer 1.000 líneas para saber que cambió un ✅. Con los tres archivos, una
-corrida toca solo `TDD-corridas.md` y el contrato que todos tienen leído sigue siendo válido. El que quiera imprime los
-tres; **la revisión se hace desde el primero**.
+**Por qué no es cosmética: el caché de lectura.** Cada lector carga el TDD en su contexto; si un cajarito anota un
+resultado **dentro** del contrato, invalida la lectura de todos los demás. Con los tres archivos, una corrida toca solo
+`TDD-corridas.md`. **La revisión se hace desde el primero.**
 
 Reglas de escritura que salen de ahí:
 - Una decisión nueva: **una línea** en §Decisiones del contrato (qué se blinda) y el porqué completo en la bitácora.
@@ -450,20 +402,12 @@ sin el skill y la arquitectura escritos, el TDD no está cerrado, está abandona
 
 ## Red flags
 
-| Si te ves… | Para |
-|---|---|
-| escribiendo tests después de que el código funciona | es el TDD tautológico: no prueba el requerimiento |
-| describiendo un caso con vocabulario de tu implementación | ya lo contaminaste con tu diseño |
-| viendo verde a la primera sin haber escrito código | el test está malo |
-| justificando un caso con "por si acaso" | escenario que no existe |
-| corriendo la suite después de varios cambios | no vas a saber cuál rompió qué |
-| envolviendo, adaptando o marcando una pieza NUESTRA de esta misma pega (wrapper, literal con getters, `defineProperty`, `{...obj, x}`) | PLR instantánea: la firma es nuestra y se cambia; envolver es parchar de fábrica |
-| dando "listo" con la suite verde sin haber leído el código contra el contrato | solo verificaste tests; el código se asume, y así nació el skill (plugin de cuotas) |
-| escribiendo un TDD con siglas que no inventamos nosotros (una RFC, un `grant_type`, un `.well-known`) **sin haber traído la norma vigente** | estás escribiendo de memoria una norma que pudo cambiar, y tu memoria tiene meses (§2d) |
-| escribiendo "se muda tal cual" sobre algo que ya opera, **sin haber probado qué le pasa hoy** | lo que ya funciona se presume correcto, y así es como un defecto de años viaja adentro del paquete nuevo (§2f) |
-| razonando el front con gramática de back (o al revés) | declara el scope y vuelve a leerlo |
-| cerrando el TDD de un componente o tipo propio sin caso de XLS ni de PDF | la vertical quedó a medias: falta la salida que se le entrega a un tercero |
+La tabla de señales de que te estás saliendo del método (tests después del código, vocabulario de tu implementación,
+verde a la primera, "por si acaso", varios cambios en una corrida, wrappers sobre lo propio, "listo" sin leer el código,
+una norma de memoria, "se muda tal cual" sin probar, front con gramática de back, componente sin XLS ni PDF):
+[references/red-flags.md](references/red-flags.md).
 
 ## Plantilla del `TDD.md`
 
 La plantilla (cabecera con regla de escalamiento, modo y destino; Rebanada 1; scope; requisitos y qué NO vamos a construir; Modelo con Entidades, Puntas, Componentes y Relaciones; Diferencial y defectos heredados; UI/UX; Ejecutores; Nivel 0..3; Huecos; Decisiones; Puesta en operación) vive en [references/template.md](references/template.md). Cópiala y llénala en ese orden.
+
