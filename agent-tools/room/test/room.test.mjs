@@ -298,6 +298,13 @@ describe("level 1: mentions", () => {
     assert.doesNotMatch(received(c), /Dirigido a [^\n]*nobody/);
   });
 
+  it("every delivered line tells the session the exact answer to give when it has nothing to add", async () => {
+    const [a, b] = await roomWith(world, "sil", ["sil-a", "sil-b"]);
+    await a.room("say", "sil", "just so you know");
+    await until(() => b.inbox.length === 1, "delivery");
+    assert.match(received(b), /\nIf you have nothing to add, your whole answer is exactly: \[sala\]\n/);
+  });
+
   it("a message without a participant mention keeps the notice as before", async () => {
     const [a, b] = await roomWith(world, "nomen", ["nomen-a", "nomen-b"]);
     await a.room("say", "nomen", "write to x@nomen-b or @stranger");

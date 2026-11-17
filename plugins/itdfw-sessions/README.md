@@ -1,6 +1,6 @@
 # itdfw-sessions: talk to Claude Code sessions from outside, and between them
 
-Fifteen small shell scripts and one hooks module (`vuelta`) for people who run several Claude Code sessions at once (some of them background sessions that
+Fifteen small shell scripts and two hooks modules (`vuelta`, `sala-limpia`) for people who run several Claude Code sessions at once (some of them background sessions that
 nobody watches) and want a cron, a script or another session to talk to them. They have nothing to do with the ITDFW
 framework: the plugin lives in this marketplace because we use them to run our own sessions.
 
@@ -180,6 +180,27 @@ Known edges, kept on purpose (the worst case is what happened before the module 
   session that had asked.
 - **Each reminder is a whole turn** of the reminded session, at the size of its context. That is why the default is one.
 - An answer given in a room (`room say`) is not seen as an answer.
+
+## A clean chat while a session sits in a room (`sala-limpia`)
+
+A session invited to a room (`agent-tools/room`) gets every line said there as a message, and most need nothing from
+it. Its chat fills with lines the person already read in the room and with short "nothing to add" answers.
+`sala-limpia` (`hooks/sala-limpia.tsx`) only changes what is drawn:
+
+| Row | Drawn? |
+|---|---|
+| a message from another session whose text starts with `[room <name>]` | no |
+| an answer of the session that is exactly `[sala]` | no |
+| anything else, and everything once expanded (ctrl+o) | yes |
+
+- **Nothing else changes**: the stored messages, what the model reads and the turn each room line costs stay as they
+  were. It saves reading for the person, not quota.
+- **`[sala]` is a contract with `room`**: every line the room delivers ends with "If you have nothing to add, your
+  whole answer is exactly: [sala]" (`SILENT_REPLY` in `agent-tools/room/room.mjs`, `SILENT` here). Change both together.
+- A plugin loads one hooks module, so `hooks/index.tsx` hands the same `on` to `vuelta` and to `sala-limpia`; each mod
+  stays in its own file. `vuelta` still obeys its off switch.
+- Not covered by the suite: it runs only inside Claude Code. Checked by hand on 2026-11-17 in one session: a room line
+  and the `[sala]` answer left no row in the chat. Sessions take it with `/reload-plugins`.
 
 ## How to verify
 

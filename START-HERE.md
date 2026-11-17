@@ -10,7 +10,7 @@ no network, no API key and no running Claude Code.
 scripts/test-all.sh        # one line per piece and a total; exit 1 if any suite fails
 ```
 
-Expected on 2026-11-17: `room` 44, `graph-rag` 13, `inventory` 17, `agent-runner` 48, `itdfw-sessions` 180, 302 in
+Expected on 2026-11-17: `room` 45, `graph-rag` 13, `inventory` 17, `agent-runner` 48, `itdfw-sessions` 180, 303 in
 all. The hooks have no suite (see their README).
 
 ## The claims, and how to check each

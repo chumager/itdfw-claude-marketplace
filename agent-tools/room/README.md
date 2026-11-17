@@ -23,8 +23,8 @@ cd agent-tools/room && pnpm install --ignore-workspace
 node --test --test-timeout=30000 "test/*.test.mjs"
 ```
 
-44 cases (`node:test`): 39 in `test/room.test.mjs`, 1 in `test/concurrency.test.mjs`, 4 in `test/tty.test.mjs`. On
-2026-11-17 they gave `tests 44, pass 44, fail 0` (43 before the blank line after each message; 35 before the person's lines were marked and `say` learned to warn
+45 cases (`node:test`): 40 in `test/room.test.mjs`, 1 in `test/concurrency.test.mjs`, 4 in `test/tty.test.mjs`. On
+2026-11-17 they gave `tests 45, pass 45, fail 0` (43 before the blank line after each message and the silent answer; 35 before the person's lines were marked and `say` learned to warn
 about an absent person). They build a temporary world — a temporary `HOME`, room directory and
 session directory, with **fake sessions that are Unix-socket processes** (`test/harness.mjs`, `test/fake-session.mjs`) —
 so they need no real Claude Code, no network, no database and no tmux. The four cases of `test/tty.test.mjs` need Linux and the `script` binary of
