@@ -32,8 +32,8 @@
 ### Puntas
 | Path | Verbo | Acceso: función asignable / anónima (porqué) / scope | Por qué ese acceso | Quién la llama | Modelo que toca |
 | Params (obligatorio · normalización) | Body | Respuesta (shape y status posibles) | Errores (código · causa) |
-<el criterio de acceso lo da `itdfw-api-system`; acá solo se declara cuál y por qué. Nunca "perfilada: <perfil>":
-quién recibe la función lo decide quien arma el site; el único perfil que se nombra es el base de un clon de User>
+<el criterio de acceso lo da `itdfw-api-system`; acá solo se declara cuál y por qué. Nunca "perfilada: <perfil>"
+ni "solo <tipo de usuario>": se declara la función y, a lo más, su perfil por omisión; quién la recibe es configuración>
 
 ### Componentes                <!-- §2b': uno por componente Itd* que el módulo declara o extiende -->
 | Prop | Tipo | Default | Qué significa |
