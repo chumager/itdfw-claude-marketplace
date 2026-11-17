@@ -26,19 +26,20 @@ While the plugin is enabled, Claude Code puts its `bin/` on the `PATH` of the Ba
 by name (`claude-session-msg.sh ...`). For a cron or a shell outside Claude Code, put `bin/` on your `PATH` or call the
 script by its full path.
 
-**An installed plugin is a copy, not the repository.** Claude Code runs it from
-`<claude-home>/plugins/cache/<marketplace>/itdfw-sessions/<commit>`, so a change committed here reaches the sessions
-only after:
+**A running session keeps what it loaded until it reloads.** With the marketplace added from a local folder,
+`/reload-plugins` re-reads the plugin from that folder (Claude Code answers "`itdfw-sessions@itdfw` re-read from its
+folder: …"), so a change committed here reaches a live session with `/reload-plugins` alone. Measured on 2026-11-17 in
+two sessions.
+
+Not measured: where a session that starts from zero loads it from. Claude Code also keeps a copy in
+`<claude-home>/plugins/cache/<marketplace>/itdfw-sessions/<commit>`; to keep that copy current as well:
 
 ```sh
 claude plugin marketplace update itdfw
 claude plugin update itdfw-sessions@itdfw
-# and /reload-plugins in each running session
 ```
 
-The hooks modules and the `bin/` on the Bash `PATH` come from that copy. A script you link or call by its path in this
-repository runs the working tree instead, so the two can differ until the copy is updated. The `vuelta` off switch
-lives in the state directory, not in the copy, and survives an update.
+The `vuelta` off switch lives in the state directory, not in the plugin, and survives a reload or an update.
 
 Requirements: `bash`, `jq`, `socat` (delivery), `tmux` (`cajaritos-compactar.sh`, `session-fg.sh`) and the `claude`
 command (`cajarito-despertar.sh`, `cajaritos-compactar.sh`, `claude-usage-watch.sh`).
