@@ -30,9 +30,10 @@
 ### Entidades
 | Campo | Tipo | Ref / refPath | Único / índice | Quién escribe | Se proyecta |
 ### Puntas
-| Path | Verbo | Acceso | Por qué ese acceso | Quién la llama | Modelo que toca |
+| Path | Verbo | Acceso: función asignable / anónima (porqué) / scope | Por qué ese acceso | Quién la llama | Modelo que toca |
 | Params (obligatorio · normalización) | Body | Respuesta (shape y status posibles) | Errores (código · causa) |
-<el criterio de acceso lo da `itdfw-api-system`; acá solo se declara cuál y por qué>
+<el criterio de acceso lo da `itdfw-api-system`; acá solo se declara cuál y por qué. Nunca "perfilada: <perfil>":
+quién recibe la función lo decide quien arma el site; el único perfil que se nombra es el base de un clon de User>
 
 ### Componentes                <!-- §2b': uno por componente Itd* que el módulo declara o extiende -->
 | Prop | Tipo | Default | Qué significa |

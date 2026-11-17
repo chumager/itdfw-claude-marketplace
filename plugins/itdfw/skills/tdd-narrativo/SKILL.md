@@ -140,7 +140,13 @@ modelo no aparece en ningún ejecutor ni en ninguna prueba, sobra o falta algo. 
 Un campo que no está en la tabla **no existe**; si el implementador lo necesita, vuelve al TDD, no lo agrega.
 Lo mismo para un modelo entero (un `PaymentCronRun` que nadie dibujó es hallazgo, no iniciativa).
 
-**Puntas** — `path · verbo · acceso (anónima / auth / perfil / skipCSRF) · quién la llama · qué modelo toca`.
+**Puntas** — `path · verbo · acceso (función asignable / anónima con su porqué / scope) · skipCSRF · quién la llama ·
+qué modelo toca`.
+
+🔴 **Quién puede qué no se diseña en el TDD: lo resuelve el AAA.** En cada punta la pregunta es *¿esto es una función
+asignable o una regla en código?* El TDD declara la función, y qué perfil la recibe lo decide quien arma el site. El
+único perfil que un TDD nombra es el perfil base de un autenticable, que se llama igual que su modelo (clon de User).
+Un "solo el dueño de X puede" dentro de la punta es hallazgo; filtrar "lo suyo" es scope y sí va en la punta.
 
 **Relaciones** — un mermaid de pocas líneas con cardinalidad (`Membership }o--|| PaymentCard`). Es lo que se
 lee en diez segundos y lo que jcmunoz revisa primero.
@@ -164,7 +170,8 @@ una punta ni cómo se define un type: cada una de esas cosas tiene dueño, y el 
 | Si la sección define… | Cargar (Skill tool) ANTES de escribirla |
 |---|---|
 | modelos, campos, refs, flujos de estado | `itdfw-models` (o `itdfw-db-models` si el modelo vive en la BD) |
-| **puntas y su acceso** (perfilada / anónima autenticada / anónima sin autenticar) | **`itdfw-api-system`** |
+| **puntas y su acceso** (función asignable / anónima autenticada / anónima sin autenticar) | **`itdfw-api-system`** |
+| **quién puede qué**: roles, tipos de usuario, "solo X puede", quién administra a quién | **`itdfw-api-system`** (`references/aaa-access.md`) **e `itdfw-models`** (`references/authenticatable.md`) |
 | types custom o Value Objects | `itdfw-mongoose-types` (+ `itdfw-ddd-value-objects` si el valor tiene lógica) |
 | componentes o vistas | `itdfw-front-develop` |
 | el empaquetado del módulo | `itdfw-fwplugin` |
@@ -329,7 +336,7 @@ de gastar un token en código es el objetivo, no un fallo (jcmunoz 2026-09-08).
 | 4 | **Modelo**: alcance escrito de cada entidad (qué es, por qué existe, quién la crea, cuánto vive), tabla de campos, tabla de puntas, mermaid de relaciones | 🔴 reportar; JAMÁS inventar campos, modelos ni puntas |
 | 4a | **AST de diseño de cada componente y punta** (§2b'): props con significado, cadena de capas y qué método pisa cada una, quién declara el render, lo que NO hace; punta con params, respuesta exacta y errores | 🔴 reportar "TDD INCOMPLETO: componente/punta sin AST"; un implementador que decide el árbol por su cuenta deja al dueño leyendo código |
 | 4b | **Coherencia del modelo**: el implementador VALIDA que el motivo de cada modelo hace sentido con la narrativa, los ejecutores y las pruebas (todo modelo aparece en algún flujo; todo flujo toca modelos declarados) | reportar la incoherencia como parte del "TDD INCOMPLETO", con el modelo y el flujo que no cuadran |
-| 4c | **Cada punta declara su acceso y el POR QUÉ** (columna de la tabla de Puntas). El criterio NO está acá: se juzga con `itdfw-api-system` cargado | reportar como "TDD INCOMPLETO" una punta sin acceso declarado, o abierta sin motivo escrito. Si el skill del área no se cargó, cargarlo antes de juzgar |
+| 4c | **Cada punta declara su acceso y el POR QUÉ** (columna de la tabla de Puntas): función asignable, anónima con su porqué, o scope. El criterio NO está acá: se juzga con `itdfw-api-system` cargado | reportar como "TDD INCOMPLETO" una punta sin acceso declarado, o abierta sin motivo escrito. 🔴 Un perfil o rol nuevo en el TDD (fuera del perfil base de un clon de User, que se llama como su modelo), o una regla "solo X puede" dentro de la punta, es hallazgo: el CTO lo devuelve. Si el skill del área no se cargó, cargarlo antes de juzgar |
 | 4d | **Si el dominio es una NORMA externa** (RFC, spec, normativa legal, API de un tercero): el TDD cita la **versión vigente con fecha**, clasifica `MUST`/`SHOULD`/`MAY`/deprecated, y declara el **choque con lo que los clientes reales implementan hoy** | 🔴 reportar "TDD INCOMPLETO: dominio normativo sin norma citada". Un TDD de protocolo escrito de memoria se implementa en verde contra un estándar equivocado — es el peor caso, no el más leve |
 | 4e | **Adoptar / adaptar / implementar**: los requisitos clasificados MUST/SHOULD/MAY, y qué se evaluó del ecosistema antes de decidir construir. Si se adopta o adapta: versión, licencia, mantenimiento, y qué parte del contrato queda en manos ajenas | reportar si el TDD manda a implementar algo de infraestructura sin decir qué se miró. No es burocracia: sin ese registro, en seis meses nadie sabe si la librería obvia ya se descartó o nadie la miró |
 | 4f | **Si el módulo YA OPERA** (mudanza, empaquetado, migración, reescritura): además del diferencial, una sección de **defectos heredados** — cada uno verificado corriendo (o marcado explícitamente como sospecha, con la prueba que lo destaparía) y cada uno con su decisión de arreglar o heredar | 🔴 reportar "TDD INCOMPLETO: mudanza sin auditoría de lo que se muda". Sin esa sección se copia el defecto tal cual y se estrena en el paquete nuevo, ahora avalado por un TDD aprobado (§2f) |
