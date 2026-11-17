@@ -43,6 +43,11 @@ Member.pre("validate", async function () {
 });
 ```
    Sin el `profiles = []` hay **escalada de permisos** (inyección de perfiles por PUT).
+   🔴 **El perfil base se llama igual que el modelo** (`Member` → perfil `Member`): es el estándar de facto, y es
+   el único perfil que un plugin o un TDD nombra. Un rol más (el dueño de una feria, el staff de un stand) no es un
+   perfil inventado en el código ni una regla en una punta. Se resuelve de una de dos formas: otro clon con su propio
+   perfil base, si es otro tipo de usuario, u otro perfil que arma quien configura el site con las funciones que el
+   plugin declara. El plugin entrega funciones asignables, y quién recibe cuáles lo decide el AAA.
 2. **Identidad INMUTABLE**: `nationalId: {immutable: true, unique: true}` — se declara una vez,
    nadie la cambia (ni el admin). Identidad mutable = vector de estafa/suplantación.
 3. **hidden GLOBAL vs CONTEXTO** — no son lo mismo:

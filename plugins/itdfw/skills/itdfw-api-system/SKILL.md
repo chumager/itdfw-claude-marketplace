@@ -5,6 +5,12 @@ description: Use when adding a backend endpoint to ITDFW, choosing between APP/,
 
 # ITDFW API System
 
+🔴 **Quién puede usar qué lo decide el AAA**: funciones asignadas a perfiles; un modelo autenticable clonado de User
+nace con su perfil base, que se llama como el modelo (`itdfw-models` → `references/authenticatable.md`); para
+administrar usuarios, el level (solo a los de level más alto que el propio, `references/aaa-access.md`). Una punta
+que decide en su código qué rol puede usarla es hallazgo. Filtrar lo que el que llama puede ver o mover (lo suyo) es
+scope de negocio, y ese sí va en la punta.
+
 ## 🔴 Índice por SÍNTOMA — entra por acá si vienes de un problema, no de una definición
 
 Este skill es una referencia larga y se lee por el lado por el que uno ya sabe entrar. Si llegaste con un síntoma:
