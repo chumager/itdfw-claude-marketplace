@@ -44,10 +44,14 @@ Member.pre("validate", async function () {
 ```
    Sin el `profiles = []` hay **escalada de permisos** (inyección de perfiles por PUT).
    🔴 **El perfil base se llama igual que el modelo** (`Member` → perfil `Member`): es el estándar de facto, y es
-   el único perfil que un plugin o un TDD nombra. Un rol más (el dueño de una feria, el staff de un stand) no es un
-   perfil inventado en el código ni una regla en una punta. Se resuelve de una de dos formas: otro clon con su propio
-   perfil base, si es otro tipo de usuario, u otro perfil que arma quien configura el site con las funciones que el
-   plugin declara. El plugin entrega funciones asignables, y quién recibe cuáles lo decide el AAA.
+   el único perfil que un plugin o un TDD nombra. Un tipo de usuario distinto (el dueño de una feria) es otro clon,
+   con su perfil base del mismo nombre, y eso está bien.
+   🔴 **El plugin define CAPACIDADES, no a quién pertenecen.** Cada capacidad (cobrar, revertir una venta) es una
+   función asignable. A lo más, el TDD sugiere en qué perfil iría por defecto. Quién la recibe es configuración, y
+   baja por la cadena de tenants: el owner arma los perfiles de sus usuarios, esos arman los de los suyos, cada uno
+   dentro de lo que su level le deja repartir. Así, un `standOwner` que hace todo y un `standSale` que solo vende
+   salen de configuración y no de código. Un "solo el dueño revierte" escrito en un contrato o en una punta es
+   programar una asignación: es hallazgo, y delata que no se conoce el flujo del FW.
 2. **Identidad INMUTABLE**: `nationalId: {immutable: true, unique: true}` — se declara una vez,
    nadie la cambia (ni el admin). Identidad mutable = vector de estafa/suplantación.
 3. **hidden GLOBAL vs CONTEXTO** — no son lo mismo:
