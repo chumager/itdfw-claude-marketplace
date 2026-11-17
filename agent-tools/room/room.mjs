@@ -677,12 +677,18 @@ export async function runInteractive(room, who) {
   let closing = false;
   let stopFollowing = () => {};
 
+  // a message (formatRecord starts it with a blank line) also ends with one, so the prompt never sits against it; the
+  // next message then drops its leading blank, so two messages stay one blank line apart
+  let endedBlank = false;
   const print = text => {
     if (terminal) {
       readline.clearLine(output, 0);
       readline.cursorTo(output, 0);
     }
-    output.write(`${text}\n`);
+    const isMessage = text.startsWith("\n");
+    const body = isMessage && endedBlank ? text.slice(1) : text;
+    output.write(`${body}\n${isMessage ? "\n" : ""}`);
+    endedBlank = isMessage;
     if (terminal && !closing) rl.prompt(true);
   };
   const exit = () => {

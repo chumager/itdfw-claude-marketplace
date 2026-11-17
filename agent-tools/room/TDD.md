@@ -94,7 +94,9 @@ sale de subir por los procesos padres hasta su ficha. No hay cron: nada corre si
     la terminal; `room read` también. El archivo guarda el texto original.
 
 ## Formato (el dueño, 7-nov-2026; modo incremental: el disco y los comandos no cambian)
-- Cada mensaje: `[HH:MM][autor]: texto` (con `DD-MM` delante si no es de hoy), una línea en blanco antes, y los saltos
+- Cada mensaje: `[HH:MM][autor]: texto` (con `DD-MM` delante si no es de hoy), una línea en blanco antes (y en la vista
+  interactiva también una después, para que el prompt no quede pegado; entre dos mensajes queda una sola; el dueño,
+  17-nov-2026), y los saltos
   del texto respetados con sangría bajo la cabecera. Entradas y salidas en una línea, atenuadas en TTY.
 - En TTY el markdown se renderiza con `marked` 15.0.12 + `marked-terminal` 7.3.0 (exactas, publicadas hace más de dos
   semanas), al ancho del terminal. Sin TTY va crudo, sin ANSI, con la misma disposición.

@@ -219,6 +219,20 @@ describe("level 1: interactive mode", () => {
     assert.ok(world.records("live").some(record => record.type === "left" && record.who === "ana" && record.reason === "leave"));
   });
 
+  it("a message ends with a blank line before what follows, and two messages stay one blank line apart", async () => {
+    const b = await world.session("gap-b");
+    const view = world.interactive("gap");
+    await until(() => view.output.includes("gap"), "the room to open");
+    view.type("/invite gap-b");
+    await until(() => b.inbox.length === 1, "the invitation");
+    await b.room("say", "gap", "first");
+    await b.room("say", "gap", "second");
+    await until(() => view.output.includes("[gap-b]: second"), "both messages");
+    assert.match(view.output, /\[gap-b\]: first\n\n[^\n]*\[gap-b\]: second\n\n/)
+    view.type("/leave");
+    assert.equal(await view.exited, 0);
+  });
+
   it("closing the terminal leaves the room", async () => {
     const view = world.interactive("eof");
     await until(() => view.output.includes("eof"), "the room to open");
