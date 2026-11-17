@@ -107,11 +107,18 @@ describe("claude-usage-watch.sh", () => {
     assert.equal(readFileSync(join(env.state, "usage-fable"), "utf8"), "4%")
   })
 
-  it("with usage-week left by a status line: that percent wins, reset is formatted from the epoch", async () => {
+  it("with a stale usage-week left by an idle session: the /usage percent wins, reset is formatted from the epoch", async () => {
     stubClaude(USAGE_TEXT)
     writeFileSync(join(env.state, "usage-week"), "61.4 1700000000\n")
     const r = await env.run(SCRIPT)
-    assert.match(r.stdout, /semana: 61% \(reset Tue 22:13\)/)
+    assert.match(r.stdout, /semana: 23% \(reset Tue 22:13\)/)
+  })
+
+  it("when the /usage text has no week: the usage-week percent is the fallback", async () => {
+    stubClaude("Current week (fable): 4% used")
+    writeFileSync(join(env.state, "usage-week"), "61.4 1700000000\n")
+    const r = await env.run(SCRIPT)
+    assert.match(r.stdout, /semana: 61% \(reset Tue 22:13\) {2}fable: 4%/)
   })
 
   it("shows '?' for what the /usage text does not have", async () => {

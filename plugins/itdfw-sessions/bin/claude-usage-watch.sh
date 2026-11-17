@@ -9,9 +9,9 @@
 # account has one; "?" when it is absent).
 #
 # Usage:   claude-usage-watch.sh [--loop <seconds>]
-# Reads:   <state-dir>/usage-week   "<percent> <resets_at epoch>", left by a status line from the JSON Claude Code gives
-#                                   it (rate_limits.seven_day). Optional: the /usage text is the fallback
-#          the output of `claude --safe-mode --model haiku -p "/usage" --output-format json`
+# Reads:   the output of `claude --safe-mode --model haiku -p "/usage" --output-format json` (fresh from the server)
+#          <state-dir>/usage-week   "<percent> <resets_at epoch>", left by a status line from the JSON Claude Code gives
+#                                   it (rate_limits.seven_day). The percent there can be stale: fallback only
 # Writes:  <state-dir>/usage.log     one "<date> <line>" per reading
 #          <state-dir>/usage-fable   the per-model percent alone, for a status line to `cat` without opening a session
 # Env:     CLAUDE_STATE_DIR   state dir (default: <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or
@@ -31,14 +31,18 @@ read_usage() {
   raw="$(cd "$HOME" && DISPLAY= claude --safe-mode --model haiku -p "/usage" --output-format json 2>/dev/null | jq -r '.result // empty')"
   [ -z "$raw" ] && { echo "$(date +%H:%M)  no answer from claude -p"; return 1; }
   local sw rw
-  # the 5-hour limit no longer exists (Anthropic, 2026-11): only the week. A status line can leave it in usage-week
-  # from the JSON Claude Code hands it (rate_limits.seven_day); the /usage text is only the fallback
-  if read -r wpct wreset < "$STATE_DIR/usage-week" 2>/dev/null && [ -n "$wpct" ]; then
-    sw="$(printf '%.0f%%' "$wpct")"
+  # the 5-hour limit no longer exists (Anthropic, 2026-11): only the week. The percent comes from the /usage text,
+  # fresh from the server. usage-week is only the fallback for it: every session's status line rewrites that file with
+  # the last value that session received, so an idle session leaves an old number (measured 2026-11-17: file 66 %,
+  # server 69 %). The reset time does not go stale, so the file still gives it in its short form when present
+  local wpct="" wreset=""
+  [ -r "$STATE_DIR/usage-week" ] && read -r wpct wreset < "$STATE_DIR/usage-week"
+  sw="$(printf '%s' "$raw" | grep -io 'current week (all models):[^%]*%' | grep -o '[0-9]\+%' | head -1)"
+  [ -z "$sw" ] && [ -n "$wpct" ] && sw="$(printf '%.0f%%' "$wpct")"
+  if [ -n "$wreset" ]; then
     rw="$(date -d "@$wreset" '+%a %H:%M' 2>/dev/null)"
   else
-    sw="$(printf '%s' "$raw" | grep -io 'current week (all models):[^%]*%' | grep -o '[0-9]\+%' | head -1)"
-    rw="$(printf '%s' "$raw" | grep -i 'current week (all models)' | grep -io 'resets [^·\n]*' | head -1 | sed 's/resets //')"
+    rw="$(printf '%s' "$raw" | grep -i 'current week (all models)' | head -1 | sed -n 's/.*resets //p')"
   fi
   # the per-model line (fable here) only exists in the /usage text: the status line JSON does not carry it
   local sf

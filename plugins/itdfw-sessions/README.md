@@ -102,6 +102,10 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
   files are the contract a panel and the sessions already depend on. Only the text printed for a human is English.
 - **`claude-usage-watch.sh` keeps the labels `semana:` and `fable:`** in its line, because `usage.log` is append-only
   and older lines use them. `fable:` is the per-model line of the `/usage` text; it shows `?` when the account has none.
+- **`claude-usage-watch.sh` takes the weekly percent from the `/usage` text, not from `usage-week`.** Every session's
+  status line rewrites that file with the last value it received, so an idle session leaves an old number there
+  (measured: file 66 %, server 69 %). The file only gives the reset time, which does not go stale, and the percent
+  when the text has none.
 - `cron-owner-guard.sh` is not run, it is sourced: `. cron-owner-guard.sh <owner> <label> || exit 0`.
 
 ## Send a message to a live session from outside
@@ -191,7 +195,7 @@ files, a fake unix socket (`node:net`) that records what a session would receive
 |---|---|
 | `test/messaging.test.mjs` | `claude-session-msg.sh`, `claude-broadcast.sh`, `claude-keepalive.sh`, `claude-session-name.sh`, `cron-owner-guard.sh` and `examples/daily-close-cron.sh`: who receives what, the auth and message lines, the skips (spare, dead, no socket, no key), the ancestor skip in the broadcast, the exit codes |
 | `test/wake-compact.test.mjs` | `cajarito-despertar.sh` and `cajaritos-compactar.sh` against a stub `claude` and a stub `tmux`: the decisions (already alive, ambiguous names, which session is compacted and which is skipped and why, `--solo`, `--excepto`, `--umbral`, `--modelo` only after a compaction that worked) |
-| `test/screen-usage.test.mjs` | `session-fg.sh` (ACTIVE / VISIBLE / BG from a fake transcript and fake panes), `claude-usage-watch.sh` (against a stub `claude -p`) and `examples/statusline-state.sh` |
+| `test/screen-usage.test.mjs` | `session-fg.sh` (ACTIVE / VISIBLE / BG from a fake transcript and fake panes), `claude-usage-watch.sh` (against a stub `claude -p`: the `/usage` percent beats a stale `usage-week`, which is only the fallback) and `examples/statusline-state.sh` |
 | `test/cartera.test.mjs` | `cartera.sh`: every subcommand, the state files, the old-format migration |
 | `test/hilo.test.mjs` | the four `hilo-*` scripts: what the capture keeps and drops, the last-N and per-message cut, the hand-back message and its 24 h summary rule, the ready mark, who is asked and who is not woken |
 | `test/vuelta.test.mjs` | the ledger (`vuelta.sh`): a request opens a debt, the answer closes it and arrives as a reply, no endless ping-pong between two sessions, two askers tracked apart, a recipient given by name, by `[ref]` or by socket address, the reminder count and the give-up, `list`, bad usage. The hooks module itself (the added line, the external senders, the reminder prompt) runs only inside Claude Code and is not exercised here |
@@ -206,9 +210,6 @@ parses with regular expressions on English wording.
 ## Limits
 
 - Claude Code internals, as said at the top.
-- `claude-usage-watch.sh` finds the reset time with `grep -io 'resets [^·\n]*'`; inside a bracket `\n` is a backslash and
-  an `n`, so the reset text stops at the first letter `n` ("Mon" is cut to "Mo"). It is kept as it was so that the
-  scripts that replaced it behave the same; the line that comes from `usage-week` is not affected.
 - `cajaritos-compactar.sh` waits up to 5 minutes per session for the percentage to drop below 20 % and then closes the
   window anyway; it reports the real before and after, so a compaction that did nothing shows as `70% -> 70%`.
 - `cajarito-despertar.sh` with no argument exits 1 (the shell's `${1:?}`), not 2.
