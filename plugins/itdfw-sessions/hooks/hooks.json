@@ -1,1 +1,1 @@
-{ "modules": ["./vuelta.ts"] }
+{ "modules": ["./index.tsx"] }
