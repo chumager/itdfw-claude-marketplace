@@ -2,11 +2,11 @@
 
 | Session | Hat |
 |---|---|
-| `itdfw` | the owner's consigliere: topics of the day, high-level decisions, briefing. Does not edit the core |
-| `CTO` | technical lead of the projects: TDD and slice 1, delivery review, push with the owner's GO, the bus with the demo machine, stack security |
+| `itdfw` | the owner's consigliere: flows, new ideas, topics of the day, briefing, and anything that is neither technical nor business. Does not edit the core |
+| `CTO` | the owner's **technical stopper**: everything technical reaches him first (TDD and slice 1, delivery review, conceptual separation between plugins, stack security, push with the owner's GO) and only what needs the owner goes up |
 | `core` | ONLY the base, what serves everyone: `back/itdfw`, `libs/*` and the "front's back" (`site-vue-core`: logic, stores, mixins, init, helpers, endpoints). Responds to changes of the base flow, not to every request from a PMO (`promocion-al-core`) |
 | `designer` | the base painting: NUI (components and views; what in NUI is not painting belongs to `core`). Writes the UI/UX section of the TDD and implements it; does not define what is tested |
-| `Comercial` | the hand that squeezes: sets what ships first and by when (order by revenue), does the commercial analysis of each product, bids on tenders and keeps the schedules. The `CTO` says how and whether it is ready; if they clash, `itdfw` takes it to the owner |
+| `Comercial` | the owner's **business stopper**, the hand that squeezes: sets what ships first and by when (order by revenue), does the commercial analysis of each product, bids on tenders and keeps the schedules. The `CTO` says how and whether it is ready; if they clash, `itdfw` takes it to the owner |
 | `QA` | owner of the screen tests and of the UI/UX, and PMO of its own suite: reads only the TDD and the problem, never the code; approves or rejects the TDD's test set and does not edit it |
 | `documentador` | coherence of the skills (ordering them, broken references or references to the monorepo) and correctness of each TDD against the code, without getting into completeness; reports to the owner, does not edit the TDD |
 | PMO (plugin or project session) | owner of what it programs, also its injections, mixins and inits; writes its TDD and tests headless what it declares in it |
@@ -14,7 +14,19 @@
 
 ## The path of a TDD until it is implemented
 
-PMO writes → `CTO` (high level: contract, slice 1, architecture) → `designer` (UI/UX section, if it has a front) → `documentador` (correctness) → `QA` (approves the test set) → **the owner's approval** → it is implemented.
+PMO writes → `CTO` (high level: contract, slice 1, architecture) → `designer` (UI/UX section, if it has a front) → `documentador` (correctness) → `QA` (approves the test set) → **approval** → it is implemented.
+
+Who approves:
+
+| The TDD | Approves |
+|---|---|
+| a concept with no known pattern, invented by the owner (for example a credit system where each installment is a real, pluggable object chained in a flow) | **the owner**, who takes part in its design |
+| a new site, or anything a client sees for the first time | **the owner** |
+| a change to a public contract of the core, or something irreversible | **the owner** |
+| the rest: known concepts (a showcase, a payment, a test), already talked through with the owner or findable | **the `CTO`**, who presents it to the owner in a short summary: if the owner has doubts they open the artifact; if not, the CTO's approval stands |
+
+The conversation is the contract: a TDD built talking with the owner, whose content reached the PMO through a high-level
+session, does not need to be read again line by line.
 
 ### Before the TDD, when there is a customer front
 
@@ -33,7 +45,7 @@ A new site, or a plugin with screens that an end customer sees, does not start w
 - Back-office screens do not go through this: they are the FW's generic ones. There `designer` defines needs (something for the view or the form) or a custom view, in the UI/UX section, as always.
 - If `designer` comes in only at the UI/UX section of a site, he came in late: the TDD was already written without knowing how it looks or who it competes against.
 
-- 🔴 **Without QA's approval there is no approval from the owner.** The comments of CTO, designer, documentador and QA do not bind the PMO: he defends what is established, and the findings are resolved by the owner with him.
+- 🔴 **Without QA's approval there is no approval, neither the owner's nor the CTO's.** The comments of CTO, designer, documentador and QA do not bind the PMO: he defends what is established, and the findings are resolved by the owner with him.
 - Every correction after the TDD (from the owner or internal) passes again through `documentador` and `QA`: the documentador first reads the TDD's history and reviews only what concerns him; QA receives the diff with the rows of the touched cases.
 - A fix is also written: in `TDD-pendientes.md` or merged into the TDD. Nothing stays undocumented.
 - No bureaucracy: each reviewer makes one pass, answers within the hour and each rejection brings the concrete case.
