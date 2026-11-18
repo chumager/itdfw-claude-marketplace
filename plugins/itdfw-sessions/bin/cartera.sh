@@ -23,6 +23,9 @@
 #   quitar "<block>" --duplicado-de "<block>"      the owner: hides one of its own blocks that is a duplicate
 #   decision "<topic>" "<decision>" "<why>" ["<what it costs to undo it>"]   the coordinator: appended to decisiones.jsonl
 #   migrar                                         converts every file of the old format (once)
+#   panel                                          for the band (hooks/cartera.tsx), one JSON line: {dir, decisiones,
+#                                                  panel, persona}. panel is the one session that draws the band
+#                                                  ("" = none), persona the name its buttons speak for
 # A block keeps no state: it is active while it has a task that is not finished, and finished when all of them are.
 #
 # Reads:   <cartera-dir>/*.json, ~/.claude/sessions/<pid>.json (to find the session name)
@@ -32,6 +35,8 @@
 #          CARTERA_DIR      the folder of the JSON files (default: <state-dir>/cartera)
 #          CLAUDE_STATE_DIR state dir (default: <claude-home>/state, with <claude-home> = $CLAUDE_CONFIG_DIR or
 #                           $HOME/.claude)
+#          CARTERA_PANEL    the session that draws the band (default: none, so no session draws it)
+#          CLAUDE_BROADCAST_FROM  who the band's GO and answers speak for (default: user)
 # Exit:    0 done · 1 the session is unknown, or the block/task does not exist · 2 bad usage (and no arguments)
 _cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -u
@@ -206,6 +211,9 @@ case "$cmd" in
       if jq -e 'type == "array"' "$f" >/dev/null 2>&1; then edit "$f" '.' && echo "migrated: $(basename "$f")"; fi
     done
     echo "backup in $backup" ;;
+  panel)
+    jq -cn --arg d "$DIR" --arg x "$DECISIONS" --arg p "${CARTERA_PANEL:-}" --arg u "${CLAUDE_BROADCAST_FROM:-user}" \
+      '{dir: $d, decisiones: $x, panel: $p, persona: $u}' ;;
   *)
     help_text >&2; exit 2 ;;
 esac

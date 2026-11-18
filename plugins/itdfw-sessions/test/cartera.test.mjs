@@ -211,6 +211,14 @@ describe("cartera.sh: migrar, help, defaults", () => {
     await as()("tarea", "B", "T", "en-curso")
     assert.ok(existsSync(join(env.state, "cartera", "a.json")))
   })
+
+  it("panel: one JSON line with the folders; no band session and persona 'user' by default, the env sets both", async () => {
+    const plain = await env.run(SCRIPT, ["panel"])
+    assert.equal(plain.code, 0)
+    assert.deepEqual(JSON.parse(plain.stdout), {dir: join(env.state, "cartera"), decisiones: join(env.state, "decisiones.jsonl"), panel: "", persona: "user"})
+    const set = await env.run(SCRIPT, ["panel"], {extraEnv: {CARTERA_PANEL: "lead", CLAUDE_BROADCAST_FROM: "ana", CARTERA_DIR: join(env.root, "board")}})
+    assert.deepEqual(JSON.parse(set.stdout), {dir: join(env.root, "board"), decisiones: join(env.state, "decisiones.jsonl"), panel: "lead", persona: "ana"})
+  })
 })
 
 function mkdirp(d) {
