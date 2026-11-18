@@ -21,7 +21,7 @@ Line numbers below are relative to this directory and were checked against the c
 | `secret-scan.toml` (85 lines) | the fixed rules, on top of gitleaks' defaults |
 | `push-develop.sh` (114 lines) | the automatic push, with the scan before it |
 | `_env.sh` (35 lines) | the optional config file both scripts read (a library, sourced) |
-| `test/` | 38 cases, `node:test` |
+| `test/` | 39 cases, `node:test` |
 
 `secret-scan.ignore` is **not** part of this piece: it is the list of false positives that **you** reviewed in **your**
 repository, so it is yours. Its format is described below.
@@ -119,7 +119,7 @@ cd agent-tools/secret-scan
 pnpm test      # node --test "test/*.test.mjs"
 ```
 
-38 cases, no network and no real `~/`: each one builds a temporary root with a fake `HOME` and, for `push-develop.sh`,
+39 cases, no network and no real `~/`: each one builds a temporary root with a fake `HOME` and, for `push-develop.sh`,
 a real git repository with a bare `origin` next to it. They need `gitleaks` on the `PATH` (the cases that run the real
 scanner are skipped without it, and say so); the machine that wrote this piece had Debian's `gitleaks 8.16.0`.
 

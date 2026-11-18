@@ -223,6 +223,13 @@ describe("secret-scan.sh: usage and the scanner itself", () => {
     assert.match(r.stderr, /gitleaks: boom/)
   })
 
+  it("gitleaks says it found something (exit 1) but leaves no report: a broken scan, exit 2, never clean", async () => {
+    env.stub("fake-gitleaks", `exit 1`)
+    const r = await env.run(SCAN, ["--files", env.write("a.txt", "x\n")], {extraEnv: {SECRET_SCAN_GITLEAKS: join(env.stubs, "fake-gitleaks")}})
+    assert.equal(r.code, 2)
+    assert.match(r.stderr, /exit 1 with no report/)
+  })
+
   // PATH with the system tools the script needs and no gitleaks; sudo and curl are stubs that only log and fail
   const noGitleaksPath = () => {
     env.stub("sudo", `echo "sudo $*" >> "$FAKE_LOG"; exit 1`)

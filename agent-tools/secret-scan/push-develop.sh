@@ -70,9 +70,10 @@ if [ "${1:-}" = "--bg" ]; then
     exit 0
   fi
   # the rebase rewrote the commits: scan what is really going out
-  "$SCAN" "$REMOTE/$BRANCH..HEAD" >"$SCANOUT" 2>&1; rc=$?
-  [ $rc -eq 0 ] || { pending "after the rebase the scan stopped the push: $(grep -vc '^AVISA' "$SCANOUT") findings"; exit 0; }
+  # resolved before the scan, so that what is pushed is exactly what was scanned even if HEAD moves meanwhile
   NEW=$(git rev-parse HEAD)
+  "$SCAN" "$REMOTE/$BRANCH..$NEW" >"$SCANOUT" 2>&1; rc=$?
+  [ $rc -eq 0 ] || { pending "after the rebase the scan stopped the push: $(grep -vc '^AVISA' "$SCANOUT") findings"; exit 0; }
   push "$NEW" && ok "rebased and pushed $NEW"
   pending "push of ${NEW:0:8} rejected again after the rebase"
   exit 0

@@ -158,7 +158,8 @@ describe("push-develop.sh: the remote moved ahead (the background part rebases b
     assert.equal(env.git(origin, "log", "--format=%s", "-3").split("\n").join(","), "mine,theirs,start")
     assert.ok(await env.waitFor(() => /✓ rebased and pushed /.test(readFileSync(cache("last.log"), "utf8"))))
     assert.equal(env.calls().length, 2, "scanned once before the push and once after the rebase")
-    assert.match(env.calls()[1], /^origin\/develop\.\.HEAD$/)
+    // the rebased commit is resolved before the scan, and the range names it: what is scanned is what is pushed
+    assert.equal(env.calls()[1], `origin/develop..${tip(origin)}`)
   })
 
   it("a conflict is predicted: nothing is touched and the pending list says how to resolve it", async () => {

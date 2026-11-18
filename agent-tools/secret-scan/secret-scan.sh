@@ -90,6 +90,8 @@ run_gl() {   # run_gl <out.json> <gitleaks args…>; exit 0/1 = it scanned, anyt
   "$GL" detect --no-banner -l error --redact -c "$cfg" -f json -r "$1" "${@:2}" >/dev/null 2>"$1.err"
   local rc=$?
   [ $rc -le 1 ] || { sed 's/^/  gitleaks: /' "$1.err" >&2; return 2; }
+  # exit 1 means "found something": a missing or empty report then is a broken scan, not a clean one
+  [ $rc -eq 1 ] && [ ! -s "$1" ] && { echo "  gitleaks: exit 1 with no report" >&2; return 2; }
   [ -s "$1" ] || echo '[]' >"$1"
 }
 
