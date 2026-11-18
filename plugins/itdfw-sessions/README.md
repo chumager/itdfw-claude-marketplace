@@ -225,11 +225,11 @@ it. Its chat fills with lines the person already read in the room and with short
 waits for the person, and a GO button on the tasks that wait for their approval. Pressing GO sends the owner session a
 message in the person's name.
 
-- **It draws in one session only**: the one named by `CARTERA_PANEL` in the config file. In every other session the
-  module loads, does two lookups at start and draws nothing; with no `CARTERA_PANEL`, nobody draws it.
+- **Off by default, in every session.** `/cartera` (or `/cartera on|off`) turns it on or off in the session where it is
+  typed, and the choice stays in that session's state. Off, it cancels its timer and reads or runs nothing.
 - Folders and the person's name come from `cartera.sh panel`, so the module carries no paths or names.
-- `claude plugin test .` in this folder runs `tests/cartera.test.tsx` (3 cases): a session that is not the panel draws
-  nothing, no panel means no band, and GO reaches the owner in the person's name.
+- `claude plugin test .` in this folder runs `tests/cartera.test.tsx` (4 cases), among them that turning it off really
+  stops it and that GO reaches the owner in the person's name.
 
 ## `/broadcast`
 
@@ -240,7 +240,7 @@ message in the person's name.
 
 ```sh
 cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 205 cases
-claude plugin test .                                          # the cartera hooks module, 3 cases
+claude plugin test .                                          # the cartera hooks module, 4 cases
 ```
 
 The suite needs no real session and touches no real `~/.claude`: each test makes a throwaway `HOME` with fake session
