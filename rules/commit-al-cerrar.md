@@ -11,4 +11,5 @@ When something is tested (the slice, the fix, the green test), it is committed a
 | each session that owns a module (Contabilidad → `plugins/accounting`, ALM → `plugins/alm`, `core` → the core…) | their own module and nothing from another; if it crosses modules, each owner their part |
 | subagents (forks, implementer, base) | nothing: the session that launched them reviews and commits |
 | push to `develop` | automatic on every commit, after the secrets scan (set up and maintained by the `CTO`). If the scan stops it, the commit is fixed before it goes out |
-| push to `main` and tags | only in a release: decided by the `CTO`, with the owner's GO |
+| push to `main` and tags (monorepo) | only in a release: decided by the `CTO`, with the owner's GO |
+| push to `main` of the marketplace | automatic on every commit, once every suite passes and the scan is clean (`scripts/post-commit.sh`). A failure is printed on the next commit and fixed before anything else |
