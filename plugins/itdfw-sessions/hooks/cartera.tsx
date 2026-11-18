@@ -6,8 +6,9 @@ import type { Bloque, Rutina, Tarea } from '../types'
 // cartera: the band above the prompt that merges every session's work board (bin/cartera.sh writes one JSON file per
 // session) and lets the person answer from it: a GO, an answer to a question, the ✔ that archives a finished block.
 // It also feeds the panel session, unseen by the person, what moved since its last turn and the new decisions of the
-// coordinator. Only ONE session draws it: the one named by CARTERA_PANEL (bin/cartera.sh panel). In every other
-// session the mod loads and does nothing.
+// coordinator. It is OFF by default in every session: `/cartera` (or `/cartera on|off`) turns it on or off in the
+// session where it is typed, and the choice is kept in that session's state, across reloads. Off, it reads nothing
+// and runs nothing. Folding the band (the engine's own shortcut) is not turning it off: folded, it keeps reading.
 //
 // The words of the band, of the files and of the messages are Spanish on purpose: they are the contract the sessions
 // already read (see bin/cartera.sh).
@@ -15,17 +16,20 @@ import type { Bloque, Rutina, Tarea } from '../types'
 // an en_curso task untouched for longer than this turns red: nobody has said anything, someone should look
 const STALE_MS = 60 * 60 * 1000
 
-/** What bin/cartera.sh panel answers; resolved once per session start. */
-type Config = { dir: string; decisiones: string; panel: string; persona: string; send: string; cartera: string }
+/** What bin/cartera.sh panel answers; resolved when the band is turned on. */
+type Config = { dir: string; decisiones: string; persona: string; send: string; cartera: string }
 let cfg: Config | null = null
-// true only in the panel session: every hook below passes through untouched otherwise
+// true while the band is on in this session: every hook below passes through untouched otherwise
 let active = false
+// the 3-second poll, cancelled when the band is turned off
+let tick: { cancel: () => void } | null = null
 
 // the plugin and key go as literals: the validator reads every atom's source from the code
 const bloques = atom({ plugin: 'itdfw-sessions', key: 'carteraBloques' } as const, [], { shape: 'bloques-3' })
 const rutinas = atom({ plugin: 'itdfw-sessions', key: 'carteraRutinas' } as const, [], { shape: 'rutinas-1' })
 const error = atom({ plugin: 'itdfw-sessions', key: 'carteraError' } as const, '', { shape: 'error-1' })
-const isHidden = atom({ plugin: 'itdfw-sessions', key: 'carteraIsHidden' } as const, false, { shape: 'hidden-1' })
+// whether the person turned the band on in this session (`/cartera`); off by default
+const isOn = atom({ plugin: 'itdfw-sessions', key: 'carteraIsOn' } as const, false, { shape: 'on-1' })
 // open nodes: "activos", "terminados", "s:<owner>", "b:<owner>/<block>", "t:<task id>", and "g:<owner>:<class>" for a
 // state group flipped from its default (yours and running start open, parked starts closed); all collapsed at start
 const opened = atom({ plugin: 'itdfw-sessions', key: 'carteraOpened' } as const, [], { shape: 'opened-4' })
@@ -96,19 +100,18 @@ const normalize = (raw: Raw, dueno: string): { bloques: Bloque[]; rutinas: Rutin
   }
 }
 
-/** Asks the plugin's own scripts where the board lives, which session draws it and whose name it speaks for. */
-const configure = async ($: EngineInterface): Promise<void> => {
+/** Asks the plugin's own script where the board lives and whose name the band speaks for. */
+const configure = async ($: EngineInterface): Promise<boolean> => {
   const bin = `${$.plugin.root}/bin`
   last = ''
   try {
     const panel = await $.process.run([`${bin}/cartera.sh`, 'panel'])
-    const name = await $.process.run([`${bin}/claude-session-name.sh`])
     const p = JSON.parse(String(panel.stdout)) as Omit<Config, 'send' | 'cartera'>
     cfg = { ...p, send: `${bin}/claude-session-msg.sh`, cartera: `${bin}/cartera.sh` }
-    active = p.panel !== '' && String(name.stdout).trim() === p.panel
+    return true
   } catch {
     cfg = null
-    active = false
+    return false
   }
 }
 
@@ -261,26 +264,55 @@ const GROUPS: { clase: Clase; title: string; mark: string }[] = [
   { clase: 'parqueada', title: 'Parqueadas', mark: '⚪' },
 ]
 
+/** Starts reading the board; `fresh` (a turn-on by hand) takes today's board and decisions as already seen. */
+const start = async ($: EngineInterface, fresh: boolean): Promise<boolean> => {
+  if (!(await configure($))) return false
+  active = true
+  await load($)
+  if (fresh) {
+    await update($, decisionsSeen, () => -1)
+    await portfolioDiff($)
+  }
+  await checkDecisions($)
+  tick?.cancel()
+  tick = $.clock.every(3000, async () => {
+    await load($)
+    await checkDecisions($)
+  })
+  return true
+}
+
+const stop = () => {
+  tick?.cancel()
+  tick = null
+  active = false
+  pendingDecisions.splice(0)
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await configure($)
-    if (active) {
-      await $.command.register({ name: 'cartera', description: 'Show or hide the portfolio band above the prompt' })
-      await load($)
-      await checkDecisions($)
-      $.clock.every(3000, async () => {
-        await load($)
-        await checkDecisions($)
-      })
-    }
+    await $.command.register({
+      name: 'cartera',
+      description: 'Turn the portfolio band on or off in this session (off reads nothing)',
+      argumentHint: '[on|off]',
+    })
+    if (await read($, isOn)) await start($, false)
     return next(e)
   })
 
-  on('command.run', { command: 'cartera' }, async ($, e, next) => {
-    if (!active) return next(e)
-    await load($)
-    const hidden = await update($, isHidden, h => !h)
-    return { text: hidden ? 'Cartera oculta.' : 'Cartera visible.' }
+  on('command.run', { command: 'cartera' }, async ($, e) => {
+    const arg = e.args.trim().toLowerCase()
+    if (arg !== '' && arg !== 'on' && arg !== 'off') return { text: 'Uso: /cartera [on|off]' }
+    const want = arg === '' ? !active : arg === 'on'
+    if (want === active) return { text: active ? 'Cartera ya encendida.' : 'Cartera ya apagada.' }
+    if (!want) {
+      stop()
+      await update($, isOn, () => false)
+      return { text: 'Cartera apagada: no lee nada en esta sesión.' }
+    }
+    if (!(await start($, true))) return { text: 'No pude encender la cartera: cartera.sh panel no respondió.' }
+    await update($, isOn, () => true)
+    return { text: 'Cartera encendida en esta sesión.' }
   })
 
   // every prompt of the person carries, unseen by them, what moved in the portfolio since the last one
@@ -298,7 +330,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (!active || e.props.hasSurvey || (await read($, isHidden))) return next(e)
+    if (!active || e.props.hasSurvey) return next(e)
     const els = $.ui.resolve(e)
     const { Box, Button, Text } = els
     // Input exists on the terminal and desktop tables, where this band is drawn; absent elsewhere

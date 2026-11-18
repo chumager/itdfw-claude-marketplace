@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
-// The band of hooks/cartera.tsx against the engine (`claude plugin test .`). The scripts are stood in for: what
-// `cartera.sh panel` and `claude-session-name.sh` answer decides whether this session draws the band.
+// The band of hooks/cartera.tsx against the engine (`claude plugin test .`). The plugin's scripts and the board's
+// folder are stood in for; `/cartera` turns the band on or off in the session where it is typed.
 
 const BAND = {
   plugin: 'itdfw-sessions',
@@ -22,47 +22,52 @@ const BOARD = JSON.stringify({
   rutinas: [],
 })
 
-/** Stands in for the plugin's scripts and the board's folder; `runs` collects every command the mod ran. */
-function engine(on: any, { me, panel }: { me: string; panel: string }) {
-  const runs: string[][] = []
+/** Stands in for the engine around the mod; `seen` counts what the mod ran and read. */
+function engine(on: any) {
+  const seen = { runs: [] as string[][], reads: 0 }
   on('command.register', (_: unknown, e: { name: string }) => ({ value: { command: e.name } }))
   on('clock.every', () => ({ value: undefined }))
   on('clock.now', () => ({ value: 2 }))
   on('session.start', (_: unknown, e: { cwd: string }) => ({ cwd: e.cwd }))
   on('fs.list', () => ({ value: [{ name: 'ops.json', kind: 'file' }] }))
-  on('fs.read', (_: unknown, e: { path: string }) => ({ value: e.path.endsWith('ops.json') ? BOARD : '' }))
+  on('fs.read', (_: unknown, e: { path: string }) => {
+    seen.reads++
+    return { value: e.path.endsWith('ops.json') ? BOARD : '' }
+  })
   on('ui.toast', () => ({ value: undefined }))
   on('process.run', (_: unknown, e: { argv: readonly string[] }) => {
-    runs.push([...e.argv])
-    const cmd = e.argv[0] ?? ''
-    const out = cmd.endsWith('/cartera.sh') && e.argv[1] === 'panel'
-      ? JSON.stringify({ dir: '/board', decisiones: '/board/decisiones.jsonl', panel, persona: 'ana' })
-      : cmd.endsWith('/claude-session-name.sh') ? `${me}\n` : ''
+    seen.runs.push([...e.argv])
+    const panel = (e.argv[0] ?? '').endsWith('/cartera.sh') && e.argv[1] === 'panel'
+    const out = panel ? JSON.stringify({ dir: '/board', decisiones: '/board/decisiones.jsonl', persona: 'ana' }) : ''
     return { value: { exitCode: 0, stdout: out, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
-  return runs
+  return seen
 }
 
-test('a session that is not the panel draws no band and runs nothing but the two lookups', async ($, on) => {
-  const runs = engine(on, { me: 'worker', panel: 'lead' })
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect(await ui.find({ key: 'activos' })).toBeUndefined()
-  expect(runs.length).toBe(2)
-  await ui.unmount()
+const START = { cwd: '/', surface: 'terminal', isInteractive: true } as const
+/** `/cartera <args>` as the person types it. */
+const cmd = (args: string) => ({
+  command: 'cartera',
+  args,
+  origin: { kind: 'composer' } as const,
+  presentation: { isFullscreen: false, columns: 80 },
 })
 
-test('no panel configured: no session draws it', async ($, on) => {
-  engine(on, { me: 'lead', panel: '' })
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+test('off by default: the session draws no band and runs or reads nothing', async ($, on) => {
+  const seen = engine(on)
+  await $.session.start(START)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(await ui.find({ key: 'activos' })).toBeUndefined()
   await ui.unmount()
+  expect(seen.runs.length).toBe(0)
+  expect(seen.reads).toBe(0)
 })
 
-test('the panel session draws the board, and GO goes to the owner in the persona name', async ($, on) => {
-  const runs = engine(on, { me: 'lead', panel: 'lead' })
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+test('/cartera turns it on: the board shows, and GO goes to the owner in the persona name', async ($, on) => {
+  const seen = engine(on)
+  await $.session.start(START)
+  const r = await $.command.run(cmd(''))
+  expect(r.text).toBe('Cartera encendida en esta sesión.')
   const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect(await desk.find({ key: 'activos' })).toBeDefined()
   await desk.unmount()
@@ -71,7 +76,34 @@ test('the panel session draws the board, and GO goes to the owner in the persona
   await ui.press({ key: 's:ops' })
   await ui.press({ key: 'go:ops/Release/Publish' })
   await ui.unmount()
-  const sent = runs.find(r => (r[0] ?? '').endsWith('/claude-session-msg.sh'))
+  const sent = seen.runs.find(x => (x[0] ?? '').endsWith('/claude-session-msg.sh'))
   expect(sent?.slice(1, 3)).toEqual(['ops', 'cartera:ana'])
   expect(sent?.[3]).toMatch(/^GO de ana para la tarea "Publish" del bloque "Release"/)
+})
+
+test('/cartera off turns it off: no band, and drawing reads nothing more', async ($, on) => {
+  const seen = engine(on)
+  await $.session.start(START)
+  await $.command.run(cmd('on'))
+  expect((await $.command.run(cmd('off'))).text).toBe('Cartera apagada: no lee nada en esta sesión.')
+  const reads = seen.reads
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ key: 'activos' })).toBeUndefined()
+  await ui.unmount()
+  expect(seen.reads).toBe(reads)
+  expect((await $.command.run(cmd('off'))).text).toBe('Cartera ya apagada.')
+  expect((await $.command.run(cmd('maybe'))).text).toBe('Uso: /cartera [on|off]')
+})
+
+test('the choice is kept in the session state: a new start of the same session comes back on', async ($, on) => {
+  const seen = engine(on)
+  await $.session.start(START)
+  await $.command.run(cmd('on'))
+  const panels = () => seen.runs.filter(x => x[1] === 'panel').length
+  const before = panels()
+  await $.session.start(START)
+  expect(panels()).toBe(before + 1)
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ key: 'activos' })).toBeDefined()
+  await ui.unmount()
 })

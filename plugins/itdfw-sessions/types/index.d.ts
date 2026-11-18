@@ -37,7 +37,7 @@ declare module 'claude-code' {
       carteraBloques: Shaped<Bloque[]>
       carteraRutinas: Shaped<Rutina[]>
       carteraError: Shaped<string>
-      carteraIsHidden: Shaped<boolean>
+      carteraIsOn: Shaped<boolean>
       carteraOpened: Shaped<string[]>
       carteraGone: Shaped<string[]>
       carteraAnswering: Shaped<string>
