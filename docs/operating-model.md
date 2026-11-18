@@ -8,8 +8,9 @@ holds. It describes the practice that the [skills](../plugins/itdfw/skills), the
 **How to read it.** Every rule below exists as a text file that is loaded into each session. Text is the weak form of a
 rule: a model can forget it. [Section 6](#6-what-enforces-what) says, rule by rule, which ones are backed by a hook or a
 script and which depend on the model alone. [Section 7](#7-what-we-got-wrong) lists the failures that produced the rules.
-The rules themselves are private (they carry names and machine paths); what is described here is their content,
-generalised. One person, the **architect**, defines contracts and decides what is irreversible; the sessions do the rest.
+The rules themselves are in [`rules/`](../rules) (the office's) and [`rules/preferences/`](../rules/preferences) (the
+architect's taste), translated and with names and machine paths taken out; a few that are only personal stay on the
+machine. One person, the **architect**, defines contracts and decides what is irreversible; the sessions do the rest.
 
 ## Contents
 
@@ -31,13 +32,14 @@ the background and nobody watches them. A background session that dies can be br
 
 | Role | Owns | Does not |
 |---|---|---|
-| **Technical lead** | The contracts (TDD and slice 1), the review of every finished development, the publication of releases (with the architect's go-ahead), the security of the stack, the work board's state | Write the product code of other owners |
+| **Technical lead** | The architect's **technical stopper**: everything technical reaches it first. The contracts (TDD and slice 1), the review of every finished development, the approval of TDDs on known concepts, the watch that two plugins do not build the same thing, the publication of releases (with the architect's go-ahead), the security of the stack, the work board's state | Write the product code of other owners |
+| **Commercial** | The architect's **business stopper**: what ships first and by when (order by revenue), the commercial analysis of each product, tenders and applications | Decide how something is built |
 | **Core owner** | The base products: the back-end framework and the shared libraries. Receives requests for core changes. Front business logic lives here too | Touch a plugin or a site that belongs to someone else |
 | **UI owner** | The component library that paints (the Naive UI front). Paints; carries no business logic | Decide data rules |
 | **QA** | The tests. Reads **only the contract** (the TDD), never the code, and refutes or completes it. Maintains the shared test helpers | Read the implementation to "see what it does" |
 | **Documenter** | Checks that skills and JSDoc agree with the code; reports to the code's owner; enriches a skill when it lacks something | Fix the code |
 | **Module / project sessions** | One session per plugin, module or project. Alive while they have priority, stopped otherwise | Edit core |
-| **Advisor** | The architect's counsellor: the day's topics, high-level decisions, briefing. Does not edit core | Ship |
+| **Advisor** | The architect's counsellor: flows, new ideas, the day's topics, briefing, anything neither technical nor business. Does not edit core | Ship |
 
 The always-alive set is the technical lead, the core owner, the UI owner, QA, the documenter and the advisor. Module
 sessions are started and stopped as priorities move.
@@ -71,7 +73,7 @@ the personal data.
 | Declare **slice 1** | the smallest end-to-end path a real user takes this week, with everything else replaced by something dumb (one hand-loaded document, one branch, one issuer) |
 | Every model, field or endpoint says in which slice it is used | "later" goes in a one-line "Outside slice 1" list, with no table and no decisions |
 | What enters, enters as a whole **concept**, not a field | the shape of the data is never cut (one photo or several? it is an array even if the view shows one); UI and automation are what get cut |
-| The architect approves | an implementer receives an approved TDD and a closed brief |
+| Someone approves | the architect, for a concept with no known pattern (their own invention), a new site or what a client sees first, a public core contract or anything irreversible; the technical lead for the rest, presenting it to the architect in a short summary. Without QA's approval of the test set there is no approval. An implementer receives an approved TDD and a closed brief |
 | The implementer's first step | run the conformity checklist of the TDD skill against the TDD; if a mandatory section is missing, **stop and report** instead of guessing |
 | The TDD declares its mode | **new** (re-implement cleanly: a wrapper over a piece of this same change is an immediate defect), **refactor with full coverage** (behaviour kept, signatures change only if the contract says so), **incremental** (signatures and edges untouched, only add) |
 | "Done" is read from the TDD | before saying "ready", open the TDD and list the rows that are not green, or "none" |
