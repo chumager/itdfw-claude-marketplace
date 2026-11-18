@@ -24,6 +24,7 @@ pieces=(
   'agent-tools/graph-rag|1|node --test "test/*.test.js"'
   'agent-tools/inventory|0|node --test "test/*.test.js"'
   'agent-tools/agent-runner|1|env -u ANTHROPIC_API_KEY pnpm test'
+  'agent-tools/secret-scan|0|node --test "test/*.test.mjs"'
   'plugins/itdfw-sessions|0|node --test "test/*.test.mjs"'
   'plugins/itdfw-hooks|0|node --test "test/*.test.mjs"'
 )

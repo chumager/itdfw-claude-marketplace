@@ -1,6 +1,6 @@
 # itdfw-hooks — rules enforced by Claude Code hooks
 
-Thirteen hooks for Claude Code, written to keep an agent inside a set of working practices while it develops on the
+Thirteen registered hooks and two more for the user's own settings, written to keep an agent inside a set of working practices while it develops on the
 ITDFW framework and to keep the person in the loop when they are away from the keyboard, plus two helper scripts for
 `git` and the definition of the `base` agent the delegation gate asks for. A hook is a program that Claude Code runs
 around a tool call and that can refuse the call. The idea behind them: a rule written as text gets forgotten, a rule
@@ -34,9 +34,17 @@ were also run once each with sample input in a throwaway `HOME` (see "How to ver
 | `StopFailure` | — | `bin/stopfailure-log.sh` | default |
 | `SessionStart` | `compact` | `bin/skill-reset.sh` | default |
 
-Four scripts are **not** registered: the `git` helpers `bin/ast-same.sh` and `bin/prune-post-commit.sh`;
-`bin/permission-denied-ask.sh`, which `permission-denied.sh` launches detached; and `bin/_sessions.sh`, a library the
-presence hooks source to find the `itdfw-sessions` scripts and the person's name.
+Six scripts are **not** registered: the `git` helpers `bin/ast-same.sh` and `bin/prune-post-commit.sh`;
+`bin/permission-denied-ask.sh`, which `permission-denied.sh` launches detached; `bin/_sessions.sh`, a library the
+presence hooks source to find the `itdfw-sessions` scripts and the person's name; and two hooks the author registers in
+their own settings rather than here, because they add text to every session in every project:
+
+- **`bin/prompt-context.sh`** (`UserPromptSubmit`): prints the real date and time (a long-lived session's own idea of
+  the date freezes when it starts), `[PRESENCIA]` (at the keyboard or away), `[CONTEXTO]` with the session's context
+  percentage and what to do above 75 % and 90 %, and `[MODELO]`. It reads the `ctx-<session>.json` that the status line
+  leaves (see `itdfw-sessions/examples/statusline-state.sh`).
+- **`bin/precompact.sh`** (`PreCompact`): tells the compactor what to keep with priority (the work in progress, the
+  decisions and their reason, the person's own words) and what to drop (what already lives in files).
 
 `user-agents/base.md` is the generic agent (Sonnet, high effort) that `agent-type-gate.sh` sends the model to. It is a
 user-level agent, linked into `~/.claude/agents/`, so that its name stays `base` with no plugin prefix
@@ -130,7 +138,8 @@ except `skill-reset.sh` (empties one) and `graph-gate.sh:71` (removes the "alrea
 cd plugins/itdfw-hooks && node --test "test/*.test.mjs"
 ```
 
-32 cases for `away-notice`, `permission-denied` (with `-ask`) and `stopfailure-log`, with fake `tmux`, `fzf` and session
+49 cases for `away-notice`, `permission-denied` (with `-ask`), `stopfailure-log` and `prompt-context` (the four lines,
+present and away, each context threshold), with fake `tmux`, `fzf` and session
 records on the `PATH` and a throwaway config directory: the notice once per turn and silence with a client, a denial
 logged and each answer of the popup delivered (approve, no, free text, away, no answer), the error line with its six
 fields and the refusals on bad input. The older hooks still have no suite. What was checked by hand on 2026-11-10, each
@@ -201,8 +210,8 @@ setup that cannot travel:
 
 - **`stop-unseen`** made a session go on once when the author was not looking at its screen. It is switched off on that
   machine.
-- **Prompt, resume, pre- and post-compaction hooks** inject the author's own context and routines into a session; their
-  generic parts (the real date, the context and model lines, the thread handed back after a compaction) are on their
-  way here.
+- **The personal part of the prompt hook** (an exercise reminder and the end-of-day ritual) and the **resume and
+  post-compaction hooks**, which inject the author's own routines. Their generic parts are `prompt-context.sh`,
+  `precompact.sh` and, in `itdfw-sessions`, `hilo-capturar.sh` / `hilo-devolver.sh`.
 
 None of them is needed to understand the rest.
