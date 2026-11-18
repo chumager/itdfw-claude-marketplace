@@ -10,8 +10,8 @@ no network, no API key and no running Claude Code.
 scripts/test-all.sh        # one line per piece and a total; exit 1 if any suite fails
 ```
 
-Expected on 2026-11-17: `room` 45, `graph-rag` 13, `inventory` 17, `agent-runner` 48, `itdfw-sessions` 180, 303 in
-all. The hooks have no suite (see their README).
+Expected on 2026-11-18: `room` 45, `graph-rag` 13, `inventory` 17, `agent-runner` 48, `itdfw-sessions` 205,
+`itdfw-hooks` 32, 360 in all. The `cartera` hooks module has 3 more, run with `claude plugin test` in its plugin.
 
 ## The claims, and how to check each
 

@@ -1,6 +1,6 @@
 # itdfw-sessions: talk to Claude Code sessions from outside, and between them
 
-Fifteen small shell scripts and two hooks modules (`vuelta`, `sala-limpia`) for people who run several Claude Code sessions at once (some of them background sessions that
+Seventeen small shell scripts, three hooks modules (`vuelta`, `sala-limpia`, `cartera`) and one skill (`/broadcast`) for people who run several Claude Code sessions at once (some of them background sessions that
 nobody watches) and want a cron, a script or another session to talk to them. They have nothing to do with the ITDFW
 framework: the plugin lives in this marketplace because we use them to run our own sessions.
 
@@ -97,7 +97,9 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
 | `cajaritos-compactar.sh [--umbral N] [--excepto name]... [--solo name]... [--modelo M]` | Compacts the idle background sessions over a context threshold (attach in a tmux window, `/compact`, wait, close the window). With `--modelo`, a session whose compaction worked is switched to that model before the window closes; one whose % did not drop keeps its model, because a switch rewrites the whole context at the new price | 0 done · 1 no tmux server · 2 usage |
 | `session-fg.sh <name> [window]` | Is the session on screen? `ACTIVE <pane>` / `VISIBLE <pane>` / `BG`, looking for its last text in the panes of a tmux window | 0 / 1 / 3 respectively · 2 not found |
 | `claude-usage-watch.sh [--loop s]` | Reads the Claude Code `/usage` without an open session; one line, plus a log | 0 · 1 no answer from `claude -p` |
-| `cartera.sh` | A work board: each session publishes its blocks and tasks in a JSON file that a panel can merge | 0 · 1 unknown session or block · 2 usage |
+| `cartera.sh` | A work board: each session publishes its blocks and tasks in a JSON file that a panel can merge. `cartera.sh panel` prints, as JSON, what the `cartera` hooks module needs (folders, the session that draws the board, the person's name) | 0 · 1 unknown session or block · 2 usage |
+| `owner-present.sh` | Is the person at the keyboard? Looks for an attached `tmux` client and prints its tty | 0 present · 1 away |
+| `ask-owner.sh "<title>" "<option>"…` | Asks the person on their screen: a modal `tmux` popup with `fzf`, the options plus "Say what to do…" for free text. Run in the background: it blocks the person, never the session. Questions from several sessions queue on a `flock` | 0 the answer on stdout · 2 `no está` (away) · 3 `sin respuesta` (closed after the timeout) · 4 `cola llena` · 64 usage |
 | `hilo-capturar.sh` | `PreCompact` hook: saves the last 100 messages of the conversation (person, other sessions, assistant text; each cut at 4,000 characters) to `<state>/hilo/<name>.ultimos.md`. Prints nothing | always 0 |
 | `hilo-devolver.sh` | `PostCompact` hook: sends the compacted session its own summary (if from the last 24 h) and those messages, as one message from `hook:hilo` | always 0 |
 | `hilo-pedir.sh [--umbral N] [--excepto name]... [--solo name]...` | Asks only the sessions over the threshold to write their summary and run `hilo-listo.sh`; the rest are not woken | 0 · 1 a message was not delivered · 2 usage |
@@ -217,10 +219,28 @@ it. Its chat fills with lines the person already read in the room and with short
 - Not covered by the suite: it runs only inside Claude Code. Checked by hand on 2026-11-17 in one session: a room line
   and the `[sala]` answer left no row in the chat. Sessions take it with `/reload-plugins`.
 
+## The work board on screen (`cartera`)
+
+`hooks/cartera.tsx` draws the board that `cartera.sh` keeps: one band with what every session has in motion, what
+waits for the person, and a GO button on the tasks that wait for their approval. Pressing GO sends the owner session a
+message in the person's name.
+
+- **It draws in one session only**: the one named by `CARTERA_PANEL` in the config file. In every other session the
+  module loads, does two lookups at start and draws nothing; with no `CARTERA_PANEL`, nobody draws it.
+- Folders and the person's name come from `cartera.sh panel`, so the module carries no paths or names.
+- `claude plugin test .` in this folder runs `tests/cartera.test.tsx` (3 cases): a session that is not the panel draws
+  nothing, no panel means no band, and GO reaches the owner in the person's name.
+
+## `/broadcast`
+
+`skills/broadcast/SKILL.md` lets the person say `/broadcast <text>` in any session to send it to all the others through
+`claude-broadcast.sh`, as `broadcast:<name>` (an external sender: nobody answers it).
+
 ## How to verify
 
 ```sh
-cd plugins/itdfw-sessions && node --test "test/*.test.mjs"
+cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 205 cases
+claude plugin test .                                          # the cartera hooks module, 3 cases
 ```
 
 The suite needs no real session and touches no real `~/.claude`: each test makes a throwaway `HOME` with fake session
@@ -235,6 +255,7 @@ files, a fake unix socket (`node:net`) that records what a session would receive
 | `test/cartera.test.mjs` | `cartera.sh`: every subcommand, the state files, the old-format migration |
 | `test/hilo.test.mjs` | the four `hilo-*` scripts: what the capture keeps and drops, the last-N and per-message cut, the hand-back message and its 24 h summary rule, the ready mark, who is asked and who is not woken |
 | `test/vuelta.test.mjs` | the ledger (`vuelta.sh`): a request opens a debt, the answer closes it and arrives as a reply, no endless ping-pong between two sessions, two askers tracked apart, a recipient given by name, by `[ref]` or by socket address, the reminder count and the give-up, `list`, bad usage. The hooks module itself (the added line, the external senders, the reminder prompt) runs only inside Claude Code and is not exercised here |
+| `test/owner.test.mjs` | `owner-present.sh` (one client, several, none, `tmux` failing) and `ask-owner.sh` against fake `tmux`, `fzf` and a real `flock`: the chosen option, free text, an empty Enter back to the menu, away before and while queued, the popup closed and closed by the timeout, the full queue, the lock path and the usage error |
 | `test/help.test.mjs` | every script answers `--help` with its header, exit 0 |
 | `test/env-file.test.mjs` | the local config file: absent, present, `XDG_CONFIG_HOME` / `CLAUDE_SESSIONS_ENV`, the environment wins, a line that tries to run something is not executed, only `KEY=value` lines count, through a symlink, and that every script loads it on start |
 

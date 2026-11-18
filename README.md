@@ -9,7 +9,8 @@ comparisons, **hooks** that enforce working rules in code, and the **operating m
 > checks it, and one command that runs every test.
 
 **It is meant to be read, not installed.** Everything here assumes the ITDFW framework and a specific machine. The
-framework itself is not in this repository: the skills describe it. Each piece has its own README with the same
+framework itself is commercial and private, and it is not in this repository: the skills describe it. What is here is
+what runs the sessions that build on it, and it runs from this folder on that machine. Each piece has its own README with the same
 sections — what it is, what it exposes, how it works, how to verify it, what depends on ITDFW, and its limits — and
 the technical claims in those READMEs carry a `file:line` that was checked against the code on 2026-11-10.
 
@@ -21,9 +22,9 @@ the technical claims in those READMEs carry a `file:line` that was checked again
 | **MCP `inventory`** | A server and CLI over stdio that answer "who extends this component, who uses it" for a front. It needs an `inventory.config.json` of the project that uses it | [`agent-tools/inventory/`](agent-tools/inventory) | Before changing a component, list what the change can break | `pnpm test` (17 cases, self-contained: a small fixture project; they cover the config lookup, the scan and the MCP pipe, not `mixins` or external project roots) |
 | **MCP `itdfw-graph`** | A server over stdio doing semantic search over the knowledge graph that the third-party tool graphify builds | [`agent-tools/graph-rag/`](agent-tools/graph-rag) | Find *which piece already solves this* when you do not know its name | `pnpm test` (13 cases, self-contained: no Ollama, a fake vector-database listener). The embedding path and `find` against a real index are not covered |
 | **`room`** | A command-line chat between a person and live Claude Code sessions on the same machine | [`agent-tools/room/`](agent-tools/room) | Lets several sessions and a person talk in one place with history, without a server | `pnpm test` (45 cases, self-contained, fake sessions) |
-| **Sessions** (`itdfw-sessions` plugin) | Fifteen shell scripts to talk to Claude Code sessions from a cron or another session: message a live session by name, wake a dead background one, broadcast, keep the prompt cache warm, compact idle sessions and hand each one back its thread after any compaction, read the usage, a small work board; and two hooks modules: `vuelta`, that reminds a session to answer the session that asked, and `sala-limpia`, that keeps room lines out of a session's chat | [`plugins/itdfw-sessions/`](plugins/itdfw-sessions) | A cron or a script that needs the tools of a session has no safe way in; a dead background session has no one-command way back | `node --test "test/*.test.mjs"` in the plugin (180 cases: fake sessions, fake sockets and stubs; not covered: what a real Claude Code still accepts) |
+| **Sessions** (`itdfw-sessions` plugin) | Seventeen shell scripts to talk to Claude Code sessions from a cron or another session: message a live session by name, wake a dead background one, broadcast, keep the prompt cache warm, compact idle sessions and hand each one back its thread after any compaction, read the usage, a small work board, tell whether the person is at the keyboard and ask them in a popup without blocking the session; three hooks modules: `vuelta`, that reminds a session to answer the session that asked, `sala-limpia`, that keeps room lines out of a session's chat, and `cartera`, the work board on screen with a GO button; and the `/broadcast` skill | [`plugins/itdfw-sessions/`](plugins/itdfw-sessions) | A cron or a script that needs the tools of a session has no safe way in; a dead background session has no one-command way back | `node --test "test/*.test.mjs"` in the plugin (205 cases: fake sessions, fake sockets and stubs; not covered: what a real Claude Code still accepts), and `claude plugin test .` for the `cartera` module (3 cases) |
 | **`agent-runner`** | A small HTTP service on the Claude Agent SDK that runs one recipe per job (read a printed menu from photos into structured JSON), with a validator that scores each run against a reference; plus the measured comparison of Haiku, Sonnet and Opus and of five prompt versions, with cost per run | [`agent-tools/agent-runner/`](agent-tools/agent-runner) | Choosing a model and a prompt by measurement instead of by impression, and showing where the defects come from (the model or the prompt's definition) | `pnpm test` (48 cases, no API key and no model); the results are in its `RESULTS.md`, whose reference was another model's reading that nobody validated |
-| **Hooks** | Shell and Node scripts that Claude Code runs on lifecycle events to enforce rules (load the skill before editing, no generic subagents, comment hygiene, presence notices) | [`plugins/itdfw-hooks/`](plugins/itdfw-hooks) | Rules written as text get forgotten; a hook makes the harness refuse the action | No automated tests; each hook was run once by hand with sample input (see its README). The scripts are short |
+| **Hooks** | Shell and Node scripts that Claude Code runs on lifecycle events to enforce rules (load the skill before editing, no generic subagents, comment hygiene, presence notices) | [`plugins/itdfw-hooks/`](plugins/itdfw-hooks) | Rules written as text get forgotten; a hook makes the harness refuse the action | `node --test "test/*.test.mjs"` in the plugin (32 cases) for the away notice, the denial popup and the stop-failure log; the older gates were run once by hand with sample input (see its README) |
 | **Operating model** | A document, not code: how an office of long-lived sessions with one owner per piece works in parallel, coordinates, reviews and corrects itself, and which of its rules a hook or script enforces versus which rest on the model's discipline | [`docs/operating-model.md`](docs/operating-model.md) | Parallel sessions without a shared practice collide, forget to report, and report success by default | Read section 6 (rule to mechanism table) and check each row against the hooks and session scripts it names |
 
 ## What is a real AST and what is not
@@ -72,7 +73,8 @@ So the AST work in this repository is done by espree, esbuild, tree-sitter (insi
 ## Honest limits
 
 - `scripts/test-all.sh` runs every suite in one command. `inventory` has 17, `itdfw-graph` 13, `room` 45,
-  `agent-runner` 48 and the session scripts 180 (303 in all, each runs by itself), and the hooks have none.
+  `agent-runner` 48, the session scripts 205 and the hooks 32 (360 in all, each runs by itself). The `cartera` hooks
+  module runs apart, with `claude plugin test` (3).
 - Each README lists its own open limits, with the line that shows each one. None is hidden.
 - The skills are written in a mix of English and Spanish and were written for an agent reader, not as a manual.
 - Counts such as the number of tools, tests or graph nodes are the result of one reading on 2026-11-12; the code is
@@ -92,3 +94,7 @@ claude plugin install itdfw@itdfw
 A session that was already open sees the plugin after `/reload-plugins` or a restart (`/reload-skills` does not load
 a newly installed plugin). From git, add the repository URL instead of the path. `plugin.json` has no `version` on
 purpose: the plugin tracks commits.
+
+## License
+
+All rights reserved: published to be read, see [`LICENSE`](LICENSE).

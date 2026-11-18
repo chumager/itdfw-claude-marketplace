@@ -2,7 +2,7 @@
 # Runs the test suite of every piece of this repository that has one, each from its own folder with its own command,
 # prints one line per piece with its pass/fail counts and a total, and exits 1 if any suite fails.
 #
-# It does NOT run the hooks: they have no suite.
+# It does NOT run the hooks modules of itdfw-sessions (`claude plugin test` inside that plugin runs them).
 #
 # A piece that needs its dependencies (`pnpm install --ignore-workspace`) gets them installed here only when its
 # `node_modules` is missing.
@@ -25,6 +25,7 @@ pieces=(
   'agent-tools/inventory|0|node --test "test/*.test.js"'
   'agent-tools/agent-runner|1|env -u ANTHROPIC_API_KEY pnpm test'
   'plugins/itdfw-sessions|0|node --test "test/*.test.mjs"'
+  'plugins/itdfw-hooks|0|node --test "test/*.test.mjs"'
 )
 
 total_pass=0; total_fail=0; status=0

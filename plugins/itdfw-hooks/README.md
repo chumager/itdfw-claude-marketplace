@@ -1,13 +1,16 @@
 # itdfw-hooks — rules enforced by Claude Code hooks
 
-Ten hooks for Claude Code, written to keep an agent inside a set of working practices while it develops on the ITDFW
-framework, plus two helper scripts for `git`. A hook is a program that Claude Code runs around a tool call and that can
-refuse the call. The idea behind them: a rule written as text gets forgotten, a rule enforced by the harness does not.
+Thirteen hooks for Claude Code, written to keep an agent inside a set of working practices while it develops on the
+ITDFW framework and to keep the person in the loop when they are away from the keyboard, plus two helper scripts for
+`git` and the definition of the `base` agent the delegation gate asks for. A hook is a program that Claude Code runs
+around a tool call and that can refuse the call. The idea behind them: a rule written as text gets forgotten, a rule
+enforced by the harness does not.
 
-> **Read this before anything else.** These hooks come from one machine and one working style. They are published to be
-> **read**, not installed as they are. Several assume an ITDFW repository, a named agent type that this plugin does not
-> ship, and a skill that is not in this marketplace. A plugin's hooks run in **every** project where the plugin is
-> enabled, and most of these have no "is this an ITDFW repository?" guard (see Limits).
+> **Read this before anything else.** These hooks come from one machine and one working style, and that machine runs
+> them from this folder. They are published to be **read**, not installed as they are. Several assume an ITDFW
+> repository and a skill that is not in this marketplace; the presence hooks assume `tmux` and the `itdfw-sessions`
+> plugin. A plugin's hooks run in **every** project where the plugin is enabled, and most of these have no "is this an
+> ITDFW repository?" guard (see Limits).
 
 All `file:line` references below are to the scripts in `bin/` and were checked against them on 2026-11-10. The hooks
 were also run once each with sample input in a throwaway `HOME` (see "How to verify").
@@ -25,9 +28,19 @@ were also run once each with sample input in a throwaway `HOME` (see "How to ver
 | `PostToolUse` | graph, Serena, Qdrant and inventory search tools (12 tool names) | `bin/search-mark.sh` | default |
 | `PostToolUse` | `Edit\|Write\|MultiEdit` | `bin/comment-police.sh` (runs `bin/comment-police.mjs`) | default |
 | `PostToolUse` | `Skill` | `bin/skill-mark.sh` | default |
+| `PostToolUse` | any tool | `bin/away-notice.sh` | default |
+| `Stop` | any | `bin/away-notice.sh` | default |
+| `PermissionDenied` | any | `bin/permission-denied.sh` | default |
+| `StopFailure` | — | `bin/stopfailure-log.sh` | default |
 | `SessionStart` | `compact` | `bin/skill-reset.sh` | default |
 
-Two scripts are **not** registered. They are `git` helpers: `bin/ast-same.sh` and `bin/prune-post-commit.sh`.
+Four scripts are **not** registered: the `git` helpers `bin/ast-same.sh` and `bin/prune-post-commit.sh`;
+`bin/permission-denied-ask.sh`, which `permission-denied.sh` launches detached; and `bin/_sessions.sh`, a library the
+presence hooks source to find the `itdfw-sessions` scripts and the person's name.
+
+`user-agents/base.md` is the generic agent (Sonnet, high effort) that `agent-type-gate.sh` sends the model to. It is a
+user-level agent, linked into `~/.claude/agents/`, so that its name stays `base` with no plugin prefix
+(`user-agents/README.md`).
 
 ## What each one does, and the practice behind it
 
@@ -43,6 +56,9 @@ Two scripts are **not** registered. They are `git` helpers: `bin/ast-same.sh` an
 | `graph-gate.sh` | When a `rg`/`grep -r` runs over the repository, blocks it **once** unless a structured search was used in the last 10 minutes; the second attempt passes (`graph-gate.sh:62-83`). | Ask the tools that already know the code (graph, Serena, inventory) before searching text. It is a reminder, not a wall (`graph-gate.sh:2-4`). |
 | `search-mark.sh` | After one of the structured search tools runs, appends a line to this session's `search-used` file (`search-mark.sh:17`). | Makes `graph-gate` possible. |
 | `comment-police.sh` / `.mjs` | After an edit of a `.js`/`.jsx`/`.mjs`/`.cjs` file, exits 2 with a message when the edit added comment noise, and warns when the whole file is saturated with comments (`comment-police.mjs:1-4`). | Comment only what the code cannot say. JSDoc is exempt (`comment-police.mjs:76`). |
+| `away-notice.sh` | After a tool call, when `owner-present.sh` (from `itdfw-sessions`) finds no `tmux` client, tells the session once per turn that the person is away, so that what they must know or decide also goes out as a push notification. `Stop` clears the once-per-turn mark. | A session working alone does not leave a decision buried in a chat nobody is looking at. |
+| `permission-denied.sh` | When the auto-mode classifier denies a call, appends a line to `denials.jsonl` and launches `permission-denied-ask.sh` detached, which asks the person in a popup (`ask-owner.sh`) and sends the answer back to the denied session as a message from `hook:permissions`. | A denial is a decision of the person, not a puzzle for the model to route around: the model stops and the person answers. |
+| `stopfailure-log.sh` | When a turn ends on an API error, appends one line with the session, the time and the error to `stopfailure.log`. | Errors that end a turn are counted, not lost. |
 
 ### `skill-gate.sh`: which path needs which skill
 
@@ -82,6 +98,9 @@ cannot be passed per call, so the only way to fix it is the front matter of a cu
 | `ITDFW_SITE_SRC_PATTERN` | `skill-gate.sh:10` | `(^|/)site/src/` | regex that recognises a site's front-end source file |
 | `ITDFW_HOOKS_DEPS` | `comment-police.mjs:11` | `$HOME/.claude/hook-deps` | directory that holds `node_modules/espree` |
 | `ITDFW_HOOKS_BIN` | `prune-post-commit.sh:16` | the script's own directory | directory that holds `comment-police.mjs` |
+| `ITDFW_SESSIONS_BIN` | `_sessions.sh` | the `PATH`, then `../../itdfw-sessions/bin` | directory that holds the `itdfw-sessions` scripts |
+| `CLAUDE_BROADCAST_FROM` | `_sessions.sh` (from the `itdfw-sessions` config file) | `user` | the name the person goes by in the texts these hooks write |
+| `CLAUDE_CONFIG_DIR` | the presence hooks and `stopfailure-log.sh` | `$HOME/.claude` | where `denials.jsonl`, `stopfailure.log` and the session records live |
 
 `CLAUDE_PLUGIN_ROOT` is set by Claude Code and is how `hooks.json` finds the scripts.
 
@@ -107,8 +126,15 @@ except `skill-reset.sh` (empties one) and `graph-gate.sh:71` (removes the "alrea
 
 ## How to verify
 
-There are **no automated tests** in this plugin. What was checked by hand on 2026-11-10, each hook once with sample
-input in a throwaway `HOME` (so that no real marker files were written):
+```
+cd plugins/itdfw-hooks && node --test "test/*.test.mjs"
+```
+
+32 cases for `away-notice`, `permission-denied` (with `-ask`) and `stopfailure-log`, with fake `tmux`, `fzf` and session
+records on the `PATH` and a throwaway config directory: the notice once per turn and silence with a client, a denial
+logged and each answer of the popup delivered (approve, no, free text, away, no answer), the error line with its six
+fields and the refusals on bad input. The older hooks still have no suite. What was checked by hand on 2026-11-10, each
+of them once with sample input in a throwaway `HOME` (so that no real marker files were written):
 
 | Input | Result |
 |---|---|
@@ -143,9 +169,16 @@ under `$ITDFW_HOOKS_DEPS/node_modules`. Without `espree`, `comment-police.mjs` f
 - **They apply to every project where the plugin is enabled.** `safe-mvcp`, `npm-pnpm`, `commit-completeness-gate`,
   `skill-gate` (for paths such as `tests/`, `APP/`, `init.js`, `claude-docs/`) and `agent-type-gate` have no guard that
   the project is an ITDFW one. `graph-gate` does nothing without a repository root.
-- **`agent-type-gate` requires an agent named `base`**, which this plugin does not ship: its messages tell the model to
-  use one (`agent-type-gate.sh:14`, `:37`). Its numbers are the author's: 750,000 tokens (`:60`), and it refuses the
-  model `fable` (`:48-53`).
+- **`agent-type-gate` requires an agent named `base`**: its messages tell the model to use one (`agent-type-gate.sh:14`,
+  `:37`). The plugin ships it in `user-agents/base.md`, but Claude Code does not install it: it has to be linked into
+  `~/.claude/agents/` by hand. Its numbers are the author's: 750,000 tokens (`:60`), and it refuses the model `fable`
+  (`:48-53`).
+- **The presence hooks need the `itdfw-sessions` scripts and `tmux`.** In Claude Code's plugin cache each plugin is a
+  separate copy, so `_sessions.sh` only finds them through `ITDFW_SESSIONS_BIN` or the `PATH` there; the sibling folder
+  works only in a checkout of this repository. Whether Claude Code puts a plugin's `bin/` on the `PATH` of a hook was
+  not measured. "Away" means no `tmux` client attached, nothing more.
+- **`ask-owner.sh` answers in Spanish on stdout** (`no está`, `sin respuesta`, `cola llena`) because the callers on the
+  author's machine compare those words.
 - **`skill-gate` refers to `itdfw-documentation`**, which is not in this marketplace (`skill-gate.sh:53`). Its default
   `site/src/` pattern matches that folder name in any project (`skill-gate.sh:10`).
 - **`ast-same.sh` only finds esbuild in `node_modules/.pnpm`**, so it needs a pnpm repository with esbuild installed. A
@@ -166,10 +199,10 @@ under `$ITDFW_HOOKS_DEPS/node_modules`. Without `espree`, `comment-police.mjs` f
 The author's machine has more hooks, which are **not** part of this plugin because they are personal or depend on a
 setup that cannot travel:
 
-- **`stop-unseen` and `away-notice`** read whether the author is at the keyboard (through a terminal multiplexer client)
-  and decide how a session should notify them. They are tied to that one setup, and `stop-unseen` is currently
-  switched off on that machine.
-- **Prompt, resume, pre- and post-compaction hooks** inject the author's own context and routines into a session.
-- **A permission-denied hook** and a **stop-failure log** write the author's decisions and errors to local files.
+- **`stop-unseen`** made a session go on once when the author was not looking at its screen. It is switched off on that
+  machine.
+- **Prompt, resume, pre- and post-compaction hooks** inject the author's own context and routines into a session; their
+  generic parts (the real date, the context and model lines, the thread handed back after a compaction) are on their
+  way here.
 
 None of them is needed to understand the rest.

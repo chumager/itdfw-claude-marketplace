@@ -60,6 +60,35 @@
         "hooks": [
           {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/skill-mark.sh"}
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/away-notice.sh"}
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/away-notice.sh"}
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "matcher": "",
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/permission-denied.sh"}
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/stopfailure-log.sh"}
+        ]
       }
     ],
     "SessionStart": [
