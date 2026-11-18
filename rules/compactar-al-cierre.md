@@ -1,0 +1,14 @@
+# When the daily close ends, the agents that are over 50 % are compacted, each with its thread written down
+
+| Who | What they do |
+|---|---|
+| `cierre diario` (daily close) | when its close ends, tells the `CTO`: "cierre listo, compacta" (close done, compact) |
+| `CTO` | `~/bin/hilo-pedir.sh --excepto CTO`: asks for the thread ONLY from those over 50 % (the others are not woken up) |
+| each session asked | finishes its work, writes its thread to `~/.claude/state/hilo/<name>.md` and runs `~/bin/hilo-listo.sh` |
+| `CTO` | watches `~/.claude/state/compactables/`: for each mark, `~/bin/cajaritos-compactar.sh --solo <name> --umbral 0` and deletes the mark. At the end, the result goes to the owner |
+| `CTO` over 50 % | writes his thread, runs `hilo-listo.sh` and asks `itdfw` to compact him (`--solo CTO`): a session does not compact itself |
+
+- Outside the close nobody is compacted, unless the session itself asks (the CTO, `itdfw`). Each session's auto-compaction keeps going on its own.
+- 🔴 **Every compaction returns the thread**, manual or automatic: the `PreCompact` hook (`hilo-capturar.sh`) saves the last 100 messages (each cut to 4,000 characters) and the `PostCompact` hook (`hilo-devolver.sh`) sends the session its summary of the day and those messages, as a message from the sender `hilo`. On receiving it, it is read in full and work resumes from there.
+- The compaction script skips whatever is not idle or has tasks from the last 10 min, and leaves the session alive.
+- Each session's % is in `~/.claude/state/ctx-<sessionId>.json`. Detail: `memory/reference_revivir-cajarito.md`.
