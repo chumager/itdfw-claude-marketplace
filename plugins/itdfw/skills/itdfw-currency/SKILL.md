@@ -42,7 +42,7 @@ chileno" deja el modelo amarrado a un país y el site ya no puede cambiarla.
 | Llave | Qué es |
 |---|---|
 | `Currency` | la moneda **base** del site (código ISO, 3 letras): el valor por omisión de todo documento nuevo |
-| `CurrencyMask` | el nombre a mostrar de la base (hasta 3 letras, en mayúsculas): `UF` para `CLF` |
+| `CurrencyMask` | el nombre a mostrar de la base (hasta 16 caracteres): `UF` para `CLF` |
 | `Currencies` | las alternativas, `[{from, to, legal}]`: `from` el código (hasta 3 letras, en mayúsculas), `to` el nombre a mostrar (hasta 16 caracteres) y `legal` si es de curso legal |
 
 Lo que se ve en pantalla es el alias (`CurrencyMask` de la base, `to` de cada alternativa), el mismo en el back y en el
@@ -70,8 +70,6 @@ priceInTickets: {type: "Currency", name: "Price in tickets", currency: "TKT", pr
 
   Se ve `tickets 2` o `2 tickets`, según dónde ponga el símbolo cada locale: un código que no es ISO toma el patrón del
   locale para "sin moneda" y pone el alias en lugar del símbolo. Sin `precision` en el campo, toma 2.
-- El alias de la base (`CurrencyMask`) admite solo 3 letras: una moneda propia con un nombre largo ("tickets") va como
-  **alternativa**, con su `to`.
 
 ## Lo que hoy NO hace
 
