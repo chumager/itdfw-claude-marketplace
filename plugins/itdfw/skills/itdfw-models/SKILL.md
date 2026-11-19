@@ -87,7 +87,7 @@ fieldName: {            // camelCase SIEMPRE; identificadores en inglés
 | `unique` | índice unique (el FW agrega multitenant + soft-delete partial solo) |
 | `immutable` | se escribe una vez, nadie lo cambia (identidades) |
 | `default` | valor o función |
-| `enum` | values SIEMPRE inglés camelCase: `["draft","approved"]` |
+| `enum` | values SIEMPRE inglés camelCase: `["draft","approved"]`. 🔴 **Solo para estados en que el código decide por dónde sigue.** Un catálogo que el negocio puede agrandar (monedas, tamaños, tipos de producto) es dato: va al Config ([config-driven.md](references/config-driven.md)) o a un modelo, y el campo valida contra él. Lo mismo vale para fijar un valor que ya da la config (un precio con `currency: "CLP"` fijo cuando las monedas vienen del Config). Litmus: *si aparece un valor nuevo, ¿hay que sacar un release?* (rule `ambiguedad-se-deja-configurable`) |
 | `ref` / `refPath` / `myRef` | referencia a otro modelo (Select con options dinámicas). `refPath`=modelo polimórfico desde otro campo. `myRef`=ref por FUNCIÓN (getRef custom, no un modelo). Detalle: [special-refs.md](references/special-refs.md) |
 | `pos` / `tablePos` | orden en form / grilla. 🔴 **El orden de un form es el de declaración**: si un campo va al final, se declara al final. `pos` es solo para forzar un lugar aunque otro enchufe campos. Si un plugin agrega campos a un modelo ajeno y lo desordena, el orden lo cuida el dev del plugin, no el dueño del modelo (caso: el historial del ticket de helpdesk llevaba `pos: 1000` y quedó declarado al final, `d3fafda0`) |
 | `description` | ayuda contextual |
