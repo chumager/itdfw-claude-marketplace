@@ -11,4 +11,7 @@
 - Outside the close nobody is compacted, unless the session itself asks (the CTO, `itdfw`). Each session's auto-compaction keeps going on its own.
 - 🔴 **Every compaction returns the thread**, manual or automatic: the `PreCompact` hook (`hilo-capturar.sh`) saves the last 100 messages (each cut to 4,000 characters) and the `PostCompact` hook (`hilo-devolver.sh`) sends the session its summary of the day and those messages, as a message from the sender `hilo`. On receiving it, it is read in full and work resumes from there.
 - The compaction script skips whatever is not idle or has tasks from the last 10 min, and leaves the session alive.
+  🔴 **A skipped session is not forgotten**: the `CTO` keeps watching the ones that were still working at close and
+  compacts each one as soon as it goes idle with its thread written, even hours later. The close is not done while one
+  over 50 % is left uncompacted.
 - Each session's % is in `~/.claude/state/ctx-<sessionId>.json`. Detail: `memory/reference_revivir-cajarito.md`.
