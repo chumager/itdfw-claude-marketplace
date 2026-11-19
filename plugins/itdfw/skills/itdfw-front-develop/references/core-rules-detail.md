@@ -71,7 +71,7 @@
   lógica del core de su type; la pintura es libre.** Se puede reimplementar o pisar el componente desde cualquier capa
   (decide la precedencia en la cascada), siempre extendiendo esa base. En una vista propia: `renderGI` en modo
   `detail`. Nunca un `Intl.NumberFormat` o un formateo a mano: la base (saneo, locale, moneda, máscara, VO) es lo que
-  da las capacidades, y saltársela rompe en silencio reglas ya establecidas (rule `datos-por-sus-componentes`). Monto: `this.renderGI({name, key, type: "Currency", component: "ItdCurrency", currency: "CLP"}, valor,
+  da las capacidades, y saltársela rompe en silencio reglas ya establecidas (rule `datos-por-sus-componentes`). Monto: `this.renderGI({name, key, type: "Currency", component: "ItdCurrency", currency: doc._currency}, valor,
   null, {viewType: "detail"})` (el componente declara `$renderGI: true`). Caso: la carta del restorán formateaba con
   `Intl` fijo en es-CL y al elegir otro idioma los precios no cambiaban (25-oct-2026).
 
