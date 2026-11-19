@@ -18,6 +18,9 @@ mkdir -p "$cache"
 
 setsid bash -c '
   root="$1"; cache="$2"; sha="$3"
+  # one run at a time: two suites at once collide on shared fixtures (room failed 1 case on 19-nov), and a run that
+  # finishes later would push a HEAD another run reported as failed
+  exec 9>"$cache/run.lock"; flock 9
   {
     echo "== $(date -Is) $sha"
     if ! "$root/scripts/test-all.sh"; then
