@@ -16,6 +16,8 @@ ITDFW transfers the complexity to the framework: the piece almost always exists.
 4. The area's skill (if it does not have it, it is a gap: it gets closed).
 5. Ask the owner.
 
+🔴 **Using a type or a model of another plugin** (Currency, Config, a product of `restaurant`): first read that plugin's README or skill whole, not just the type's name. You need to know what it gives, what is configured and how it is consumed. Seeing only that the type exists is how a currency ends up hard-wired in a field when the plugin takes it from the Config.
+
 ## Red flag
 
 - Writing infrastructure (pubsub, lock, SSE client, schema cloner, cursor, parser) → STOP: it exists (`libs/sse`, `libs/mongoose-mutex`, `safeClone`…). If it did not exist, creating it is not my decision.
