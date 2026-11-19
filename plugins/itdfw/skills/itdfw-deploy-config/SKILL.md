@@ -42,8 +42,10 @@ cómo cada pieza declara sus propias necesidades. Un plugin que necesita config 
 {level: 0})`. Crítica es todo lo que permitiría mal uso de la plataforma a un admin: api keys, credenciales de validadores
 externos, cuentas bancarias o de pago, secretos de firma. Un admin no es el dueño: darle eso es darle al cajero acceso
 a las cámaras del local. El `level` decide quién la ve y quién la edita; `send: false` dentro de la definición **no**
-la protege. Sin `level` queda en 10000 y la ve cualquiera con lectura sobre Config. Ojo: el documento copia el `level`
-al crearse, así que cambiar la definición no baja los documentos que ya existen. Se prueba en dos tiempos: con el
+la protege. Sin `level` queda en 10000 y la ve cualquiera con lectura sobre Config. El documento copia el `level` (y
+`private`) de la definición en cada guardado: cambiar la definición se aplica en el próximo guardado del documento.
+Quién ve una config son tres capas que se cruzan (AAA del perfil, `level` y `canOverride`): tabla en `itdfw-models`
+→ [config-driven.md](../itdfw-models/references/config-driven.md). Se prueba en dos tiempos: con el
 usuario en level 0 se ve y se edita; con level 100 no aparece en `tableData` ni se puede modificar.
 
 ⟹ Si te ves agregando al archivo algo que el servicio no necesita para levantarse, va en nivel 2.

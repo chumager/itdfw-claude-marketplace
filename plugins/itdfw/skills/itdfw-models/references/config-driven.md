@@ -31,9 +31,27 @@ db.setConfigDefinition("OnBoarding", {
 La definición TIPA el value: el FW arma el form del value automáticamente (endpoint `getDefinition`).
 El `name` es la IDENTIDAD de la config (inmutable: cambiarlo = otra config, delete+create, no rename).
 
-Firma completa: `setConfigDefinition(name, schema, level = 10000, canOverride = false)`. `level` es quién
-puede ver/editar el valor (10000 = admin; un token de bot va ahí); `canOverride` permite que una capa
-posterior redefina la misma `name` (por defecto NO: redefinir tira `redefining X is not allowed`, ver #144).
+Firma completa: `setConfigDefinition(name, schema, {level = 10000, public = false, canOverride = false, description} = {})`.
+`name` y `schema` van en posición; lo opcional, en el objeto. La forma posicional vieja (`level` como tercer
+argumento) ya no es el contrato.
+
+### 🔴 Quién ve y edita una config: TRES capas, y se cruzan
+
+| Capa | Qué decide | Dónde se declara |
+|---|---|---|
+| **1. AAA** | si el usuario entra al administrador de Configuraciones y con qué verbos | la función `Config` en su perfil (`Profile.functions`), como cualquier modelo |
+| **2. `level`** | cuáles configs ve y edita dentro de ese administrador | el `level` de la **definición** contra el level del usuario (0 = dueño, más bajo = más poder). Se ve y se edita una config si `config.level >= level del usuario`; las opciones de `name` solo ofrecen las de tu nivel o superior; escribir una por debajo de tu nivel da 403 |
+| **3. `canOverride`** | si la capa del site puede redefinir la config (su schema, su `level`, su visibilidad) | la definición del plugin; sin `canOverride: true`, redefinir tira `redefining X is not allowed` (#144). Quien la redefine se hace cargo |
+
+- El documento **copia `level` y `private = !public` de su definición en cada guardado**, y ninguno de los dos se edita
+  desde la interfaz (un PUT que los traiga no cambia nada). Cambiar la definición se aplica al documento en su próximo
+  guardado.
+- **`public`**: una config pública se entrega al front por `APP/getConfig`, filtrada por el mismo `level` (el anónimo
+  cuenta como 10000). No se valida ninguna combinación: una pública de level 0 solo le llega al dueño.
+- **Una config crítica** (api key, cuenta de pago, secreto de firma) va con `level` bajo, ≤ 100: un admin no es el
+  dueño. Sin `level` queda en 10000 y la ve cualquiera que tenga la función `Config` en su perfil.
+- Sin definición la config no existe: no se guarda ni se edita (400).
+- El orden para habilitar a alguien: primero la capa 1 (la función en su perfil); sin ella el level no se alcanza a mirar.
 
 ### 🔴 Desde DÓNDE se llama, y por qué no hay que esperar nada
 
@@ -56,11 +74,11 @@ después `db.setConfigDefinition(...)` y `await db.getConfig(name)`. Caso real: 
 
 ## 2. CREAR el valor — un documento del modelo `Config`
 
-El valor concreto se crea como un **documento** `{name, value, private}` en el modelo `Config`
+El valor concreto se crea como un **documento** `{name, value}` en el modelo `Config`
 (colección "Configuraciones"). No es un archivo — se crea por la **UI admin** ("Administración de
 Configuraciones"), por **API** (`POST /APP/AAA/Config.json`) o por **MCP**. El `name` debe ser uno
 de los definidos en el paso 1 (es un ref restringido); el `value` se valida contra esa definición.
-`private` (default `true`) marca configs internas vs. públicas.
+`private` y `level` no se escriben: los copia el back desde la definición (arriba, las tres capas).
 
 ## 3. LEER en runtime — sync vs async
 
