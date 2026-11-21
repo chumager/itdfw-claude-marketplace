@@ -77,7 +77,10 @@ Cada vista se diseña con todos sus estados, no solo con el feliz:
 
 - **44 px** en todo lo que se toca, en el celular. En escritorio puede haber más densidad, pero siempre con **una sola
   altura de control por breakpoint**, para que campos y botones alineen.
-- **Grid** para el layout, nunca flex.
+- **Grid por preferencia**, al revés de la costumbre: flex solo donde grid no sirve, como cajas de ancho variable que
+  fluyen en línea (etiquetas, chips). Para un mosaico tipo Pinterest existe `display: grid-lanes` (MDN: aún no es
+  Baseline; Safari estable, el resto detrás de una flag), que se usa como mejora progresiva con `@supports` y cae a la
+  grilla normal.
 - **Colores solo por tokens del tema.** Un token que no existe en ese contexto falla en silencio: se verifica en la
   captura.
 - **Claro y oscuro** a la vez, nunca uno solo.
