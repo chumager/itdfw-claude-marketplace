@@ -1,4 +1,4 @@
-# The `itdfw` plugin — 17 skills for developing on ITDFW
+# The `itdfw` plugin — 20 skills for developing on ITDFW
 
 A skill is a Markdown file (`SKILL.md`, sometimes with a `references/` folder) that Claude Code loads when its
 description matches what the agent is about to do. Each skill here holds the contract of one area of the **ITDFW**
@@ -25,9 +25,12 @@ framework's source. **They only make sense next to that code.**
 | `itdfw-front-creation` | Creating a new front library that wraps a UI framework so the core can cascade through it |
 | `itdfw-nui` | Components that render Naive UI: tags, colours and theme tokens |
 | `itdfw-translate` | Making a site's texts translatable and redefinable by the site owner |
+| `itdfw-currency` | Money amounts and own units (tickets, points): the `Currency` type, the document's currency and the site's currency Config |
+| `itdfw-design` | The design judgement over a screen: which FW piece each element is, scale analysed on its merit, every state, and reviewing an implementer's screens |
 | `itdfw-migration` | Migrating an existing system into ITDFW, and renaming fields of models already running |
 | `itdfw-completeness` | The framework's definition of done: what to check before saying a task is finished |
 | `tdd-narrativo` | How to write, read and implement a `TDD.md`: a narrative contract approved before code, split into slices |
+| `producto-antes-del-tdd` | A customer-facing site or screen starts with a study of the competitor's product and a chosen alternative, before its `TDD.md` |
 
 ## How the work is specified and checked
 
