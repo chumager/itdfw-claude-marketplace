@@ -82,6 +82,9 @@ Cada vista se diseña con todos sus estados, no solo con el feliz:
   captura.
 - **Claro y oscuro** a la vez, nunca uno solo.
 - **Textos por traducción** (`t()`), con base en inglés.
+- **Nada de memoria.** Qué soporta un navegador se coteja en caniuse o MDN, y la API de una librería (Naive, Vue), en
+  su documentación vigente o en su código instalado. La afirmación va con su fuente; lo que no se pudo cotejar se dice
+  "sin verificar" y no se vuelve requisito ni brief.
 
 ## 6 · El brief al implementer sale con el cómo ya decidido
 
