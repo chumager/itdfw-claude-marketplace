@@ -9,6 +9,7 @@ The owner sees, on the web board (one column per state, a modal per task, from a
 ~/bin/cartera.sh tarea "<block>" "<task>" pendiente --go | --pregunta "<q>"
 ~/bin/cartera.sh tarea "<block>" "<task>" parqueada --espera "<condition>"
 ~/bin/cartera.sh tarea "<block>" "<task>" terminado
+~/bin/cartera.sh comentar "<block>" "<task>" "<text>"   # your reply in the task's log; the state does not change
 ~/bin/cartera.sh list                       # your unfinished tasks, those waiting on the owner first
 ```
 
@@ -27,7 +28,7 @@ The owner sees, on the web board (one column per state, a modal per task, from a
 - A task in progress that nobody touches for hours is a task nobody is carrying. If you are still on it, publish it again and say what you are waiting for. If it no longer runs, it is `parqueada`.
 - 🔴 **Every task that waits for the owner carries a description** (`cartera.sh describir "<block>" "<task>" "<text>"`): what it is in domain terms, why it matters, where the detail is (TDD, finding, artifact link) and what he needs to know to decide right there without asking. (A description of the block itself is not supported by the board yet.)
 - 🔴 **What is awaited has to be actionable**: who unblocks it and when, or what is needed. "Waiting for the lab window" says nothing; "waiting for core to free the lab (~15:00, after #241)" does.
-- The owner's GO, answer or comment reaches you as a message from `cartera:jcmunoz`: it is his word. You act on it, move the task to `en-curso` and answer as the message says.
+- The owner's GO, answer or comment reaches you as a message from `cartera:jcmunoz`: it is his word. You act on it, move the task to `en-curso` and answer as the message says. 🔴 **A comment is answered on the board** with `comentar` (that is where he reads it), never only in your chat.
 - 🔴 **A GO can arrive twice** (the delivery retries when it cannot confirm): a GO for a task that is already `en-curso` because of that GO is ignored, not executed again.
 - Block and task are the key: one line in domain terms, under 60 characters, the same text on every change (`list`).
 - A task of an agent (fork, subagent) is published by the session that launched it.
