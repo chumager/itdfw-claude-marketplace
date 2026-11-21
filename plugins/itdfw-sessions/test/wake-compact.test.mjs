@@ -1,6 +1,6 @@
 import {describe, it, beforeEach, afterEach} from "node:test"
 import assert from "node:assert/strict"
-import {writeFileSync, readFileSync, mkdirSync, rmSync} from "node:fs"
+import {writeFileSync, readFileSync, mkdirSync, rmSync, utimesSync} from "node:fs"
 import {join} from "node:path"
 import {BIN, makeEnv} from "./helpers.mjs"
 
@@ -196,6 +196,17 @@ esac`
     ctx("sB", 80)
     const r = await env.run(SCRIPT, [], {extraEnv: base()})
     assert.equal(r.stdout.trim(), "busy: 80% but it is working, skipping")
+    assert.equal(env.calls().length, 0)
+  })
+
+  it("--quieto skips a session with a recent turn and compacts one that has been quiet that long", async () => {
+    setAgents([{name: "chatty", id: "c1", sessionId: "sC", status: "idle"}, {name: "quiet", id: "q1", sessionId: "sQ", status: "idle"}])
+    ctx("sC", 80)
+    ctx("sQ", 80)
+    const old = new Date(Date.now() - 20 * 60 * 1000)
+    utimesSync(join(env.state, "ctx-sQ.json"), old, old)
+    const r = await env.run(SCRIPT, ["--quieto", "10", "--solo", "chatty"], {extraEnv: base()})
+    assert.equal(r.stdout.trim(), "chatty: 80% but it had a turn in the last 10 min, skipping")
     assert.equal(env.calls().length, 0)
   })
 

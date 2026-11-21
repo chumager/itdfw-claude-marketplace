@@ -7,6 +7,8 @@
 #          --umbral N     compact the sessions whose context is at N % or more (default 50)
 #          --excepto NAME skip that session (repeatable)
 #          --solo NAME    only that session (repeatable)
+#          --quieto MIN   only the sessions with no turn for MIN minutes (their ctx file untouched that long), so a
+#                         session in the middle of a conversation is left alone (default 0: no such check)
 #          --modelo M     after a compaction that worked, switch the session to model M (`/model M`). A switch
 #                         rewrites the whole context at the new model's price, so it only happens on a compacted
 #                         session; one whose % did not drop keeps its model
@@ -26,8 +28,8 @@
 _cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -uo pipefail
 STATE_DIR="${CLAUDE_STATE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/state}"
-UMBRAL=50; EXCEPTO=(); SOLO=(); MODELO=""
-usage() { echo "usage: cajaritos-compactar.sh [--umbral N] [--excepto <name>]... [--solo <name>]... [--modelo M]"; }
+UMBRAL=50; EXCEPTO=(); SOLO=(); MODELO=""; QUIETO=0
+usage() { echo "usage: cajaritos-compactar.sh [--umbral N] [--quieto MIN] [--excepto <name>]... [--solo <name>]... [--modelo M]"; }
 while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help) usage; awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
@@ -35,6 +37,7 @@ while [ $# -gt 0 ]; do
     --excepto) EXCEPTO+=("$2"); shift 2 ;;
     --solo) SOLO+=("$2"); shift 2 ;;
     --modelo) MODELO="$2"; shift 2 ;;
+    --quieto) QUIETO="$2"; shift 2 ;;
     *) usage >&2; exit 2 ;;
   esac
 done
@@ -52,6 +55,9 @@ while IFS=$'\t' read -r nombre id sid estado; do
   if [ "$estado" != "idle" ]; then echo "$nombre: ${antes}% but it is $estado, skipping"; continue; fi
   tareas=$(find /tmp/claude-"$(id -u)"/*/"$sid"/tasks -type f -mmin -10 2>/dev/null | wc -l)
   if [ "$tareas" -gt 0 ]; then echo "$nombre: ${antes}% but it has active tasks, skipping"; continue; fi
+  if [ "$QUIETO" -gt 0 ] && [ -n "$(find "$f" -mmin -"$QUIETO" 2>/dev/null)" ]; then
+    echo "$nombre: ${antes}% but it had a turn in the last $QUIETO min, skipping"; continue
+  fi
   # The name is only a label: a leftover window with the same name makes `session:name` ambiguous, so every later call
   # targets the unique window id (@N) that new-window prints.
   w="cmp-$id"
