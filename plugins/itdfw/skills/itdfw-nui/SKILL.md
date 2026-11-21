@@ -217,14 +217,11 @@ Reglas que el contrato blinda (el TDD de nav-items de NUI, enmienda 4, y el de m
 
 - `import {X} from "naive-ui"` en un site → no resuelve, y no es la vía.
 - `import NCard from "itdfw/NUI/NCard.js"` → resuelve, pero mata el lazy y se salta el loader.
-  🔴 **Única excepción: los componentes que Naive reconoce por una marca en el componente real** —
-  `NTab`/`NTabPane` (`__TAB_PANE__`), `NGridItem`/`NFormItemGridItem` (`__GRID_ITEM__`), verificado en
-  Naive 2.45, y `NRadioButton` (`n-radio-group` mira `type.name === "RadioButton"` para activar `--button-group` y
-  su altura; naive-ui 2.44.1 `RadioGroup.mjs:15-17`). `$NUI` los envuelve en `defineAsyncComponent` y la marca queda en el componente real, no en
-  el wrapper: `n-tabs`/`n-grid` descartan los hijos **sin error** y quedan vacíos. Esos cinco se
-  importan directo (`itdfw/NUI/NTabPane.js`) y se registran en el `init.js` del site o en el `created`
-  del componente que los usa — como hace el propio front con `NGridItem` en `App.vue`. No es un defecto
-  del loader: es cómo opera Naive (caso demo, 14-sep-2026).
+  🔴 **Los componentes que Naive reconoce por una marca en el componente real** (`RadioButton`, `Tab`, `TabPane`,
+  `GridItem`, `FormItemGridItem`, `CarouselItem`: el padre mira `type.name` o `__TAB_PANE__`/`__GRID_ITEM__`) ya los
+  registra `$NUI` **sin** el envoltorio `defineAsyncComponent`, desde la lista `NO_ASYNC_WRAPPER` del `init.js` de NUI
+  (21-nov-2026). Se declaran en `$NUI` como cualquier otro; **no** se importan directo. Si aparece otro padre de Naive
+  que descarta hijos sin error o pierde su estilo de grupo, se suma a esa lista con su marca y su línea de naive-ui.
 - Escribir un archivo en la carpeta generada `NUI/` del front → basura, el builder la borra.
 - Un `#hex`, `rgb(...)` o `red` en un componente → le rompes el tema al cliente.
 - Usar `<n-algo>` sin haberlo puesto en `$NUI` → compila, no rinde, no avisa.
