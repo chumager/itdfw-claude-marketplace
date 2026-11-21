@@ -37,6 +37,12 @@ Por ejemplo: un filtro que se prende y apaga es un interruptor, y si filtra dato
 FW, igual que en la grilla. Un monto o una fecha pasan siempre por el componente de su tipo (`renderGI` en `detail`). Y
 cualquier zona con scroll usa el scrollbar de NUI, nunca el nativo.
 
+**La coherencia es de la pieza de cada dato, no de la disposición.** El mismo input para el mismo dato, con su
+lógica; cómo se ordenan esas piezas en la pantalla sale del contexto de *esta* pantalla. Por ejemplo, el filtro de una
+grilla va en una columna porque vive en un drawer angosto y la grilla ya filtra en su cabecera. El filtro de un tablero
+es una barra de herramientas y va en fila. Copiar la disposición de otra pantalla sin su porqué es el mismo error que
+copiar a otro producto.
+
 ### Pero no en modo esclavo
 
 Si la pieza del FW quedó vieja o va contra lo que hoy usa el mercado (colores pastel de los 90, todo exageradamente
