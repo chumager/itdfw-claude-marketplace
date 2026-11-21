@@ -230,7 +230,7 @@ esac`
     setAgents([{name: "alpha", id: "a1", sessionId: "sA", status: "idle"}])
     ctx("sA", 70)
     const r = await env.run(SCRIPT, [], {extraEnv: base()})
-    assert.equal(r.stdout.trim(), "alpha: 70% -> 70% (idle)")
+    assert.equal(r.stdout.trim(), "alpha: 70% -> 70% (idle, NOT compacted)")
   })
 
   it("--modelo switches the model after a compaction that worked, before closing the window", async () => {
@@ -248,7 +248,7 @@ esac`
     setAgents([{name: "alpha", id: "a1", sessionId: "sA", status: "idle"}])
     ctx("sA", 70)
     const r = await env.run(SCRIPT, ["--modelo", "opus"], {extraEnv: base()})
-    assert.equal(r.stdout.trim(), "alpha: 70% -> 70% (idle)")
+    assert.equal(r.stdout.trim(), "alpha: 70% -> 70% (idle, NOT compacted)")
     assert.equal(env.calls().some(c => c.includes("/model")), false)
   })
 
