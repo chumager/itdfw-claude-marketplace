@@ -18,7 +18,8 @@
 #          labelled `cmp-<id>` but driven by its unique tmux id (@N), so a leftover window with that name cannot
 #          make the target ambiguous.
 # Output:  one line per candidate: "<name>: <before>% -> <after>% (<status>)", or why it was skipped (not idle, active
-#          tasks, or tmux returned no window id: nothing is sent and the next session goes on).
+#          tasks, or tmux returned no window id: nothing is sent and the next session goes on). When the context did not
+#          drop under 20 % within 5 min the line says "NOT compacted", so a watcher cannot take "87% -> 87%" as done.
 # Env:     CLAUDE_STATE_DIR   where the ctx-<sessionId>.json files live (default: <claude-home>/state, with
 #                             <claude-home> = $CLAUDE_CONFIG_DIR or $HOME/.claude)
 # Exit:    0 done · 1 no tmux server (it cannot attach) · 2 bad usage
@@ -67,5 +68,6 @@ while IFS=$'\t' read -r nombre id sid estado; do
   fi
   tmux kill-window -t "$wid" 2>/dev/null
   sleep 2
+  [ "$compactada" = 1 ] || cambio="$cambio, NOT compacted"
   echo "$nombre: ${antes}% -> $(jq -r '.used' "$f")% ($(claude agents --json | jq -r --arg s "$sid" '.[]|select(.sessionId==$s)|.status')$cambio)"
 done
