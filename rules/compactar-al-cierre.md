@@ -14,4 +14,9 @@
   🔴 **A skipped session is not forgotten**: the `CTO` keeps watching the ones that were still working at close and
   compacts each one as soon as it goes idle with its thread written, even hours later. The close is not done while one
   over 50 % is left uncompacted.
+- 🔴 **Waiting for it to go idle is a subscription, not a retry loop**: `SendMessage({to: "<name>", notify_when_idle:
+  true})` with no message, and the compaction runs when the notice arrives. The script decides by the daemon's status,
+  which can read `busy` while the session's harness reports idle (a background agent of its own): if the script skips
+  it on the notice, the notice is not repeated, and one subscription for the next turn is enough. Measured 21-nov: a
+  subscription to a session that is already idle fires at once.
 - Each session's % is in `~/.claude/state/ctx-<sessionId>.json`. Detail: `memory/reference_revivir-cajarito.md`.

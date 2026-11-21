@@ -5,7 +5,7 @@ At close, `graphify-out/` is updated with `graphify-runner` (sonnet, never Fable
 ## Who and when
 - The 21:00 cron (`~/bin/claude-cierre-cron.sh`) writes to `cierre diario`; if it is not alive, to the `CTO`.
 - **One close per day**: `~/.cache/claude-cierre/<date>.running` at start, `.done` at the end. If a `.done` exists or a `.running` less than 3 h old, the answer is "ya corrió" (already ran).
-- `cierre diario` asks the live sessions for their status (waits 10-20 s). The day's inputs are provided by the `CTO` (projects), `core` (core) and `itdfw` (the owner's topics). Its final summary goes to the `CTO`, who reports.
+- `cierre diario` asks the live sessions for their status; for the ones still working it subscribes with `notify_when_idle` instead of waiting a fixed time. The day's inputs are provided by the `CTO` (projects), `core` (core) and `itdfw` (the owner's topics). Its final summary goes to the `CTO`, who reports.
 - A TDD in draft or without pending items is reported to its owning session or, if it has none, to the `CTO`.
 - Quota: `~/bin/claude-usage-watch.sh` is read at start and at end and the difference is reported.
 
