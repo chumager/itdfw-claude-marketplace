@@ -96,7 +96,8 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
 | `cron-owner-guard.sh <owner> <label>` | Sourced by a cron script: only the owner session may run it; any other gets the order to do nothing and drop its cron | return 0 owner · 1 another session |
 | `cajaritos-compactar.sh [--umbral N] [--quieto MIN [--aunque-ocupada]] [--excepto name]... [--solo name]... [--modelo M]` | Compacts the idle background sessions over a context threshold (attach in a tmux window, `/compact`, wait, close the window). `--quieto` leaves alone a session with a turn in the last MIN minutes; `--aunque-ocupada` also takes one the daemon reports busy, for a session whose own harness was seen idle. With `--modelo`, a session whose compaction worked is switched to that model before the window closes; one whose % did not drop keeps its model, because a switch rewrites the whole context at the new price | 0 done · 1 no tmux server · 2 usage |
 | `cajaritos-reposo.sh [--umbral N] [--quieto MIN] [--frio MIN] [--listo MIN] [--seco]` | For a 10-minute user timer, on each session's own status (`sessions/*.json`): a session at rest 30-55 min over 50 % is asked for its thread (`hilo-pedir.sh --solo`, once per hour); one that left its mark and has been at rest 2 min is compacted (`cajaritos-compactar.sh --solo … --aunque-ocupada`) and its mark deleted; a mark from an earlier ritual is dropped. A session already cold is not woken | 0 · 2 usage |
-| `cajaritos-recargar.sh [--excepto name]... [--solo name]...` | Types `/reload-plugins` and `/reload-skills` into every live session (attach in a tmux window; a busy session queues them) and closes each window once that session is idle again, at most 15 min later, from a detached wait | 0 · 1 no tmux server · 2 usage |
+| `cajarito-teclear.sh [--espera MIN] <id\|name> <line>...` | The one road for typed keys: types each line into one session's chat (attach in a tmux window, `send-keys -l`, newlines turned into spaces) only while that session is `idle` or `shell`, re-reading the status before each Enter and wiping the line if it changed; logs each typed line in `teclear.log` and closes the window. Used by `cajaritos-recargar.sh` and by the denial popup's "type it in" approval | 0 queued · 1 no tmux, or no such session · 2 usage |
+| `cajaritos-recargar.sh [--excepto name]... [--solo name]...` | Types `/reload-plugins` and `/reload-skills` into every live session through `cajarito-teclear.sh` (only while each is at rest, at most 15 min later) | 0 · 1 no tmux server · 2 usage |
 | `cajaritos-shell-tope.sh [--tope SEG] [--seco]` | Ends every Claude Code tool shell running longer than the cap (default 660 s): TERM to its process group, KILL ten seconds later, one line in `shell-tope.log`. It acts on the process and never rewrites a command, so the Bash permission rules keep seeing the real one. Meant for a per-minute user timer | 0 · 2 usage |
 | `session-fg.sh <name> [window]` | Is the session on screen? `ACTIVE <pane>` / `VISIBLE <pane>` / `BG`, looking for its last text in the panes of a tmux window | 0 / 1 / 3 respectively · 2 not found |
 | `claude-usage-watch.sh [--loop s]` | Reads the Claude Code `/usage` without an open session; one line, plus a log | 0 · 1 no answer from `claude -p` |
@@ -244,7 +245,7 @@ message in the person's name.
 ## How to verify
 
 ```sh
-cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 249 cases
+cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 255 cases
 claude plugin test .                                          # the cartera hooks module, 4 cases
 ```
 

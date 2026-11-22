@@ -22,6 +22,7 @@ beforeEach(() => {
   env.stub("owner-present.sh", "exit 0")
   env.stub("ask-owner.sh", `printf '%s' "$1" > "$FAKE_LOG.title"; echo "ask" >> "$FAKE_LOG"; [ -n "\${FAKE_SLEEP:-}" ] && sleep "$FAKE_SLEEP"; echo "ask-end" >> "$FAKE_LOG"; printf '%s' "\${FAKE_ANSWER:-}"; exit "\${FAKE_RC:-0}"`)
   env.stub("claude-session-msg.sh", `echo "msg $1|$2" >> "$FAKE_LOG"; printf '%s' "$3" > "$FAKE_LOG.msg"; exit "\${FAKE_MSG_RC:-0}"`)
+  env.stub("cajarito-teclear.sh", `echo "type $1 $2 $3" >> "$FAKE_LOG"; printf '%s' "$4" > "$FAKE_LOG.typed"; exit "\${FAKE_TYPE_RC:-0}"`)
 })
 afterEach(() => env.cleanup())
 
@@ -85,6 +86,18 @@ describe("permission-denied-ask.sh", () => {
   it("shows the person the denial with the two options and how to approve", async () => {
     await ask({FAKE_ANSWER: "Do not do it"})
     assert.equal(readFileSync(`${env.log}.title`, "utf8"), "⛔ Bash of alpha: denied destructive command\nrm -rf build\nTo approve it: /permissions → Recently denied → r")
+  })
+
+  it("'I approve it: type it in': types the approval with the FULL command into the session's chat, and sends no message", async () => {
+    await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "rm -rf bu…", "rm -rf build dist"], {extraEnv: {FAKE_ANSWER: "I approve it: type it in"}})
+    assert.ok(env.calls().includes("type --espera 30 alpha"))
+    assert.equal(readFileSync(`${env.log}.typed`, "utf8"), "I approve the action the classifier denied you (destructive command): rm -rf build dist. Retry it exactly as it was.")
+    assert.equal(env.calls().some(c => c.startsWith("msg ")), false)
+  })
+
+  it("'I approve it: type it in' that cannot be typed falls back to a message with the /permissions route", async () => {
+    await ask({FAKE_ANSWER: "I approve it: type it in", FAKE_TYPE_RC: "1"})
+    assert.match(sent(), /^user approved the denied action \(destructive command\): rm -rf build, but it could not be typed into your chat\. Ask them to approve it in \/permissions/)
   })
 
   it("'I approve it in /permissions': tells the session to retry in 5 minutes", async () => {

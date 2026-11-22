@@ -1,18 +1,29 @@
 #!/usr/bin/env bash
-# Detached from the PermissionDenied hook: asks the person about the denial (ask-owner.sh) and sends the result to the
-# denied session over its socket (claude-session-msg.sh). It always ends: the popup closes after 5 minutes.
-# If the denied agent is a subagent, the message reaches its parent session (subagents have no socket).
-#   usage: permission-denied-ask.sh "<session>" "<who>" "<reason>" "<command>"
-# Reads:   the answer of ask-owner.sh and claude-session-msg.sh, both from the itdfw-sessions plugin
-# Writes:  one message to the session; when no live session has that name, one line in ~/.cache/claude-denials/undelivered.log
+# Detached from the PermissionDenied hook: asks the person about the denial (ask-owner.sh) and passes on the answer.
+# It always ends: the popup closes after 5 minutes. If the denied agent is a subagent, it all goes to its parent session
+# (subagents have no socket and no chat of their own; the approval frees the parent, which runs the action itself).
+#   "I approve it: type it in"  the approval is typed into the session's own chat, as the person's words, through
+#                               cajarito-teclear.sh (only while the session is at rest, waiting up to 30 min): a fixed
+#                               text that carries the denied command verbatim. A message over the socket would not do:
+#                               a session must never take a peer's message as the person's approval. If it cannot be
+#                               typed (no tmux, no such session), the session gets the /permissions route instead
+#   "I approve it in /permissions", "Do not do it", or free text: a message over the socket (claude-session-msg.sh)
+#   usage: permission-denied-ask.sh "<session>" "<who>" "<reason>" "<command>" ["<full command>"]
+# Reads:   the answer of ask-owner.sh; cajarito-teclear.sh and claude-session-msg.sh, all from the itdfw-sessions plugin
+# Writes:  the typed approval (logged by cajarito-teclear.sh) or one message to the session; when no live session has
+#          that name, one line in ~/.cache/claude-denials/undelivered.log
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_sessions.sh"
-session="$1"; who="$2"; reason="$3"; what="$4"
+session="$1"; who="$2"; reason="$3"; what="$4"; full="${5:-$4}"
 ANS=$("$(sessions_script ask-owner.sh)" "⛔ $who: denied $reason
 $what
 To approve it: /permissions → Recently denied → r" \
-  "I approve it in /permissions" "Do not do it")
+  "I approve it: type it in" "I approve it in /permissions" "Do not do it")
 case $? in
   0) case "$ANS" in
+       "I approve it: type it in")
+         "$(sessions_script cajarito-teclear.sh)" --espera 30 "$session" \
+           "I approve the action the classifier denied you ($reason): $full. Retry it exactly as it was." >/dev/null 2>&1 && exit 0
+         msg="$OWNER approved the denied action ($reason): $what, but it could not be typed into your chat. Ask them to approve it in /permissions (Recently denied → r), and carry on with whatever does not depend on it." ;;
        "I approve it in /permissions")
          msg="$OWNER is going to approve the denied action in /permissions ($reason): $what. Try again in 5 min (CronCreate one-shot); if it is denied again, ask them again with ask-owner.sh." ;;
        "Do not do it")

@@ -38,7 +38,7 @@ describe("cajaritos-recargar.sh", () => {
     const calls = env.calls()
     assert.ok(calls.includes("tmux new-window -d -P -F #{window_id} -t main -n rl-a1 claude attach a1"))
     const keys = calls.filter(c => c.startsWith("tmux send-keys"))
-    assert.deepEqual(keys, ["tmux send-keys -t @7 /reload-plugins", "tmux send-keys -t @7 Enter", "tmux send-keys -t @7 /reload-skills", "tmux send-keys -t @7 Enter"])
+    assert.deepEqual(keys, ["tmux send-keys -t @7 -l /reload-plugins", "tmux send-keys -t @7 Enter", "tmux send-keys -t @7 -l /reload-skills", "tmux send-keys -t @7 Enter"])
     assert.equal(calls.some(c => c.includes("g1")), false)
   })
 

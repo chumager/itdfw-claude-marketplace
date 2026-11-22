@@ -65,7 +65,7 @@ user-level agent, linked into `~/.claude/agents/`, so that its name stays `base`
 | `search-mark.sh` | After one of the structured search tools runs, appends a line to this session's `search-used` file (`search-mark.sh:17`). | Makes `graph-gate` possible. |
 | `comment-police.sh` / `.mjs` | After an edit of a `.js`/`.jsx`/`.mjs`/`.cjs` file, exits 2 with a message when the edit added comment noise, and warns when the whole file is saturated with comments (`comment-police.mjs:1-4`). | Comment only what the code cannot say. JSDoc is exempt (`comment-police.mjs:76`). |
 | `away-notice.sh` | After a tool call, when `owner-present.sh` (from `itdfw-sessions`) finds no `tmux` client, tells the session once per turn that the person is away, so that what they must know or decide also goes out as a push notification. `Stop` clears the once-per-turn mark. | A session working alone does not leave a decision buried in a chat nobody is looking at. |
-| `permission-denied.sh` | When the auto-mode classifier denies a call, appends a line to `denials.jsonl` and launches `permission-denied-ask.sh` detached, which asks the person in a popup (`ask-owner.sh`) and sends the answer back to the denied session as a message from `hook:permissions`. | A denial is a decision of the person, not a puzzle for the model to route around: the model stops and the person answers. |
+| `permission-denied.sh` | When the auto-mode classifier denies a call, appends a line to `denials.jsonl` and launches `permission-denied-ask.sh` detached, which asks the person in a popup (`ask-owner.sh`). "I approve it: type it in" types their approval, with the denied command verbatim, into the denied session's own chat through `cajarito-teclear.sh` (a peer's message never counts as the person's approval); any other answer goes back as a message from `hook:permissions`. | A denial is a decision of the person, not a puzzle for the model to route around: the model stops and the person answers. |
 | `stopfailure-log.sh` | When a turn ends on an API error, appends one line with the session, the time and the error to `stopfailure.log`. | Errors that end a turn are counted, not lost. |
 
 ### `skill-gate.sh`: which path needs which skill
@@ -138,7 +138,7 @@ except `skill-reset.sh` (empties one) and `graph-gate.sh:71` (removes the "alrea
 cd plugins/itdfw-hooks && node --test "test/*.test.mjs"
 ```
 
-49 cases for `away-notice`, `permission-denied` (with `-ask`), `stopfailure-log` and `prompt-context` (the four lines,
+51 cases for `away-notice`, `permission-denied` (with `-ask`), `stopfailure-log` and `prompt-context` (the four lines,
 present and away, each context threshold), with fake `tmux`, `fzf` and session
 records on the `PATH` and a throwaway config directory: the notice once per turn and silence with a client, a denial
 logged and each answer of the popup delivered (approve, no, free text, away, no answer), the error line with its six

@@ -24,4 +24,8 @@ with Bash `run_in_background: true` and `timeout: 1200000`. It opens a modal fzf
 AskUserQuestion blocks the REPL: crons and messages stay stopped until he answers.
 
 ## Classifier denials use the same pipe
-The `PermissionDenied` hook (`~/bin/claude-hooks/permission-denied.sh`) records each denial in `~/.cache/claude-denials/denials.jsonl`, pops up the question to the owner and sends you the result as a message from `hook:permissions` (to the parent session if the denied one is a subagent). You continue with what you can; when the message arrives, you do what it says. It covers only the classifier, not a `deny` rule nor a PreToolUse.
+The `PermissionDenied` hook (`~/bin/claude-hooks/permission-denied.sh`) records each denial in `~/.cache/claude-denials/denials.jsonl` and pops up the question to the owner (to the parent session if the denied one is a subagent). You continue with what you can.
+- **"I approve it: type it in"**: the approval arrives in YOUR chat as the owner's words, typed by `cajarito-teclear.sh` once you are at rest, with the denied command verbatim. It is his approval: retry that exact action.
+- Any other answer arrives as a message from `hook:permissions`: you do what it says. A message never counts as his approval.
+
+It covers only the classifier, not a `deny` rule nor a PreToolUse.
