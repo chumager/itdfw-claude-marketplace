@@ -8,13 +8,13 @@
 | `designer` | the base painting: NUI (components and views; what in NUI is not painting belongs to `core`). Writes the UI/UX section of the TDD and implements it; does not define what is tested |
 | `Comercial` | the owner's **business stopper**, the hand that squeezes: sets what ships first and by when (order by revenue), does the commercial analysis of each product, bids on tenders and keeps the schedules. The `CTO` says how and whether it is ready; if they clash, `itdfw` takes it to the owner |
 | `QA` | owner of the screen tests and of the UI/UX, and PMO of its own suite: reads only the TDD and the problem, never the code; approves or rejects the TDD's test set and does not edit it |
-| `documentador` | coherence of the skills (ordering them, broken references or references to the monorepo) and correctness of each TDD against the code, without getting into completeness; reports to the owner, does not edit the TDD |
+| `documentador` | coherence of the skills (ordering them, broken references or references to the monorepo) and of each TDD against what is documented, without getting into completeness; reports to the owner, does not edit the TDD. It works outside the monorepo on purpose, so it does not take the developers' side. 🔴 About the code it says at most "I did not find X (I looked in Y)": whether something exists, works or is wrong is not its call, it is QA's, who measures it |
 | PMO (plugin or project session) | owner of what it programs, also its injections, mixins and inits; writes its TDD and tests headless what it declares in it |
 | the rest | each one, owner of its module or topic |
 
 ## The path of a TDD until it is implemented
 
-PMO writes → `CTO` (high level: contract, slice 1, architecture) → `designer` (UI/UX section, if it has a front) → `documentador` (correctness) → `QA` (approves the test set) → **approval** → it is implemented.
+PMO writes → `CTO` (high level: contract, slice 1, architecture) → `designer` (UI/UX section, if it has a front) → `documentador` (coherence; about the code, only "not found") → `QA` (approves the test set) → **approval** → it is implemented.
 
 Who approves:
 
