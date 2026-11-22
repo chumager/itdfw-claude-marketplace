@@ -74,6 +74,21 @@ producción (`true` únicamente en `onDev` o con `firstTime`): los recibe cualqu
 autenticable, sin asignación. Un modelo marcado `internal` (la opción vale `true` por omisión) responde 403 a un
 autenticado que no sea `User`; `internal: false` lo abre (el plugin `restaurant` lo usa en lo que ve su dueño).
 
+#### 🔴 Contrato de `getRef`: cerrado por construcción (jcmunoz, 22-nov-2026)
+`getRef` no lleva un control de acceso propio (ni `canSee` del modelo dueño, ni un nivel). No le hace falta:
+
+| Referencia | Cómo viaja | Quién la abre |
+|---|---|---|
+| **directa a un modelo** (`ref: "Sucursal"`) | siempre con el **token de origen** (`origin`, sellado con `cipherStable`: modelo dueño, path y quién pidió el form). Sin él, **403** | solo el form la entrega, y el form se le sirve a quien tiene acceso al modelo dueño: sin acceso no hay token, y sin token no hay pedido |
+| **custom**: del pool (`req.refs`) y con nombre `Model.x` (`getRef` del modelo) | libre; el origen es opcional y solo trae la `query` del campo | lo que exponga es **responsabilidad de quien la escribe**, no del FW (rule `el-plugin-entrega-la-herramienta`) |
+| `getSimpleName` | en claro, sin token | un nombre por id (decisión del 6-may-2026); cubre los títulos y el modal de borrado |
+
+- Un selector suelto que necesita un modelo (un "elige sucursal" en un dashboard) **no arma una referencia a mano en el
+  front**: el modelo declara una autorreferencia oculta y el selector usa ese campo, con su token.
+- Quien necesite una referencia distinta la define como **custom**, aunque solo llame a `formOptions`.
+- 🔴 **Para un revisor:** no es un hoyo que `getRef` esté abierto a cualquier autenticado, ni que las custom vayan sin
+  token. Solo es hallazgo **una referencia directa a un modelo que responda sin token de origen**.
+
 ### 🔴 JWT es headless; el front espera SESIÓN (gap #17)
 
 JWT es el camino **headless / MCP**: ya viene autenticado y no pasa por el flujo del navegador. **El front espera

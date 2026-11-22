@@ -203,6 +203,11 @@ La norma: **todo lo anónimo es anónimo AUTENTICADO**, salvo que el origen no e
 
 🔴🔴 **Lo que "anónima" significa DE VERDAD**: (1) **no se gobierna por perfil**: declarar `isAnonymous: true` **es** la autorización; (2) `anonymousStates = [true, "auth"]` y para un autenticado el filtro acepta los dos ⟹ **cualquier usuario autenticado entra a cualquier punta `isAnonymous: true`**: si es anónima, es de todos, y no se puede restringir a un subconjunto de autenticados. Si una operación debe ser abierta en un escenario y perfilada en el resto, son **dos puntas**. La forma **función** `(req)=>bool` opera (back ≥ 7.3.8, se evalúa por request) pero **no se abre una ESCRITURA así**.
 
+🔴 **`getRef` está cerrado por construcción**: una referencia directa a un modelo exige su token de origen (403 sin él),
+y el token solo lo entrega el form a quien tiene acceso al modelo dueño. Las custom (pool y `Model.x`) van libres y son
+responsabilidad de quien las escribe. Solo es hallazgo una directa que responda sin token (`references/aaa-access.md`
+§Contrato de `getRef`).
+
 Paso a paso del acceso, level, `getRef`, el caso `getFile`/`getLogo` y la forma función: [references/aaa-access.md](references/aaa-access.md).
 
 ## Autenticación y registro de un modelo nuevo
