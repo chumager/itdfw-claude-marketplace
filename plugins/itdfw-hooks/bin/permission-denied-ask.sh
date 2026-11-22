@@ -5,7 +5,7 @@
 #   "I approve it: type it in"  the approval is typed into the session's own chat, as the person's words, through
 #                               cajarito-teclear.sh (only while the session is at rest, waiting up to 30 min): a fixed
 #                               text that carries the denied command verbatim, the same
-#                               text the popup showed (a command over 500 characters is not offered). A message over the socket would not do:
+#                               text the popup showed (one that cannot be shown whole is not offered). A message over the socket would not do:
 #                               a session must never take a peer's message as the person's approval. If it cannot be
 #                               typed (no tmux, no such session), the session gets the /permissions route instead
 #   "I approve it in /permissions", "Do not do it", or free text: a message over the socket (claude-session-msg.sh)
@@ -15,9 +15,15 @@
 #          that name, one line in ~/.cache/claude-denials/undelivered.log
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_sessions.sh"
 session="$1"; who="$2"; reason="$3"; what="$4"; full="${5:-$4}"
-# What the popup shows is exactly what gets typed: one value. A command too long to read in the popup is not offered
-# for typing (only the /permissions route), so the person never approves text they did not see.
-if [ ${#full} -le 500 ]; then shown="$full"; opts=("I approve it: type it in"); else shown="$what"; opts=(); fi
+# What the popup shows is exactly what gets typed: one value, wrapped at 70 columns for the eye only (fold adds line
+# breaks to the view, never to the typed text), so every character fits in the popup (80 % of the terminal). It is
+# offered for typing only when every character can be seen: at most 500 characters (8 lines), and no invisible or
+# direction-changing Unicode (format, private-use, unassigned or control characters). Otherwise only the /permissions
+# route, so the person never approves text they did not see.
+opts=(); shown="$what"
+if [ ${#full} -le 500 ] && ! printf '%s' "$full" | perl -CS -ne 'exit(/[\p{Cf}\p{Co}\p{Cn}\p{Cc}]/ ? 0 : 1)'; then
+  shown=$(printf '%s' "$full" | fold -w 70); opts=("I approve it: type it in")
+fi
 ANS=$("$(sessions_script ask-owner.sh)" "⛔ $who: denied $reason
 $shown
 To approve it: /permissions → Recently denied → r" \
@@ -28,7 +34,7 @@ case $? in
          # typed only when it was offered: the same words written as free text, for a command too long to show, are not it
          if [ ${#opts[@]} -gt 0 ]; then
            "$(sessions_script cajarito-teclear.sh)" --espera 30 "$session" \
-             "I approve the action the classifier denied you ($reason): $shown. Retry it exactly as it was." >/dev/null 2>&1 && exit 0
+             "I approve the action the classifier denied you ($reason): $full. Retry it exactly as it was." >/dev/null 2>&1 && exit 0
            msg="$OWNER approved the denied action ($reason): $what, but it could not be typed into your chat. Ask them to approve it in /permissions (Recently denied → r), and carry on with whatever does not depend on it."
          else
            msg="About the denied action ($reason): $what — $OWNER answered: $ANS"

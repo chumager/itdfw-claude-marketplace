@@ -52,8 +52,10 @@ describe("permission-denied.sh", () => {
   it("the popup shows the whole command up to 500 characters (what would be typed); a longer one is cut at 160; without a command the whole tool_input is shown", async () => {
     await env.run(HOOK, [], {stdin: payload({tool_input: {file_path: "/x/" + "a".repeat(300)}})})
     assert.ok(await env.waitFor(() => existsSync(`${env.log}.title`) && env.calls().includes("ask-end")))
-    let shown = readFileSync(`${env.log}.title`, "utf8").split("\n")[1]
-    assert.equal(shown, JSON.stringify({file_path: "/x/" + "a".repeat(300)}))
+    const lines = readFileSync(`${env.log}.title`, "utf8").split("\n").slice(1, -1)
+    assert.ok(lines.every(l => l.length <= 70), "wrapped at 70 columns so every character is on screen")
+    assert.equal(lines.join(""), JSON.stringify({file_path: "/x/" + "a".repeat(300)}))
+    let shown
     await env.run(HOOK, [], {stdin: payload({tool_input: {file_path: "/x/" + "a".repeat(600)}})})
     assert.ok(await env.waitFor(() => readFileSync(`${env.log}.title`, "utf8").split("\n")[1].length === 160))
     shown = readFileSync(`${env.log}.title`, "utf8").split("\n")[1]
@@ -104,6 +106,13 @@ describe("permission-denied-ask.sh", () => {
     await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "x…", "x".repeat(501)], {extraEnv: {FAKE_ANSWER: "Do not do it"}})
     assert.match(readFileSync(`${env.log}.title`, "utf8"), /\nx…\n/)
     assert.equal(readFileSync(`${env.log}.opts`, "utf8"), "I approve it in /permissions|Do not do it")
+  })
+
+  it("a command with invisible or direction-changing Unicode is shown but not offered for typing", async () => {
+    await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "rm x", "rm x\u202e.txt"], {extraEnv: {FAKE_ANSWER: "Do not do it"}})
+    assert.equal(readFileSync(`${env.log}.opts`, "utf8"), "I approve it in /permissions|Do not do it")
+    await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "rm x", "rm x\u200b.txt"], {extraEnv: {FAKE_ANSWER: "I approve it: type it in"}})
+    assert.equal(env.calls().some(c => c.startsWith("type ")), false)
   })
 
   it("'I approve it: type it in' that cannot be typed falls back to a message with the /permissions route", async () => {
