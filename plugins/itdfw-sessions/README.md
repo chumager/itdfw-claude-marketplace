@@ -94,7 +94,9 @@ script symlinked from `~/bin` loads the file too. A single script copied away wi
 | `claude-keepalive.sh` | From a system cron, queues a `ping` in every live session so the prompt cache (1 h TTL) stays warm | always 0 |
 | `claude-session-name.sh` | Prints the name of the session this command runs under (walks up the parent processes) | 0 printed · 1 not under a named session |
 | `cron-owner-guard.sh <owner> <label>` | Sourced by a cron script: only the owner session may run it; any other gets the order to do nothing and drop its cron | return 0 owner · 1 another session |
-| `cajaritos-compactar.sh [--umbral N] [--excepto name]... [--solo name]... [--modelo M]` | Compacts the idle background sessions over a context threshold (attach in a tmux window, `/compact`, wait, close the window). With `--modelo`, a session whose compaction worked is switched to that model before the window closes; one whose % did not drop keeps its model, because a switch rewrites the whole context at the new price | 0 done · 1 no tmux server · 2 usage |
+| `cajaritos-compactar.sh [--umbral N] [--quieto MIN [--aunque-ocupada]] [--excepto name]... [--solo name]... [--modelo M]` | Compacts the idle background sessions over a context threshold (attach in a tmux window, `/compact`, wait, close the window). `--quieto` leaves alone a session with a turn in the last MIN minutes; `--aunque-ocupada` also takes one the daemon reports busy, for a session whose own harness was seen idle. With `--modelo`, a session whose compaction worked is switched to that model before the window closes; one whose % did not drop keeps its model, because a switch rewrites the whole context at the new price | 0 done · 1 no tmux server · 2 usage |
+| `cajaritos-recargar.sh [--excepto name]... [--solo name]...` | Types `/reload-plugins` and `/reload-skills` into every live session (attach in a tmux window; a busy session queues them) and closes each window once that session is idle again, at most 15 min later, from a detached wait | 0 · 1 no tmux server · 2 usage |
+| `cajaritos-shell-tope.sh [--tope SEG] [--seco]` | Ends every Claude Code tool shell running longer than the cap (default 660 s): TERM to its process group, KILL ten seconds later, one line in `shell-tope.log`. It acts on the process and never rewrites a command, so the Bash permission rules keep seeing the real one. Meant for a per-minute user timer | 0 · 2 usage |
 | `session-fg.sh <name> [window]` | Is the session on screen? `ACTIVE <pane>` / `VISIBLE <pane>` / `BG`, looking for its last text in the panes of a tmux window | 0 / 1 / 3 respectively · 2 not found |
 | `claude-usage-watch.sh [--loop s]` | Reads the Claude Code `/usage` without an open session; one line, plus a log | 0 · 1 no answer from `claude -p` |
 | `cartera.sh` | A work board: each session publishes its blocks and tasks in a JSON file that a panel can merge. `cartera.sh panel` prints, as JSON, what the `cartera` hooks module needs (folders, the session that draws the board, the person's name) | 0 · 1 unknown session or block · 2 usage |
@@ -241,7 +243,7 @@ message in the person's name.
 ## How to verify
 
 ```sh
-cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 227 cases
+cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 240 cases
 claude plugin test .                                          # the cartera hooks module, 4 cases
 ```
 

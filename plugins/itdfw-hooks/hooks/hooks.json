@@ -40,12 +40,6 @@
         "hooks": [
           {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/graph-gate.sh", "timeout": 5}
         ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/background-timeout.sh", "timeout": 5}
-        ]
       }
     ],
     "PostToolUse": [

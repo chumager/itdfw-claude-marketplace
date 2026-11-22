@@ -1,6 +1,6 @@
 # itdfw-hooks — rules enforced by Claude Code hooks
 
-Fourteen registered hooks and two more for the user's own settings, written to keep an agent inside a set of working practices while it develops on the
+Thirteen registered hooks and two more for the user's own settings, written to keep an agent inside a set of working practices while it develops on the
 ITDFW framework and to keep the person in the loop when they are away from the keyboard, plus two helper scripts for
 `git` and the definition of the `base` agent the delegation gate asks for. A hook is a program that Claude Code runs
 around a tool call and that can refuse the call. The idea behind them: a rule written as text gets forgotten, a rule
@@ -22,7 +22,6 @@ were also run once each with sample input in a throwaway `HOME` (see "How to ver
 | `PreToolUse` | `Bash` | `bin/safe-mvcp.sh` | default |
 | `PreToolUse` | `Bash` | `bin/commit-completeness-gate.sh` | 10 s |
 | `PreToolUse` | `Bash` | `bin/npm-pnpm.sh` | 5 s |
-| `PreToolUse` | `Bash` | `bin/background-timeout.sh` | 5 s |
 | `PreToolUse` | `Edit\|Write` | `bin/skill-gate.sh` | default |
 | `PreToolUse` | `Agent` | `bin/agent-type-gate.sh` (status line "Checking subagent_type/model...") | default |
 | `PreToolUse` | `Bash` | `bin/graph-gate.sh` | 5 s |
@@ -57,7 +56,6 @@ user-level agent, linked into `~/.claude/agents/`, so that its name stays `base`
 |---|---|---|
 | `safe-mvcp.sh` | Denies a `mv` or `cp` that has no `-n`/`-i` (no-clobber or interactive) flag (`safe-mvcp.sh:11-19`). It answers with a `deny` decision in JSON and exit 0 (`safe-mvcp.sh:22-29`). | Do not overwrite files by accident. The script cites a real case: a `mv` overwrote a plugin and broke a login check (`safe-mvcp.sh:5`). |
 | `npm-pnpm.sh` | Denies any command that uses `npm` or `npx` as a command word (`npm-pnpm.sh:15`), and says to use `pnpm`/`pnpx` or to ask the user to run it with `!` (`npm-pnpm.sh:17-26`). | The repository uses pnpm. The script's reason: logins are per tool, and `npm view` of a private package answers 404 when it is really a 401 (`npm-pnpm.sh:28-29`). |
-| `background-timeout.sh` | Wraps every `run_in_background` command line in `timeout -k 10 600 bash -c '<line>'` (`background-timeout.sh:19-26`), so every part of it (`;`, `&&`, `|`) dies at 10 min; returns no permission decision, so the rewritten call still goes through the normal permission check. | A foreground Bash is cut by the harness at 10 min; a background one has no cap, and a wait loop whose signal never comes keeps its session busy for hours (22-nov: seven such loops in two sessions, one 16 h old). |
 | `skill-gate.sh` | Blocks an `Edit` or `Write` on a file in a mapped framework area unless the matching skill was already loaded in this session (`skill-gate.sh:25-71`). Exit 2 with "Load the `<skill>` skill with the Skill tool before touching `<file>`". | Load the skill of an area before editing it. The path-to-skill map is in `skill-gate.sh:29-56` (see the table below). |
 | `skill-mark.sh` | After the `Skill` tool runs, appends the skill name and the time to a marker file for this session (`skill-mark.sh:26-29`). It strips a `<plugin>:` prefix so that a namespaced skill unlocks the gate (`skill-mark.sh:13-14`). | Makes `skill-gate` and `commit-completeness-gate` possible. |
 | `skill-reset.sh` | On a session that resumes after a compaction, empties that session's marker file (`skill-reset.sh:12-18`). | After a compaction the skills must be loaded again. |
@@ -140,7 +138,7 @@ except `skill-reset.sh` (empties one) and `graph-gate.sh:71` (removes the "alrea
 cd plugins/itdfw-hooks && node --test "test/*.test.mjs"
 ```
 
-54 cases for `away-notice`, `permission-denied` (with `-ask`), `stopfailure-log`, `prompt-context` and `background-timeout` (the four lines,
+49 cases for `away-notice`, `permission-denied` (with `-ask`), `stopfailure-log` and `prompt-context` (the four lines,
 present and away, each context threshold), with fake `tmux`, `fzf` and session
 records on the `PATH` and a throwaway config directory: the notice once per turn and silence with a client, a denial
 logged and each answer of the popup delivered (approve, no, free text, away, no answer), the error line with its six
