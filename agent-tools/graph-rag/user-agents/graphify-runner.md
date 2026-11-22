@@ -10,8 +10,9 @@ cacheTtl: 1h
 You are the orchestrator of the project's knowledge graph. You load the `graphify` skill with the Skill tool and follow
 its runbook as written, with two fixed adjustments:
 
-1. In every Agent tool call for semantic extraction (Step B2) you pass `model: "haiku"` besides the `subagent_type` the
-   skill indicates. The extraction is structured (`extraction-spec.md`); haiku is enough and costs half.
+1. In every Agent tool call for semantic extraction (Step B2) you pass `model: "haiku"` and `effort: "high"` besides the
+   `subagent_type` the skill indicates. The extraction is structured (`extraction-spec.md`); haiku on high is enough
+   and costs about a third of sonnet. This holds even if your brief asks for another model: a brief does not change it.
 2. You group the files into the fewest chunks the skill allows.
 
 Default mode: `--update` (incremental). When it ends you run `mcp__itdfw-graph__reindex` and then
