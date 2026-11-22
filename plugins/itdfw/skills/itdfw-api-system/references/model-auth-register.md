@@ -10,6 +10,14 @@ TODO el aparato de auth del back, gratis y sin una línea nueva:
 - `authForm.json` — genera el form de login según `{model, option}`.
 - `checkLogin.json` — valida credenciales, puebla sesión, devuelve `userData` + `link` (página del perfil).
 - `recovery.json` — recuperación de contraseña.
+- 🔴 **Dejar logueada a una cuenta recién creada** (una invitación o un alta con contraseña en el mismo form): la punta
+  que la crea NO abre la sesión. `POST checkLogin.json` es el único lugar que la escribe. Cuando la punta responde
+  200, el front hace ese POST con `{modelAuth, username, password}` que la persona acaba de escribir, con el CSRF
+  normal y sin pasar por la pantalla de login. Copiar en la punta las líneas que escriben `req.session` la deja fuera
+  el día que la apertura de sesión cambie.
+- **Límite de intentos por IP con 429:** el FW no lo trae. El limitador del server cuenta pedidos idénticos en vuelo,
+  no intentos. Contra el abuso de una punta anónima con un token secreto está el captcha del core
+  (`Model.assertCaptcha(req)`, llamable desde una punta libre).
 - Los paths con `auth: "password"` (username/email/identidad) ya son las opciones de login.
 - Perfil forzado (en `pre("validate")` el modelo asigna su perfil único — buscar por **`profileName`**
   camelCase, verificado vía MCP `modelFields Profile`, NUNCA copiar `profile_name` snake de un corpus viejo).
