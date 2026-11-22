@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # cajaritos-recargar.sh: types /reload-plugins and /reload-skills into every live background session, so a new or
-# changed hook, plugin or skill applies everywhere. A busy session queues them and runs them when its turn ends.
-# For each session: `claude attach` in a tmux window, the two commands, and the window is closed once the session is
-# idle again (its own status in <claude-home>/sessions/*.json is `idle` or `shell`), at most 15 min later. That wait runs
-# detached (setsid), so the script returns at once.
+# changed hook, plugin or skill applies everywhere.
+# For each session: `claude attach` in a tmux window, then a detached wait (setsid, so the script returns at once) until
+# the session's own status in <claude-home>/sessions/*.json is `idle` or `shell`, and only then the two commands; the
+# status is read again right before each Enter. A busy session may be showing a permission prompt, and an Enter typed
+# into it would answer that prompt: keys go only into a session at rest. A session not at rest within 15 min gets no
+# keys at all, and its window is closed.
 #
 # Usage:   cajaritos-recargar.sh [--excepto <name>]... [--solo <name>]...
 # Reads:   `claude agents --json` (name, id, sessionId, status); <claude-home>/sessions/*.json (status of each session)
@@ -34,11 +36,17 @@ while IFS=$'\t' read -r nombre id sid; do
   case "$wid" in @*) ;; *) echo "$nombre: tmux gave no window id, skipping"; continue ;; esac
   echo "$nombre: queued"
   setsid bash -c '
-    wid=$1; sid=$2; estado() { jq -r --arg s "$sid" "select(.sessionId == \$s) | .status" "$3"/sessions/*.json 2>/dev/null | head -1; }
+    wid=$1; sid=$2; cc=$3; estado() { jq -r --arg s "$sid" "select(.sessionId == \$s) | .status" "$cc"/sessions/*.json 2>/dev/null | head -1; }
+    quieta() { case "$(estado)" in idle|shell) return 0 ;; esac; return 1; }
     sleep 6
-    tmux send-keys -t "$wid" "/reload-plugins"; sleep 1; tmux send-keys -t "$wid" Enter; sleep 3
-    tmux send-keys -t "$wid" "/reload-skills"; sleep 1; tmux send-keys -t "$wid" Enter
-    for _ in $(seq 1 180); do sleep 5; case "$(estado)" in idle|shell) break ;; esac; done
+    ok=0; for _ in $(seq 1 180); do quieta && { ok=1; break; }; sleep 5; done
+    if [ "$ok" = 1 ]; then
+      for cmd in /reload-plugins /reload-skills; do
+        tmux send-keys -t "$wid" "$cmd"; sleep 1
+        quieta || { tmux send-keys -t "$wid" C-u; break; }
+        tmux send-keys -t "$wid" Enter; sleep 3
+      done
+    fi
     sleep 5; tmux kill-window -t "$wid" 2>/dev/null' _ "$wid" "$sid" "$HOME_CC" >/dev/null 2>&1 < /dev/null &
 done
 exit 0

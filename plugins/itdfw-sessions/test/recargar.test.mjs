@@ -42,6 +42,15 @@ describe("cajaritos-recargar.sh", () => {
     assert.equal(calls.some(c => c.includes("g1")), false)
   })
 
+  it("a session that is not at rest gets no keys (it may be showing a permission prompt), and its window is closed", async () => {
+    setAgents([{name: "busy", id: "b1", sessionId: "sB", status: "busy"}])
+    sessionFile("sB", "busy")
+    const r = await env.run(SCRIPT, [], {extraEnv: {FAKE_AGENTS: agentsFile()}})
+    assert.equal(r.stdout.trim(), "busy: queued")
+    assert.ok(await waitFor(() => env.calls().includes("tmux kill-window -t @7")))
+    assert.equal(env.calls().some(c => c.startsWith("tmux send-keys")), false)
+  })
+
   it("--solo and --excepto choose the sessions", async () => {
     setAgents([{name: "alpha", id: "a1", sessionId: "sA", status: "idle"}, {name: "beta", id: "b1", sessionId: "sB", status: "idle"}])
     sessionFile("sA", "idle"); sessionFile("sB", "idle")
