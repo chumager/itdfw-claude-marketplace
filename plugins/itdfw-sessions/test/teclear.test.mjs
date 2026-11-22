@@ -31,9 +31,9 @@ esac`)
 afterEach(() => env.cleanup())
 
 describe("cajarito-teclear.sh", () => {
-  it("finds the session by name, types each line literally with newlines turned into spaces, logs it and closes the window", async () => {
+  it("finds the session by name, types each line literally with every control character turned into a space, logs it and closes the window", async () => {
     sessionFile("sA", "idle")
-    const r = await run(["alpha", "Apruebo que ejecutes: git push\norigin develop", "Enter"])
+    const r = await run(["alpha", "Apruebo que ejecutes: git push\norigin develop", "Enter", "\u001b[2J\rok\u007f"])
     assert.equal(r.code, 0)
     assert.equal(r.stdout.trim(), "alpha: queued")
     assert.ok(await waitFor(() => env.calls().includes("tmux kill-window -t @7")))
@@ -42,10 +42,12 @@ describe("cajarito-teclear.sh", () => {
       "tmux send-keys -t @7 -l Apruebo que ejecutes: git push origin develop",
       "tmux send-keys -t @7 Enter",
       "tmux send-keys -t @7 -l Enter",
+      "tmux send-keys -t @7 Enter",
+      "tmux send-keys -t @7 -l  [2J ok ",
       "tmux send-keys -t @7 Enter"
     ])
     const log = readFileSync(join(env.state, "teclear.log"), "utf8").trim().split("\n")
-    assert.equal(log.length, 2)
+    assert.equal(log.length, 3)
     assert.match(log[0], /\talpha\tApruebo que ejecutes: git push origin develop$/)
   })
 

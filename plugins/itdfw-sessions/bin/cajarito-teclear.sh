@@ -4,7 +4,8 @@
 # /reload-skills) and permission-denied-ask.sh (the person's approval, chosen in the popup). Nobody else calls it.
 # `claude attach` in a tmux window, then a detached wait (setsid, so the script returns at once) until the session's own
 # status in <claude-home>/sessions/*.json is `idle` or `shell`; each line is typed literally (`send-keys -l`, so a word
-# like "Enter" stays text) with its newlines turned into spaces (a newline would send half of it), the status is read
+# like "Enter" stays text) with every control character turned into a space (a newline would send half of it; an
+# ESC or a CR would act as a key), the status is read
 # again before its Enter, and if it changed the line is wiped (C-u) and nothing else is typed. A busy session may be
 # showing a permission prompt, and an Enter typed into it would answer that prompt. A session not at rest within
 # --espera minutes gets no keys at all. The window is closed at the end either way.
@@ -44,7 +45,7 @@ setsid bash -c '
   ok=0; for _ in $(seq 1 "$vueltas"); do quieta && { ok=1; break; }; sleep 5; done
   if [ "$ok" = 1 ]; then
     for linea in "$@"; do
-      linea=${linea//$'"'"'\n'"'"'/ }
+      linea=$(printf "%s" "$linea" | LC_ALL=C tr "\\000-\\037\\177" " ")
       tmux send-keys -t "$wid" -l "$linea"; sleep 1
       quieta || { tmux send-keys -t "$wid" C-u; break; }
       tmux send-keys -t "$wid" Enter

@@ -138,7 +138,7 @@ except `skill-reset.sh` (empties one) and `graph-gate.sh:71` (removes the "alrea
 cd plugins/itdfw-hooks && node --test "test/*.test.mjs"
 ```
 
-51 cases for `away-notice`, `permission-denied` (with `-ask`), `stopfailure-log` and `prompt-context` (the four lines,
+52 cases for `away-notice`, `permission-denied` (with `-ask`), `stopfailure-log` and `prompt-context` (the four lines,
 present and away, each context threshold), with fake `tmux`, `fzf` and session
 records on the `PATH` and a throwaway config directory: the notice once per turn and silence with a client, a denial
 logged and each answer of the popup delivered (approve, no, free text, away, no answer), the error line with its six

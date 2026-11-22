@@ -20,7 +20,7 @@ function sessionFile(name) {
 beforeEach(() => {
   env = makeEnv()
   env.stub("owner-present.sh", "exit 0")
-  env.stub("ask-owner.sh", `printf '%s' "$1" > "$FAKE_LOG.title"; echo "ask" >> "$FAKE_LOG"; [ -n "\${FAKE_SLEEP:-}" ] && sleep "$FAKE_SLEEP"; echo "ask-end" >> "$FAKE_LOG"; printf '%s' "\${FAKE_ANSWER:-}"; exit "\${FAKE_RC:-0}"`)
+  env.stub("ask-owner.sh", `printf '%s' "$1" > "$FAKE_LOG.title"; shift; (IFS='|'; printf '%s' "$*") > "$FAKE_LOG.opts"; echo "ask" >> "$FAKE_LOG"; [ -n "\${FAKE_SLEEP:-}" ] && sleep "$FAKE_SLEEP"; echo "ask-end" >> "$FAKE_LOG"; printf '%s' "\${FAKE_ANSWER:-}"; exit "\${FAKE_RC:-0}"`)
   env.stub("claude-session-msg.sh", `echo "msg $1|$2" >> "$FAKE_LOG"; printf '%s' "$3" > "$FAKE_LOG.msg"; exit "\${FAKE_MSG_RC:-0}"`)
   env.stub("cajarito-teclear.sh", `echo "type $1 $2 $3" >> "$FAKE_LOG"; printf '%s' "$4" > "$FAKE_LOG.typed"; exit "\${FAKE_TYPE_RC:-0}"`)
 })
@@ -49,12 +49,14 @@ describe("permission-denied.sh", () => {
     assert.equal(titleLine(), "⛔ session of unnamed: denied destructive command")
   })
 
-  it("the command shown is cut at 160 characters; without a command the whole tool_input is shown", async () => {
+  it("the popup shows the whole command up to 500 characters (what would be typed); a longer one is cut at 160; without a command the whole tool_input is shown", async () => {
     await env.run(HOOK, [], {stdin: payload({tool_input: {file_path: "/x/" + "a".repeat(300)}})})
     assert.ok(await env.waitFor(() => existsSync(`${env.log}.title`) && env.calls().includes("ask-end")))
-    const title = readFileSync(`${env.log}.title`, "utf8")
-    const shown = title.split("\n")[1]
-    assert.equal(shown.length, 160)
+    let shown = readFileSync(`${env.log}.title`, "utf8").split("\n")[1]
+    assert.equal(shown, JSON.stringify({file_path: "/x/" + "a".repeat(300)}))
+    await env.run(HOOK, [], {stdin: payload({tool_input: {file_path: "/x/" + "a".repeat(600)}})})
+    assert.ok(await env.waitFor(() => readFileSync(`${env.log}.title`, "utf8").split("\n")[1].length === 160))
+    shown = readFileSync(`${env.log}.title`, "utf8").split("\n")[1]
     assert.match(shown, /^\{"file_path":"\/x\/a+/)
   })
 
@@ -93,6 +95,15 @@ describe("permission-denied-ask.sh", () => {
     assert.ok(env.calls().includes("type --espera 30 alpha"))
     assert.equal(readFileSync(`${env.log}.typed`, "utf8"), "I approve the action the classifier denied you (destructive command): rm -rf build dist. Retry it exactly as it was.")
     assert.equal(env.calls().some(c => c.startsWith("msg ")), false)
+  })
+
+  it("the popup shows the full command it would type; one over 500 characters is not offered for typing", async () => {
+    await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "rm -rf bu…", "rm -rf build dist"], {extraEnv: {FAKE_ANSWER: "Do not do it"}})
+    assert.match(readFileSync(`${env.log}.title`, "utf8"), /\nrm -rf build dist\n/)
+    assert.match(readFileSync(`${env.log}.opts`, "utf8"), /^I approve it: type it in\|/)
+    await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "x…", "x".repeat(501)], {extraEnv: {FAKE_ANSWER: "Do not do it"}})
+    assert.match(readFileSync(`${env.log}.title`, "utf8"), /\nx…\n/)
+    assert.equal(readFileSync(`${env.log}.opts`, "utf8"), "I approve it in /permissions|Do not do it")
   })
 
   it("'I approve it: type it in' that cannot be typed falls back to a message with the /permissions route", async () => {
