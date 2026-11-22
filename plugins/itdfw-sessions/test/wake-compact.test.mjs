@@ -210,6 +210,25 @@ esac`
     assert.equal(env.calls().length, 0)
   })
 
+  it("--aunque-ocupada compacts a session reported busy that has been quiet --quieto minutes, and still skips a busy one with a recent turn", async () => {
+    setAgents([{name: "stuck", id: "s1", sessionId: "sS", status: "busy"}, {name: "talking", id: "k1", sessionId: "sK", status: "busy"}])
+    ctx("sS", 90)
+    ctx("sK", 90)
+    const old = new Date(Date.now() - 20 * 60 * 1000)
+    utimesSync(join(env.state, "ctx-sS.json"), old, old)
+    const r = await env.run(SCRIPT, ["--quieto", "15", "--aunque-ocupada"], {extraEnv: {...base(), FAKE_COMPACT_FILE: join(env.state, "ctx-sS.json")}})
+    assert.equal(r.code, 0)
+    assert.equal(r.stdout.trim(), "stuck: 90% -> 12% (busy)\ntalking: 90% but it had a turn in the last 15 min, skipping")
+  })
+
+  it("--aunque-ocupada without --quieto is bad usage: nothing is sent", async () => {
+    setAgents([{name: "stuck", id: "s1", sessionId: "sS", status: "busy"}])
+    ctx("sS", 90)
+    const r = await env.run(SCRIPT, ["--aunque-ocupada"], {extraEnv: base()})
+    assert.equal(r.code, 2)
+    assert.equal(env.calls().length, 0)
+  })
+
   it("skips an idle session with task files touched in the last 10 minutes", async () => {
     const dir = taskDir("sT")
     mkdirSync(dir, {recursive: true})

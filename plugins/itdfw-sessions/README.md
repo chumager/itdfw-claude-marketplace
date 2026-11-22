@@ -241,7 +241,7 @@ message in the person's name.
 ## How to verify
 
 ```sh
-cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 224 cases
+cd plugins/itdfw-sessions && node --test "test/*.test.mjs"   # 227 cases
 claude plugin test .                                          # the cartera hooks module, 4 cases
 ```
 

@@ -9,6 +9,9 @@
 #          --solo NAME    only that session (repeatable)
 #          --quieto MIN   only the sessions with no turn for MIN minutes (their ctx file untouched that long), so a
 #                         session in the middle of a conversation is left alone (default 0: no such check)
+#          --aunque-ocupada  with --quieto, also compact a session the daemon reports as not idle when it has had no
+#                         turn for MIN minutes and no active tasks. The daemon can keep reporting `busy` for a session
+#                         whose harness is idle (measured 21-nov: two sessions `busy` 30 min after their last turn)
 #          --modelo M     after a compaction that worked, switch the session to model M (`/model M`). A switch
 #                         rewrites the whole context at the new model's price, so it only happens on a compacted
 #                         session; one whose % did not drop keeps its model
@@ -28,8 +31,8 @@
 _cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
 set -uo pipefail
 STATE_DIR="${CLAUDE_STATE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/state}"
-UMBRAL=50; EXCEPTO=(); SOLO=(); MODELO=""; QUIETO=0
-usage() { echo "usage: cajaritos-compactar.sh [--umbral N] [--quieto MIN] [--excepto <name>]... [--solo <name>]... [--modelo M]"; }
+UMBRAL=50; EXCEPTO=(); SOLO=(); MODELO=""; QUIETO=0; AUNQUE=0
+usage() { echo "usage: cajaritos-compactar.sh [--umbral N] [--quieto MIN [--aunque-ocupada]] [--excepto <name>]... [--solo <name>]... [--modelo M]"; }
 while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help) usage; awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
@@ -38,9 +41,11 @@ while [ $# -gt 0 ]; do
     --solo) SOLO+=("$2"); shift 2 ;;
     --modelo) MODELO="$2"; shift 2 ;;
     --quieto) QUIETO="$2"; shift 2 ;;
+    --aunque-ocupada) AUNQUE=1; shift ;;
     *) usage >&2; exit 2 ;;
   esac
 done
+[ "$AUNQUE" = 1 ] && [ "$QUIETO" -le 0 ] 2>/dev/null && { usage >&2; exit 2; }
 TMUX_SES=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | head -1)
 [ -n "$TMUX_SES" ] || { echo "no tmux server: cannot attach"; exit 1; }
 en() { local x="$1"; shift; for y in "$@"; do [ "$x" = "$y" ] && return 0; done; return 1; }
@@ -52,7 +57,7 @@ while IFS=$'\t' read -r nombre id sid estado; do
   f="$STATE_DIR/ctx-$sid.json"
   antes=$(jq -r '.used // empty' "$f" 2>/dev/null)
   [ -n "$antes" ] && [ "$antes" -ge "$UMBRAL" ] 2>/dev/null || continue
-  if [ "$estado" != "idle" ]; then echo "$nombre: ${antes}% but it is $estado, skipping"; continue; fi
+  if [ "$estado" != "idle" ] && [ "$AUNQUE" = 0 ]; then echo "$nombre: ${antes}% but it is $estado, skipping"; continue; fi
   tareas=$(find /tmp/claude-"$(id -u)"/*/"$sid"/tasks -type f -mmin -10 2>/dev/null | wc -l)
   if [ "$tareas" -gt 0 ]; then echo "$nombre: ${antes}% but it has active tasks, skipping"; continue; fi
   if [ "$QUIETO" -gt 0 ] && [ -n "$(find "$f" -mmin -"$QUIETO" 2>/dev/null)" ]; then
