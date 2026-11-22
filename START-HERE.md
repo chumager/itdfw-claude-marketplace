@@ -11,7 +11,7 @@ scripts/test-all.sh        # one line per piece and a total; exit 1 if any suite
 ```
 
 Expected on 2026-11-18: `room` 45, `graph-rag` 13, `inventory` 17, `agent-runner` 48, `secret-scan` 39,
-`itdfw-sessions` 240, `itdfw-hooks` 49, 451 in all. The `cartera` hooks module has 4 more, run with `claude plugin test` in its plugin.
+`itdfw-sessions` 249, `itdfw-hooks` 49, 460 in all. The `cartera` hooks module has 4 more, run with `claude plugin test` in its plugin.
 
 ## The claims, and how to check each
 
