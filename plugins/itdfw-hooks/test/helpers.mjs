@@ -57,7 +57,8 @@ export function makeEnv() {
       return false
     },
 
-    cleanup() { rmSync(root, {recursive: true, force: true}) },
+    // a detached script under test (the denial popup half) may still be writing its last file: retry the removal
+    cleanup() { rmSync(root, {recursive: true, force: true, maxRetries: 10, retryDelay: 50}) },
   }
   return env
 }

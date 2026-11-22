@@ -115,6 +115,12 @@ describe("permission-denied-ask.sh", () => {
     assert.equal(env.calls().some(c => c.startsWith("type ")), false)
   })
 
+  it("when the character check cannot run (no perl), typing is not offered: it fails closed", async () => {
+    env.stub("perl", "exit 0")
+    await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "rm x", "rm x"], {extraEnv: {FAKE_ANSWER: "Do not do it"}})
+    assert.equal(readFileSync(`${env.log}.opts`, "utf8"), "I approve it in /permissions|Do not do it")
+  })
+
   it("'I approve it: type it in' that cannot be typed falls back to a message with the /permissions route", async () => {
     await ask({FAKE_ANSWER: "I approve it: type it in", FAKE_TYPE_RC: "1"})
     assert.match(sent(), /^user approved the denied action \(destructive command\): rm -rf build, but it could not be typed into your chat\. Ask them to approve it in \/permissions/)

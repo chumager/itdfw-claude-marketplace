@@ -21,7 +21,9 @@ session="$1"; who="$2"; reason="$3"; what="$4"; full="${5:-$4}"
 # direction-changing Unicode (format, private-use, unassigned or control characters). Otherwise only the /permissions
 # route, so the person never approves text they did not see.
 opts=(); shown="$what"
-if [ ${#full} -le 500 ] && ! printf '%s' "$full" | perl -CS -ne 'exit(/[\p{Cf}\p{Co}\p{Cn}\p{Cc}]/ ? 0 : 1)'; then
+# fail closed: only an explicit "clean" from the check offers typing; no perl or any error is "not offered"
+veredicto=$(printf '%s' "$full" | perl -CS -e 'local $/; my $s = <STDIN> // ""; print(($s =~ /[\p{Cf}\p{Co}\p{Cn}\p{Cc}]/) ? "dirty" : "clean")' 2>/dev/null)
+if [ ${#full} -le 500 ] && [ "$veredicto" = clean ]; then
   shown=$(printf '%s' "$full" | fold -w 70); opts=("I approve it: type it in")
 fi
 ANS=$("$(sessions_script ask-owner.sh)" "⛔ $who: denied $reason
