@@ -58,7 +58,14 @@ A new site, or a plugin with screens that an end customer sees, does not start w
 
 - 🔴 **Every e2e belongs to QA, however complex.** Neither the PMO nor designer nor `core` writes or commits an e2e spec: whoever tests their own work on screen tests what they understood. If QA needs definitions or an initial scope, the PMO gives them in prose (cases, data, what to observe), not as a spec. When a dev already has a spec written, it is handed to QA as input.
 - 🔴 **The specs live with their module, and the folder is QA's.** `<module>/test/e2e` (and `fronts/*/test`) is QA's. A PMO that needs an e2e that does not belong to QA asks QA for permission. The test bases (helpers, bench models, endpoints) are provided by test-suite, and are activated by the site's config. The ones that already exist stay where they are: they are not deleted or rewritten all at once.
-- The implementer's own check (a probe or a screenshot in their tmp before delivering) is allowed. It is not committed and replaces nothing of QA's.
+- 🔴 **Two separate runs, never mixed** (owner, 23-nov):
+
+  | Who | Runs | What for |
+  |---|---|---|
+  | whoever implements (session or subagent) | its headless behavior tests, its own behavior e2e probes and its personal screenshots | to see that its own work behaves and looks right. Nothing of it is delivered as a test, committed or replaces anything of QA's |
+  | `QA` | its e2e suites, the screen walkthrough and the design screenshots | to certify how it looks and how it works |
+
+  An implementer never runs a QA suite, whole or in part: it pays twice in quota and in time (~7 min) for a run QA does anyway. If it needs a QA case, it asks QA. Every implementer brief says so.
 
 - 🔴 **Always alive:** `itdfw`, `CTO`, `core`, `designer`, `QA` and `documentador`. Those of plugins and projects (freelance) are switched off when they have no priority. The `CTO` controls the change monitors and sends the assignments to the four office ones.
 
