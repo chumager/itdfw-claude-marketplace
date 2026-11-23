@@ -38,6 +38,14 @@ eso el mapa va por ext y no por verbo. Una punta libre que quiera su política a
 | `{maxAge: 0, swr: 60}` | `private, max-age=0, stale-while-revalidate=60` (`tableData`, `tableFields`: de sesión) |
 | `{maxAge: 3600}` | `private, max-age=3600` (CF pura) |
 | `vary: …` | **se ignora**: nunca sale `Vary` desde la política de cache (ver abajo) |
+| cualquiera, y la respuesta es 4xx/5xx | `private, no-store`: un error habla de ESE pedido y nunca se repite (back, #294; lo pone `aaa.cache` en `writeHead`, también sobre lo que puso el handler) |
+| cualquiera, verbo que no es GET/HEAD | ningún header de la política |
+
+🔴 **`public` solo cuando la respuesta es igual para cualquiera que la pida** (#294). Si depende del que llama (el
+filtro de lectura o el scope con `setReq(req)`, un `hidden` función, el perfil o el level, `req.getUser()`, la sesión,
+una cookie, un header que no está en la URL), es `private`: un caché compartido (CDN, proxy) le serviría a uno la
+respuesta de otro. Lo que es único por llamada (un token, un PKCE, un Set-Cookie de sesión) va `noStore`. Un archivo
+cuyo acceso decide el handler (`File/getFile`) es `private` aunque viva un año.
 
 Reglas: **`private` es el default** (se parte de la restricción y se suelta con `public`). 🔴 **Sello (back ≥ 7.4.0):
 una punta anónima legal (`isAnonymous: true`, o su función devuelve `true`) sale SIEMPRE `public`**, diga lo que
