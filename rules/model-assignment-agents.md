@@ -15,4 +15,11 @@ Management runs on high because it is the final filter; if high is not enough, o
 Opus on low is not used: Sonnet high beats it by a little more (benchmarks of 8-nov-2026, memory `reference_modelos-5-5`). What a Sonnet delivers is reviewed by an Opus.
 
 ## Effort is inherited too
-A subagent without `effort:` in its frontmatter inherits the session's. To implement: `subagent_type: "implementer"` (sonnet, `effort: high`); generic: `base` (rule `usar-agente-base`). The Agent tool also accepts `effort` (`lower`/`higher`) per call.
+A subagent without `effort:` in its frontmatter inherits the session's. To implement: `subagent_type: "implementer"` (sonnet, `effort: medium` by default); generic: `base` (rule `usar-agente-base`). Whoever launches it decides, and passes `effort` in the Agent call:
+
+| The assignment | Effort |
+|---|---|
+| a bounded change with a closed brief: a function, a component, a case, a fix whose cause is known | `medium` (the default, nothing to pass) |
+| a bug with no known cause, a design, a change that crosses several pieces, a race or concurrency | `high`, passed in the call |
+
+Why: measured 23-nov-2026 on the same closed brief, both passed 8/8 hidden cases; `high` spent 19 % more and took twice as long, adding defenses nobody asked for.
