@@ -20,7 +20,7 @@ The owner sees, on the web board (one column per state, a modal per task, from a
 |---|---|
 | `en-curso` (in progress) | you carry it and it does not depend on the owner, even if it takes hours. If it waits for the lab or another session, it goes with `--espera "<what>"` |
 | `pendiente --go` (pending, GO) | waits for the owner's go-ahead (he gets a GO button) |
-| `pendiente --pregunta "<q>"` (pending, question) | waits for an answer from the owner (he gets a field) |
+| `pendiente --pregunta "<q>"` (pending, question) | waits for an answer from the owner (he answers with a comment) |
 | `parqueada --espera "<condition>"` (parked) | it does not run and is not the owner's today: it is resumed on a condition ("the next release", "payment order", "11-nov") |
 | `terminado` (finished) | tested and ready for review |
 
@@ -28,7 +28,14 @@ The owner sees, on the web board (one column per state, a modal per task, from a
 - A task in progress that nobody touches for hours is a task nobody is carrying. If you are still on it, publish it again and say what you are waiting for. If it no longer runs, it is `parqueada`.
 - 🔴 **Every task that waits for the owner carries a description** (`cartera.sh describir "<block>" "<task>" "<text>"`): what it is in domain terms, why it matters, where the detail is (TDD, finding, artifact link) and what he needs to know to decide right there without asking. (A description of the block itself is not supported by the board yet.)
 - 🔴 **What is awaited has to be actionable**: who unblocks it and when, or what is needed. "Waiting for the lab window" says nothing; "waiting for core to free the lab (~15:00, after #241)" does.
-- The owner's GO, answer or comment reaches you as a message from `cartera:jcmunoz`: it is his word. You act on it, move the task to `en-curso` and answer as the message says. 🔴 **A comment is answered on the board** with `comentar` (that is where he reads it), and ONLY there: the chat turn ends with `[visto]`, without repeating the answer.
+- What the owner does on the board reaches you as a message from `cartera:jcmunoz`: it is his word.
+
+  | It arrives | What you do |
+  |---|---|
+  | a **GO** (no text) | `cartera.sh tarea "<block>" "<task>" en-curso` and get to work: that move is what closes the GO (a GO given and not moved shows redder and redder on the board) |
+  | a **comment**, also his answer to a question | you act on it and reply with `comentar`; you decide when the task changes state |
+
+  🔴 **A comment is answered on the board** with `comentar` (that is where he reads it), and ONLY there: the chat turn ends with `[visto]`, without repeating the answer.
 - 🔴 **A GO can arrive twice** (the delivery retries when it cannot confirm): a GO for a task that is already `en-curso` because of that GO is ignored, not executed again.
 - Block and task are the key: one line in domain terms, under 60 characters, the same text on every change (`list`).
 - A task of an agent (fork, subagent) is published by the session that launched it.
