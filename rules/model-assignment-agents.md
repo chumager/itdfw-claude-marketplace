@@ -4,13 +4,13 @@ When launching any subagent, pass `model` explicitly: omitting it inherits the m
 
 | Who | Model · effort |
 |---|---|
-| management: `itdfw`, `CTO`, `QA`, `Comercial` | Opus 5.5 · high |
+| management: `itdfw`, `CTO`, `QA`, `Comercial` | Opus 5.5 · medium |
 | the other leads and reviewers (`core`, `designer`, `documentador`) and the PMOs | Opus 5.5 · medium (core may go up to high per session) |
-| project, module and service sessions, and every subagent that operates (implement, scout, search, synthesize, edit) | `"sonnet"` · high |
+| project, module and service sessions, and every subagent that operates (implement, scout, search, synthesize, edit) | `"sonnet"` · medium (`high` per call, table below) |
 | trivial/mechanical (lookup, count, format) | `"haiku"` (short window: never long tasks) |
 | **Fable** | **never**: Opus 5.5 beats it in code and in reasoning and costs 2.5 times less |
 
-Management runs on high because it is the final filter; if high is not enough, only then is Fable evaluated for a specific query (Anthropic's guidance). The trial with management on Fable (15 to 17-nov-2026) closed with no visible difference.
+Every session runs on medium (owner, 23-nov-2026): management catches many balls anyway (messages between sessions, escalated requirements), so high did not shrink its context and only added turns; Opus 5.1 on medium never fell short, and 5.5 is better. Measured that week: output (thinking + text) was 4 % of the Opus cost, cache reads 75 %. If medium is not enough for one specific query, it is raised for that query, not for the session.
 
 Opus on low is not used: Sonnet high beats it by a little more (benchmarks of 8-nov-2026, memory `reference_modelos-5-5`). What a Sonnet delivers is reviewed by an Opus.
 
