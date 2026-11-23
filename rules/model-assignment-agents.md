@@ -5,8 +5,9 @@ When launching any subagent, pass `model` explicitly: omitting it inherits the m
 | Who | Model · effort |
 |---|---|
 | management: `itdfw`, `CTO`, `QA`, `Comercial` | Opus 5.5 · medium |
-| the other leads and reviewers (`core`, `designer`, `documentador`) and the PMOs | Opus 5.5 · medium (core may go up to high per session) |
-| project, module and service sessions, and every subagent that operates (implement, scout, search, synthesize, edit) | `"sonnet"` · medium (`high` per call, table below) |
+| the other leads and reviewers (`core`, `designer`, `documentador`) | Opus 5.5 · medium (core may go up to high per session) |
+| the PMOs (plugin or project sessions that own what they program: `Degustacion`, `Restaurant`, `ALM`…) | `"sonnet"` · high: close to Opus medium for less (owner, 23-nov-2026) |
+| module and service sessions, and every subagent that operates (implement, scout, search, synthesize, edit) | `"sonnet"` · medium (`high` per call, table below) |
 | trivial/mechanical (lookup, count, format) | `"haiku"` (short window: never long tasks) |
 | **Fable** | **never**: Opus 5.5 beats it in code and in reasoning and costs 2.5 times less |
 
