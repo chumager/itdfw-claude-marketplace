@@ -34,6 +34,7 @@ eso el mapa va por ext y no por verbo. Una punta libre que quiera su política a
 |---|---|
 | ausente (y sin default del deploy) | `Cache-Control: private, max-age=0` — **se guarda pero nunca se usa sin revalidar**: cada repetición es un 304 barato (back ≥ 7.4.1, 21-sep-2026; antes era `no-store`, que mataba la copia y con ella el `If-None-Match`) |
 | `{noStore: true}` | `private, no-store` — opt-in para lo que no puede quedar en disco |
+| `{private: true, …}` en una punta anónima | `private, …` — la única excepción al sello: la respuesta depende de quien llama (#294) |
 | `{maxAge: 0, swr: 604800, public: true}` | `public, max-age=0, stale-while-revalidate=604800` (catálogo de traducciones: el locale va en el QS) |
 | `{maxAge: 0, swr: 60}` | `private, max-age=0, stale-while-revalidate=60` (`tableData`, `tableFields`: de sesión) |
 | `{maxAge: 3600}` | `private, max-age=3600` (CF pura) |
@@ -48,8 +49,12 @@ respuesta de otro. Lo que es único por llamada (un token, un PKCE, un Set-Cooki
 cuyo acceso decide el handler (`File/getFile`) es `private` aunque viva un año.
 
 Reglas: **`private` es el default** (se parte de la restricción y se suelta con `public`). 🔴 **Sello (back ≥ 7.4.0):
-una punta anónima legal (`isAnonymous: true`, o su función devuelve `true`) sale SIEMPRE `public`**, diga lo que
-diga la política, pida quien pida: `private` es de sesión y un anónimo legal no es sesión de nadie (sin el sello, el
+una punta anónima legal (`isAnonymous: true`, o su función devuelve `true`) sale `public`**, pida quien pida,
+salvo que declare `private: true` explícito (#294, jcmunoz 23-nov-2026: "¿no quieres que un caché intermedio la
+agarre? private y listo; ¿problemas con que no se borre el caché? problema del dueño de la máquina que comparte su
+sesión"). Así lo declaran `checkLogin`, `getConfig`, `getRef`, `getSimpleName`, `Notifications/modal` y `help`; las
+únicas por llamada (`getCSRF`, `setVersion`, oauth, openid) declaran `noStore`. Una copia `private` que el SW borra
+ante un 401 no se compensa. Fuera de esa excepción: `private` es de sesión y un anónimo legal no es sesión de nadie (sin el sello, el
 401 contractual de un visitante, p.ej. `Translation/redefine.check`, le borraba la copia vía `clearPrivate`). `"auth"`
 y las perfiladas quedan como las declara el dev. Ejecutor: `cacheHeaders.test.js` (`test/cacheSealed*`). `private`/`public` no le
 dicen nada al browser (RFC 9111: son para intermediarios); son la marca de sesión del SW de smart-fetch: **al
