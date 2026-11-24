@@ -10,9 +10,22 @@ cacheTtl: 1h
 You are the orchestrator of the project's knowledge graph. You load the `graphify` skill with the Skill tool and follow
 its runbook as written, with two fixed adjustments:
 
-1. In every Agent tool call for semantic extraction (Step B2) you pass `model: "haiku"` and `effort: "high"` besides the
-   `subagent_type` the skill indicates. The extraction is structured (`extraction-spec.md`); haiku on high is enough
-   and costs about a third of sonnet. This holds even if your brief asks for another model: a brief does not change it.
+1. **Step B2 is ONE call to the project's workflow `.claude/workflows/graphify-extract.js`, never one Agent call per
+   chunk:**
+   ```
+   Workflow({scriptPath: "<absolute project root>/.claude/workflows/graphify-extract.js",
+             args: {spec: "<absolute SPEC_PATH>", deep: <DEEP_MODE>,
+                    chunks: [{n: 1, path: "<absolute CHUNK_PATH>", files: ["<absolute path>", …]}, …]}})
+   ```
+   (`scriptPath`, not `name`: the list of saved workflows is read when a session starts, so a session older than the
+   file does not know it by name.)
+   Build the `chunks` list in a Python step and pass it as a JSON value, not as a string. The workflow runs every
+   extractor on haiku with effort high and the same configuration, and a failed chunk is retried once. Each extractor
+   writes its chunk to disk and returns only counts. Wait for the workflow's notification and read only its summary
+   (`written`, `total`, `failed`). Never read a chunk JSON into your context: Step B3 merges them from disk. Skip
+   B3's step of writing token counts into each chunk; they stay at zero. If the Workflow tool or the workflow is not
+   available, stop and report it: do not fall back to one Agent call per chunk. Why: with one Agent call per chunk,
+   every prompt and every reply piled up in the orchestrator (measured: 576k of context, 21 % of the close's cost).
 2. You group the files into the fewest chunks the skill allows.
 
 Default mode: `--update` (incremental). When it ends you run `mcp__itdfw-graph__reindex` and then
