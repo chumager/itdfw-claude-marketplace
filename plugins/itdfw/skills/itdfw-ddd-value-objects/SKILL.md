@@ -5,13 +5,18 @@ description: Use when an ITDFW custom type's value has behavior of its own (form
 
 # ITDFW DDD — Domain Objects (types con clase)
 
-Un type custom cuyo valor tiene lógica = una **clase de dominio** transversal back↔front: la MISMA clase
-la usa el SchemaType (cast/validate/persistencia) y el front (hooks GI/formato/validación). El objetivo:
-**el dato es dueño de su comportamiento** — `doc.campo.metodo()`, nunca statics al modelo.
+## Referencias
 
-> Contrato definido 2026-07-03 (jcmunoz + análisis conjunto). Reemplaza el canon "VO inmutable" anterior:
-> la inmutabilidad dura era dogma custodiando una puerta sin camino (ver §setValue). Piloto del core: **Rut**
-> (la base simple); luego Currency (el completo).
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [externalities-gi.md](references/externalities-gi.md) | El regreso `initVal`/`onChange`, el VO pure-externality (por qué no emite), el wrapper de externalidades con su regla de fuentes planas, y la máxima del componente pelado | enchufas un VO al GI, el VO tiene locale/moneda/mask, o su componente está creciendo |
+| [validation-detail.md](references/validation-detail.md) | `validateSelf` como adaptador, el patrón snapshot y por qué, `{VALUE}` en mensajes, la cadena `required` doble punta y la serialización de `validators.js` | escribes `validate()`/`isEmpty`/`checkRequired` o un validador del front |
+| [why-and-history.md](references/why-and-history.md) | Por qué murió la inmutabilidad dura y por qué `setValue` no valida, el pecado original del constructor, por qué no hay clase base, cómo nació el VO compuesto, la lección de las tasas, el orden en que se implementó el core | quieres el porqué de una regla, o vas a discutirla |
+
+Un type custom cuyo valor tiene lógica = una **clase de dominio** transversal back↔front: la MISMA clase la usa el
+SchemaType (cast/validate/persistencia) y el front (hooks GI/formato/validación). El objetivo: **el dato es dueño de su
+comportamiento** — `doc.campo.metodo()`, nunca statics al modelo. Piloto del core: **Rut** (la base simple); el
+completo: **Currency**.
 
 ## 🔴 Los 3 anillos — qué necesita una clase para VIVIR
 
@@ -19,230 +24,141 @@ la usa el SchemaType (cast/validate/persistencia) y el front (hooks GI/formato/v
 |---|---|---|---|
 | **1. DOMINIO** (sin esto no ES) | el valor + su identidad + lo derivado | monto + moneda (identidad, vive UNA vez en el doc) → precisión | el rut mismo |
 | **2. PRESENTACIÓN** (sin esto no se MUESTRA, pero ES igual) | lo del OBSERVADOR, jamás del dato | locale (user-scope) + mask (config) | formato puntos/guión (fijo, sin externalidad) |
-| **3. VIDA** (sin esto no SOBREVIVE al tiempo) | enterarse de cambios de su identidad externa | pub/sub `newCurrency` del root (ownerDocument) | — (identidad propia, no necesita) |
+| **3. VIDA** (sin esto no SOBREVIVE al tiempo) | enterarse de cambios de su identidad externa | pub/sub `newCurrency` del root (ownerDocument) | — (identidad propia) |
 
-🔴 **Completitud ≠ obligación**: este contrato es el TECHO, no el piso. Rut no necesita challa (sin
-externalidades, sin pub/sub: `setValue` que valida+guarda+ensucia y listo). Currency necesita los 3 anillos.
-La challa se gana por necesidad — anti-sobreingeniería aplicada al propio estándar.
+🔴 **El contrato es el TECHO, no el piso**: Rut no necesita challa (sin externalidades ni pub/sub: `setValue` que
+normaliza+guarda+ensucia y listo); Currency necesita los 3 anillos. La challa se gana por necesidad.
 
 ## 🔴 Nulish = FCC de la clase — LA INSTANCIA SIEMPRE SE CREA
 
-null/undefined NO niegan la clase (antes el caster hacía `v == null → return null`: **eso murió**).
-Nulish → instancia en **STANDBY**: `#value = null`, no valida, `toJSON()`/`toBSON()` → null — pero la
-instancia EXISTE con su infra lista. El front igual: `initVal` soporta undefined.
+null/undefined NO niegan la clase (el `v == null → return null` del caster murió). Nulish → instancia en **STANDBY**:
+`#value = null`, no valida, `toJSON()`/`toBSON()` → null, con su infra lista. El front igual: `initVal` soporta
+undefined. ⟹ **UNA instancia viva por campo desde el nacimiento**, y el valor se **transfiere** (`setValue`) en vez de
+recrearse por cast.
 
-**Consecuencia estructural — muere el patrón recrear-el-invariante**: el campo SIEMPRE es la clase
-(aunque nazca vacía) → **UNA instancia viva por campo desde el nacimiento**, y el valor se **transfiere
-directo** (`setValue`) en vez de recrear por cast. No hay paso transitivo del nulish.
+## 🔴 `setValue` — normaliza + asigna + ensucia (TRÁNSITO, no punta)
 
-## 🔴 `setValue` — valida + guarda + ensucia (y el fin del dogma inmutable)
+- **NUNCA valida ni lanza.** La asignación va antes de la validación por construcción del pipeline; el estado intermedio
+  inconsistente es legítimo. Quien cae es `validate()` (la llaman VS y mongoose) y, si se decide, `toBSON`/`toJSON`
+  como gate de salida.
+- **Auto-dirty**: el caster pasa el **`this` del SchemaType** como argumento final del constructor → la clase conoce su
+  **path** → `setValue` hace `#doc.markModified(#path)`. El schemaType es COMPARTIDO por path: de él solo se toma
+  path/options; el doc es el `#doc` propio.
+- **Contrato back**: `setValue` NO se usa en mongoose (el idioma es `doc.campo = v`, y la aritmética recastea vía
+  `Symbol.toPrimitive`). Existe para el front y casos límite.
 
-La inmutabilidad dura del `#value` protegía UNA cosa práctica: mutar in place = mongoose no se entera =
-no dirty = no persiste (el hoyo del Rut original). Pero en mongoose **nadie llama `setValue`**: el idioma
-es `doc.campo = v` (recast) y la aritmética pasa por `Symbol.toPrimitive` (recast al reasignar) — la
-barrera custodiaba una puerta sin camino. Se suelta el dogma con una RED de fábrica:
+| Mutación | Regla |
+|---|---|
+| `#value` | se transfiere SOLO por `setValue` (disciplina, no dogma) |
+| `setCurrency`/`setPrecision` (Currency) | re-cierran el valor; acotado al front (en el back la identidad es fija al cast) |
+| `setLocale`/`setMask` | presentación PURA: el valor es el mismo con cualquier locale |
 
-- **La cochinada del caster**: el caster pasa el **`this` del SchemaType** como argumento final del
-  constructor → la clase conoce su **path** → `setValue` se **auto-ensucia**
-  (`#doc.markModified(#path)`). La mutación invisible al dirty-tracking es imposible por construcción.
-  (Ojo: el schemaType es COMPARTIDO por path del schema — de él solo se toma path/options; el doc de la
-  dupla dirty es el `#doc` propio.)
-- 🔴 `setValue` es TRÁNSITO, NO punta: normaliza → asigna → ensucia. **NUNCA valida ni lanza.** El flujo lo
-  demuestra: VSV → assignVSR → para VALIDAR se necesita el formateado → el formatter necesita el valor YA
-  en el VO → la asignación va ANTES de la validación por construcción del pipeline. Un setValue que valida
-  invierte el orden del proceso. **El estado intermedio inconsistente es LEGÍTIMO** (la clase es
-  transitiva, vive siempre); quien cae es `validate()` (VS/mongoose la llaman) y, por contrato si se
-  decide, `toBSON`/`toJSON` como gate de salida.
-- **Contrato back**: `setValue` NO se usa en mongoose (existe para el front y casos límite). El skill lo
-  explicita; el caso dirty queda documentado, no prohibido.
+El porqué: [references/why-and-history.md](references/why-and-history.md).
 
-### Taxonomía de mutabilidad
+## 🔴 Las puntas OBLIGATORIAS frente al GI — `initVal` y `onChange`
 
-- `#value`: se transfiere SOLO por `setValue` (disciplina, no dogma).
-- `setCurrency`/`setPrecision` (Currency): re-cierran el valor — descanso deliberado, acotado al front
-  (en el back la identidad es fija al cast).
-- `setLocale`/`setMask`: presentación PURA — el valor es el mismo sin importar el locale. Cero deuda.
+Todo VO enchufado al GI (`$VO`) tiene **`initVal`** (externo → display) y **`onChange(cb)`** (el REGRESO: el VO cambió
+por una externalidad → notifica con el valor YA initVal'eado → el GI lo asigna al VSV). El GI las llama PELADAS:
+ausencia = revienta al boot. Sin reactividad externa → `onChange` NOOP (`return this`): la firma existe aunque nunca se
+dispare.
 
-## 🔴 El REGRESO — `onChange` e `initVal` son FIRMA del VO (2026-07-12)
+🔴 **VO PURE-EXTERNALITY** (en modo external NO tiene valor propio: es 100 % derivado de sus externalidades): **NO emite
+`onChange` por externalidades** — la propagación la hace el computed EV, y emitir dentro del goteo es
+escritura-dentro-de-lectura. `initVal` retorna SIEMPRE la derivación; el primer descenso no-vacío se guarda
+(`#initial ??=`); `onChange` queda para cambios INTERNOS que el pipeline no ve.
 
-Todo VO enchufado al GI (`$VO`) tiene DOS puntas OBLIGATORIAS (el GI las llama PELADAS — ausencia =
-revienta al boot, no silent-error): **`initVal`** (externo → display; declarativa, el fallback nativo del
-GI es SOLO para componentes sin VO) y **`onChange(cb)`** (el REGRESO: el VO cambió su valor por una
-externalidad → notifica con el valor YA initVal'eado → el GI lo asigna al VSV → la cascada natural corre
-sola). Sin reactividad externa → `onChange` NOOP (`return this`), jamás se dispara pero la firma existe.
-Canales paralelos (símbolos, texts de medidas) = slots aparte del VO, registrados por el componente.
-Detalle completo: skill itdfw-front-develop → vo-gi-contract.md §El REGRESO. El módulo de conformance
-debe chequear ambas puntas.
+Detalle: [references/externalities-gi.md](references/externalities-gi.md); del lado del front, skill
+`itdfw-front-develop` → `vo-gi-contract.md` §El REGRESO.
 
-🔴 **VO PURE-EXTERNALITY (2026-07-15) — la excepción que refina el regreso**: si el VO en modo external
-NO tiene valor propio (su valor es 100% DERIVADO de las externalidades — Credit VO), **NO emite onChange
-por externalidades: de la propagación se encarga el computed EV** (la misma externalidad que gotea
-re-evalúa el EV y el `initVal` retorna la derivación fresca — un ciclo, cero eventos). Emitir dentro del
-goteo = escritura-dentro-de-lectura (el goteo corre DENTRO del EV; la notificación reentra a mitad de
-evaluación y la cola del computed la pisa). `initVal` = derivación pura: retorna SIEMPRE la derivación
-(cálculo en vivo se presume correcto); el PRIMER descenso no-vacío se guarda (`#initial ??=`) pal caso
-update / validación futura contra datos legacy. `onChange` queda reservado a cambios INTERNOS que el
-pipeline no ve (cadena cuota→crédito en free). Construcción PURA en el componente: sin precarga de
-arrays. Ambas patas (externalidad que cambia EV≠VSR — declarada, sin caso aún — y externalidad que
-cambia formateo+initVal) cubiertas por el early-return del valor final. Detalle: vo-gi-contract.md
-§VO PURE-EXTERNALITY.
+## 🔴 Validación: ESENCIA vs DEFINICIÓN
 
-## 🔴 Validación: ESENCIA vs DEFINICIÓN (y el validate transversal)
+| Regla | Dónde va |
+|---|---|
+| la **ESENCIA** (lo que la hace SER: Number "no me llegó chanchito", Currency "monto monetario coherente", Rut módulo 11). Test: *¿es verdadera para CUALQUIER campo de este tipo en cualquier schema?* | la clase (`validate()`) |
+| las **DEFINICIONES** del campo (min/max/required/unique) | mongoose nativo, validators del form, capa de contexto |
+| lo **extrínseco** (remotas tipo `checkStrength`, cruzadas entre campos) | su capa, no la clase |
 
-- **La clase valida su ESENCIA** — lo que la hace SER: Number valida "no me llegó chanchito"; Currency
-  (hereda esencia de Number) valida "monto monetario coherente"; Rut valida módulo 11. Test: *¿la regla es
-  verdadera para CUALQUIER campo de este tipo en cualquier schema?* → esencia → clase.
-- **Las DEFINICIONES EXTERNAS** (min/max/required/unique) son del CAMPO → mongoose nativo (extends),
-  validators del form, capa de contexto. El mismo Currency vale 5.000 acá y 5.000.000 allá.
-- **Transversal**: el custom type detecta `validate` en la clase y **lo enchufa al SchemaType** → la misma
-  función valida en mongoose Y en el front. La pichicata `_validate` (el túnel viejo back→front) MUERE
-  para los DDD — y esa presión empuja a que todo sea DDD.
-- **El desplazamiento del flujo**: `validateSelf` (front) deja de validar esencia — pasa a ADAPTADOR:
-  ¿hay clase instanciada? → `setValue` → si se cae, trapea el error y lo EMITE (dominio → UI, i18n vía
-  formatM). Se desplaza lo INTRÍNSECO (sync, puro); lo EXTRÍNSECO queda en su capa (remotas tipo
-  checkStrength, cruzadas entre campos, min/max de mongoose).
-- 🔴 **Validación EXCLUSIVA para DATOS** (2026-07-06): `validate()` **nunca rechaza indefiniciones** —
-  vacío pasa, TRÁNSITO pasa (el pipeline lo resuelve; el emitter-gate impide que persista). Pa eso está
-  `required`, que el MOTOR da GRATIS a todo type con `class`: `checkRequired = v != null && !v.isEmpty`
-  (delega en el isEmpty del VO) — por eso `isEmpty` = "NADA de nada" (datos colgando ≠ empty; esos los
-  juzga validate como COHERENCIA — ej. Address: "datos huérfanos sin coordenadas = malo").
-- 🔴 **`validate()` valida el BOLSILLO, no el registro vivo (patrón SNAPSHOT, 2026-07-23)**: el
-  singleton VO es MUTABLE por la cadena reactiva del front (scope: campos LAZY — la re-bajada lo pisa
-  mid-ciclo) → un validate ASYNC/lento que lea `#value` después de un await valida OTRO valor (cazado
-  e2e: N2 prístino validaba "OK" con basura adentro, vía un delay de prueba). Regla: **primera línea
-  `const value = this.#value` y TODO el cuerpo valida el snapshot** — inmune a pisadas, aguanta
-  validadores foráneos lentos (checkStrength, remotas). Verificado con delay de 500ms inyectado:
-  perfecto. Canon: `Rut.validate()`. (Arista aparte, pendiente: 2 ciclos VS solapados → generación.)
-- 🔴 **`{VALUE}` en mensajes de esencia SOLO si el VSV es ESCALAR** (Rut/Currency): en VOs de
-  valor-objeto (Address) el front interpola contra el VSV plano → "[object Object]". El back interpola
-  vía Symbol.toPrimitive (mensaje) y toJSON (serialización del error) — verificado e2e 2026-07-06.
-- 🔴 **La cadena required es DOBLE PUNTA espejada** (2026-07-06): back = `checkRequired` del SchemaType
-  (motor); front = las variantes `required` de `validators.js`. Ambas: `vo.checkRequired(...args)` si
-  existe → `!vo.isEmpty` → chequeo nativo/estándar. TODOS los args del caller se colan (el VO decide si
-  los usa; args asimétricos back/front = problema del dev que los necesite). 🔴 los validadores de
-  `validators.js` se SERIALIZAN al front (toString + merge por capas) → CERO closures/helpers de módulo
-  — todo INLINE en cada variante, aunque se repita.
+- **Transversal**: el custom type detecta `validate` en la clase y **lo enchufa al SchemaType** → la misma función valida
+  en mongoose Y en el front. `_validate` (el túnel viejo back→front) muere para los DDD. En el front `validateSelf` pasa a
+  ADAPTADOR (`setValue` → si cae, emite el error).
+- 🔴 **Solo DATOS**: `validate()` **nunca rechaza indefiniciones** (vacío y tránsito pasan). `required` lo da el MOTOR
+  gratis a todo type con `class`: `checkRequired = v != null && !v.isEmpty`. `isEmpty` = "NADA de nada" (datos
+  colgando no son vacío: los juzga `validate` como coherencia).
+- 🔴 **SNAPSHOT**: primera línea `const value = this.#value` y TODO el cuerpo valida el snapshot (un validate async que
+  relee `#value` tras un `await` valida otro valor). Canon: `Rut.validate()`.
+- 🔴 **`{VALUE}`** en mensajes de esencia SOLO si el VSV es ESCALAR (Rut/Currency); en valor-objeto (Address) sale
+  "[object Object]".
+- 🔴 **`required` es DOBLE PUNTA espejada**: back `checkRequired` del SchemaType; front las variantes `required` de
+  `validators.js`. Ambas: `vo.checkRequired(...args)` si existe → `!vo.isEmpty` → chequeo estándar. Los validadores de
+  `validators.js` se SERIALIZAN al front → cero closures o helpers de módulo, todo INLINE.
 
-## 🔴 VO COMPUESTO — génesis monetaria y aritmética por definición (2026-07-17, canon: FeeFullClass)
+Detalle: [references/validation-detail.md](references/validation-detail.md).
 
-Un VO cuyo valor CONTIENE valores monetarios/dimensionales NO opera floats: **compone VOs hijos**.
-Nació del descuadre del motor de cuotas — "compute RAW + la capa redondea" era **definirse por
-condicionantes EXTERNOS** (el back redondeaba de carambola vía setters mongoose; el front NADA →
-dispersión acumulada → la validación por reconstrucción estaba condenada por diseño: un peso corrido
-con premisa de identidad = premisa invalidada; la tolerance era la alfombra). Las reglas:
+## 🔴 VO COMPUESTO — un valor que CONTIENE montos compone VOs hijos (canon: `FeeFullClass`)
 
-- **GÉNESIS**: el compuesto construye su estructura en el constructor — cada campo monetario nace
-  `new Currency(null)` (instancia-siempre, standby FCC). Los valores se CONDUCEN por `setValue` del
-  hijo (un conductor único: `assign(field, v)` — público: mongoose no soporta privates por definición).
-- **ARITMÉTICA MONETARIA**: cada paso del cálculo CIERRA a la precisión de su moneda ANTES de alimentar
-  el siguiente (lee por `+this.x` = toPrimitive cerrado, escribe por conductor). Back y front idénticos
-  por construcción — misma clase, mismos VOs; mongoose pasa a ser SOLO persistencia.
-- **CASCADA (anillo 3 compuesto)**: `setCurrency` del padre dispersa a todos los hijos (re-cierran su
-  valor) y sella `_currency` own-prop (viaja por fila; el docArray no la persiste si no está declarada).
-- **El sello de los casters lo hace viable**: `v instanceof VO → pasa colá` — las MISMAS instancias
-  fluyen clase→mongoose→componente sin reinterpretación. Sin ese sello, el compuesto no existe.
-- **QUÉ CIERRA Y QUÉ NO (2026-07-18)**: solo la PLATA cierra por moneda (Currency — los centavos
-  fraccionarios no existen en caja). Las TASAS/definiciones (Percentage) NO llevan VO ni caster: **raw
-  PURO operacional, jamás se redondean** — su `precision` es perilla de DISPLAY no más (lección TIR: un
-  cap de precisión en la tasa genera bloques de error groseros sobre capital gordo; el display a 2
-  escondía 0,8333% como 0,83% — la pintura capada, el cálculo intacto).
-- **TRANSPORTE**: el compuesto se serializa SOLO (`toJSON()`: hijos como raw YA cerrados + contexto
-  plano). 🔴 Las instancias JAMÁS cruzan hacia estado reactivo del front — el Proxy de Vue es
-  transparente al `instanceof` pero NO declara los `#privates` → throw. Raw + externalidades por su
-  vía = idempotente. Detalle front: itdfw-front-develop → vo-gi-contract.md §VOs vs LA REACTIVIDAD.
+- **GÉNESIS**: el compuesto arma su estructura en el constructor — cada campo monetario nace `new Currency(null)`. Los
+  valores se CONDUCEN por `setValue` del hijo con un conductor único `assign(field, v)` (público: mongoose no soporta
+  privates).
+- **ARITMÉTICA**: cada paso CIERRA a la precisión de su moneda ANTES del siguiente (lee por `+this.x` = toPrimitive
+  cerrado, escribe por conductor). Back y front idénticos por construcción; mongoose queda SOLO como persistencia.
+- **CASCADA**: `setCurrency` del padre dispersa a todos los hijos y sella `_currency` own-prop (viaja por fila; el
+  docArray no la persiste si no está declarada).
+- **El sello de los casters**: `v instanceof VO → pasa colá`, así las MISMAS instancias fluyen clase→mongoose→componente.
+- **QUÉ CIERRA**: solo la PLATA (Currency). Las TASAS (Percentage) NO llevan VO ni caster: **raw PURO, jamás se
+  redondean**; su `precision` es solo de display.
+- **TRANSPORTE**: se serializa SOLO (`toJSON()`: hijos raw ya cerrados + contexto plano). 🔴 Las instancias JAMÁS entran
+  al estado reactivo del front: el Proxy de Vue no declara los `#privates` → throw. Raw + externalidades por su vía.
 
-## 🔴 LA MÁXIMA: componente PELADO — el VO lo hace TODO (jcmunoz 2026-07-04)
+Cómo nació y la lección de las tasas: [references/why-and-history.md](references/why-and-history.md).
 
-**Un VO que necesita PARCHAR su componente está MALO — o tiene externalidades que no puede controlar
-sin ayuda. Corta y fome.** El norte del contrato:
+## 🔴 Externalidades: JAMÁS en la clase ni en el doc — WRAPPER en el componente
 
-- **Sin externalidades → el componente queda VACÍO**: con suerte `$options.VO = Rut` y **NADA MÁS**.
-  ItdRut hoy está vacío A PROPÓSITO — es la prueba de concepto de lo que se INYECTA al GI después.
-- **El GI viene parchado para soportar VOs instanciados**: si el VO soporta la funcionalidad (hook
-  homólogo: initVal/formatter/emitter/keypress/validate…) el GI la usa; **si no la soporta → FALLBACK**
-  al flujo clásico del GI. Encapsulamiento transversal, CERO sobrecarga por componente.
-- **Con externalidades (Currency: locale/moneda/mask) → el componente justifica SOLO el cableado de
-  externalidades** (watchers → setters al singleton). Todo lo demás que un componente declare (pisar
-  emitter, formatM, refreshes, herencias por binding) es olor a parche → revisar el VO o el GI, no
-  engordar la hoja.
+Los hooks GI de la clase sirven lo que existe REALMENTE en ambos mundos: `_currency` sí (campo real del doc); `locale` y
+`mask` JAMÁS (son del USUARIO: back `$locals.locale`/`req.locale`, front el store de Config). Nunca se parcha una clase
+ni un pseudoDoc: en el `created()` del componente, `this.VO = class extends Currency { constructor(...a) { super(...a);
+this.setLocale(vm.staticLocale); } }`. 🔴 El wrapper lee fuentes **PLANAS** (`vm.staticLocale`, snapshot por watcher),
+NUNCA el getter reactivo.
 
-Vara de revisión: cuenta las líneas del componente que NO son cableado de externalidades — cada una
-es deuda contra esta máxima.
-
-## 🔴 Externalidades: JAMÁS en la clase ni el doc — WRAPPER en el componente
-
-Los hooks GI de la clase existen SOLO SIN externalidades (los valores deben existir REALMENTE en ambos
-mundos: `_currency` sí — campo real del doc + alcanzable por localInput/rootBus; `locale`/`mask` JAMÁS —
-son del USUARIO: back `$locals.locale`/`req.locale`, front Config store). **Nunca se parcha una clase ni
-un pseudoDoc para suplir externalidades** — se enchufa por WRAPPER (la cochinada):
-
-```js
-// created() del componente — el ADAPTER: solo el componente sabe que hay cochinada
-const vm = this;
-this.VO = class extends Currency {
-  constructor(...args) { super(...args); this.setLocale(vm.staticLocale); }
-};
-```
-Clase pura (el back jamás ve el wrapper), GI ni se entera, externalidad en la frontera. 🔴 Regla de oro:
-el wrapper lee fuentes **PLANAS** (`vm.staticLocale`, snapshot actualizado por watcher) — NUNCA el getter
-reactivo (el constructor corre dentro del computed `externalValue` → getter-tubo → pisado fantasma).
-Detalle front: skill `itdfw-front-develop` → vo-gi-contract.md.
+**La máxima — componente PELADO**: un VO que necesita PARCHAR su componente está malo. Sin externalidades el componente
+queda VACÍO (`$options.VO = Rut` y nada más; el GI usa los hooks que el VO soporta y cae al flujo clásico en los demás).
+Con externalidades, el componente justifica SOLO el cableado (watchers → setters al singleton); el resto es olor a
+parche. Detalle y el ejemplo completo: [references/externalities-gi.md](references/externalities-gi.md).
 
 ## 🔴 Construcción: constructor-VALOR / setters-AMBIENTE / `static cast` opcional
 
-**El pecado original (muerto 2026-07-03): "constructor = firma del cast"** — amarraba la clase al esquema
-de UN consumidor (mongoose) → reinstanciación perpetua + constructor fijo + timing ambiental como problema
-del dev. La forma final separa las 3 fases:
-
 1. **`constructor(value)`** — SOLO registra valor. Puro, testeable sin mocks, cero ambiente.
-2. **SETTERS ambientales** — el ambiente entra POR GOTEO cuando llega (`setDoc`/`setLocale`/
-   `setSchemaType`/`setCurrency`...), idempotentes. Resuelve el timing: no se puede saber cuándo cambia el
-   ambiente ni en qué etapa está — la instancia se arma al ritmo del ambiente (hydrate back, lazy/async
-   front, da lo mismo el orden).
-3. **`static cast(...)`** (OPCIONAL — challa por necesidad) — el ADAPTER por consumidor: recibe la firma
-   que sea (la del caster mongoose `(value, doc, init, prev)` + options + schemaType; la del GI; la que
-   venga), crea la instancia y pichicatea vía setters. La variabilidad de firmas vive en la fábrica, no en
-   la clase. **Simple (Rut) NO necesita cast** — constructor directo; complejo (Currency) sí.
+2. **SETTERS ambientales** (`setDoc`/`setLocale`/`setSchemaType`/`setCurrency`…) — el ambiente entra POR GOTEO cuando
+   llega, idempotentes, en cualquier orden.
+3. **`static cast(...)`** (OPCIONAL) — el ADAPTER por consumidor: recibe la firma que sea (la del caster mongoose
+   `(value, doc, init, prev)` + options + schemaType; la del GI), crea la instancia y la arma vía setters. Simple (Rut)
+   no lo necesita; complejo (Currency) sí.
 
-🔴 **Construcción TOTAL — la infra NUNCA se cae**: cualquier input produce instancia (nulish FCC incluido);
-los setters ambientales tampoco lanzan. **La parcialidad (throws) vive SOLO en las puntas de SALIDA, y solo
-si la punta lo necesita**: `validate` cae al validar (mongoose lo llama pre-save → lo inválido nunca
-persiste, como ValidationError), `format` cae sin locale (PLR), `toBSON` warnea el chueco. Mata: el dogma
-"jamás existe inválido" (validaba en el peor momento — la construcción, con el ambiente a medias), los
-guards de timing y los FCC-checks defensivos.
+- 🔴 **Construcción TOTAL**: cualquier input produce instancia y los setters no lanzan. Los throws viven SOLO en las
+  puntas de SALIDA que lo necesiten: `validate` cae al validar (mongoose la llama pre-save), `format` cae sin locale
+  (PLR), `toBSON` warnea el chueco.
+- 🔴 **`setOptions(options)` = LA punta estándar para la config del campo**: la infra la llama sola en ambos mundos (back:
+  caster genérico post-new; front: GI en created Y en cada `inputUpdate`), siempre con `?.`. El constructor PUEDE recibir
+  los args completos del caster para config back-only; si la config se necesita en AMBOS mundos, va por `setOptions`.
+  La clase lee lo que su contrato define e ignora el resto; sin props "por fuera" en el front.
+- `schemaType`: el path para el auto-dirty de `setValue`. `prev` → `dispose()` (limpieza de listeners). Pub/sub:
+  escuchar al **ROOT** (`ownerDocument()`).
 
-- 🔴 **`setOptions(options)` = LA punta ESTÁNDAR para recibir la config del campo** — la infra la llama
-  SOLA en ambos mundos (back: caster genérico post-new; front: GI en created Y en cada `inputUpdate`),
-  siempre `?.` (optional por construcción). **Libertad del dev**: el constructor PUEDE recibir los args
-  completos del caster (config back-only por constructor es legítimo — el caster le pasa todo); pero si
-  la config se necesita en AMBOS mundos, la vía correcta es `setOptions` (el GI solo conoce esa punta).
-  La clase lee LO QUE SU CONTRATO DEFINE e ignora el resto; sin externalidades de input (Rut) simplemente
-  no la declara. SIN props "por fuera" en el front.
-- `schemaType` (la cochinada del caster): path para el auto-dirty de `setValue`.
-- `prev` → `dispose()` (limpieza de listeners). Pub/sub: escuchar al **ROOT** (`ownerDocument()`).
+## 🔴 SIN clase base — el contrato se VERIFICA, no se hereda
 
-## 🔴 SIN clase base/template — el contrato se VERIFICA, no se hereda
+No hay `DomainObject` base: los `#private` no se heredan, y exponerlos con getter/setter los deja sin protección. El
+contrato es de COMPORTAMIENTO y lo verifica un **módulo TDD de CONFORMANCE**: le pasas tu clase y dice qué cumple y qué
+falta (¿instancia con nulish sin caerse? ¿`setValue` sin throw y con dirty? ¿`toJSON`/`toBSON` vacío → null? ¿`validate`
+cae con basura? ¿`toPrimitive`? ¿`initVal` y `onChange`?). "¿Pasa el conformance?" es la puerta de salida objetiva
+(`itdfw-completeness`).
 
-Una base `DomainObject` con `#value` está muerta **por construcción** (evaluada y descartada 2026-07-03):
-los `#private` no se heredan → el hijo no puede operar su valor (¿un `formatter` que no puede leer lo que
-formatea?); y darle getter/setter público "para que opere" hace que **el privado ya no sea privado** —
-acceso total sin transformación = protección ceremonial. La base cobra flexibilidad y paga con seguridad
-falsa.
+## Reglas de salida y presentación
 
-**El reemplazo: módulo TDD de CONFORMANCE** — el contrato DDD es de COMPORTAMIENTO (qué hacen las puntas),
-no de estructura → se verifica con un test externo: le pasas tu clase y te dice qué cumples y qué falta
-(¿instancia con nulish sin caerse? ¿setValue no-throw+dirty? ¿toJSON/toBSON empty→null? ¿validate cae con
-basura? ¿toPrimitive?). Sirve para clases nuevas Y para auditar las existentes (Address/Duration gratis),
-sin acoplamiento estructural. Es el gemelo del skill: el skill DICE el contrato, el módulo lo VERIFICA —
-y "¿pasa el conformance?" = la puerta de salida objetiva (itdfw-completeness).
-
-## Orden de implementación (2026-07-03)
-
-1. **Rut** — el CORE del contrato sin challa: instancia-siempre (FCC nulish), `setValue` triple,
-   validate transversal de esencia, auto-dirty. Sin anillos 2/3.
-2. **Currency** — el completo: + externalidades por wrapper, pub/sub, formatters, hooks GI.
-3. Rama futura: **distribución de clases de types al front** (para types core/DEFAULT sin FWP) →
-   (ver el TODO «type-classes-distribution»).
+- **Export**: `toXLS()`/`toPDF()` en la clase — la data sabe presentarse (canon Rut).
+- **`toJSON()` = transporte** (canónico limpio al front) / **`toBSON()` = persistencia**; vacío → null.
+- **PLR segmentado**: el locale solo lo usan los formatters → PLR AHÍ, no en el constructor.
+- **Labels locale-aware para selects = SINGULAR** (forma de cita; no existe plural genérico sin conteo):
+  `Intl...formatToParts({[unit]: 1})` filtrando `type !== "integer"`, NUNCA regex sobre el dígito. `options`/label =
+  independiente del conteo; `format`/valor = flexiona por conteo.
 
 ## Anti-patrones
 
@@ -253,18 +169,7 @@ y "¿pasa el conformance?" = la puerta de salida objetiva (itdfw-completeness).
 | Negar la clase con nulish (`v == null → null`) | instancia SIEMPRE, standby |
 | Validar definiciones (min/max) en la clase | solo ESENCIA; definiciones al campo |
 | `_validate` para túnel back→front | `validate` en la clase, enchufado transversal |
-| Revertir el display para recuperar el valor | el SSoT es VSR — ya lo tenemos |
+| Revertir el display para recuperar el valor | el SSoT es VSR |
 | Default silencioso de locale | PLR en dominio explícito; el hook degrada; el wrapper inyecta |
-| **Clase de adorno**: cast gordo valida todo + clase vacía (Duration histórico) | la lógica EN la clase; cast/type delgado |
+| **Clase de adorno**: cast gordo que valida todo + clase vacía | la lógica EN la clase; cast/type delgado |
 | Copiar un VO viejo como plantilla (TimeFrame) | partir del contrato de este skill (piloto Rut) |
-
-## Reglas heredadas VIGENTES (del canon anterior — sobreviven al contrato nuevo)
-
-- **Presentación para export**: `toXLS()`/`toPDF()` en la clase — la data sabe presentarse (canon Rut).
-- **`toJSON()` = transporte** (canónico limpio/crudo al front) / **`toBSON()` = persistencia**; `empty → null`.
-- **PLR segmentado**: el locale solo lo usan los formatters → PLR AHÍ, no en el constructor (una instancia
-  sin locale sigue operando el resto).
-- **Labels locale-aware para selects = SINGULAR (forma de cita)**: no existe "plural genérico" sin conteo
-  (eslavos 3 formas, árabe 5, galés muta raíz — verificado con matriz 1/2/5/10/20/100/1000 en 12 locales,
-  2026-06-26). Recipe: `Intl...formatToParts({[unit]: 1})` filtrando `type !== "integer"` — NUNCA regex
-  sobre el dígito. `options`/label = count-independent (singular); `format`/valor = count-aware (flexiona).
