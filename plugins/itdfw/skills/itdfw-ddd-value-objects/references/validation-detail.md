@@ -5,8 +5,9 @@
 
 ## El desplazamiento del flujo en el front
 
-`validateSelf` (front) deja de validar esencia y pasa a ADAPTADOR: ¿hay clase instanciada? → `setValue` → si se cae,
-trapea el error y lo EMITE (dominio → UI, i18n vía `formatM`). Se desplaza lo INTRÍNSECO (sync, puro); lo EXTRÍNSECO
+`validateSelf` (front) deja de validar esencia y pasa a ADAPTADOR: si hay VO, corre su `validate()` como un validador
+más; si lanza, lo atrapa y devuelve su mensaje como error del ciclo, con `{PATH}` y `{VALUE}` interpolados (dominio →
+UI, i18n vía `formatM`). `setValue` nunca valida ni lanza. Se desplaza lo INTRÍNSECO (sync, puro); lo EXTRÍNSECO
 queda en su capa (remotas tipo `checkStrength`, cruzadas entre campos, min/max de mongoose). La pichicata `_validate`
 (el túnel viejo back→front) muere para los DDD, y esa presión empuja a que todo sea DDD.
 
