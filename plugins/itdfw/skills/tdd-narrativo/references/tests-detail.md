@@ -1,7 +1,5 @@
 # Pruebas: la vertical XLS y PDF, el ritual manual y el grafo — detalle
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la plantilla.
-
 #### 🔴 Componentes y tipos propios: la vertical se prueba COMPLETA, hasta XLS y PDF
 
 Un tipo o un componente no termina en la pantalla. El mismo valor **se descarga en planilla y se
@@ -39,7 +37,7 @@ Litmus al escribir la fila: *¿el resultado es un número o un "¿reaccionó alg
 automático, no inspección. (El costo suele ser mucho menor de lo que parece: la infra de prueba y los logs
 que dicen quién reaccionó ya existen; falta la aserción.)
 
-#### 🔴 Las pruebas son un GRAFO, no un árbol (jcmunoz 2-oct-2026)
+#### 🔴 Las pruebas son un GRAFO, no un árbol
 
 "Tengo este requerimiento, le hago un test" produce un árbol con duplicados. La pregunta va al revés: **con mi set
 de pruebas, ¿queda todo el contrato encadenado o hay nodos colgando?**
@@ -51,7 +49,7 @@ de pruebas, ¿queda todo el contrato encadenado o hay nodos colgando?**
 | **no se prueba en una prueba la base de las demás** | si N specs recorren un mecanismo, un spec dedicado a él no aporta: si el mecanismo se rompe, caen todos; si cae uno solo y a ratos, es entorno o el spec (rule `e2e-siempre-chrome-real-y-al-dia`, paso 0) |
 | **dos pruebas con intent distinto que hacen lo mismo son una** | se saca la redundante; no se fusionan en una nueva |
 
-Caso: `itd-t-shared` (translate) probaba "redefinir → PUT → `mutate({force})` → aviso del SW → repintar", que ya
-recorrían `nullify`, `attr-href`, `grid-width`, `not-translatable` y `status-colours`. Falló 2 de 4, se le culpó a un
-cambio ajeno sin correlación, y a mano funcionaba siempre. Se sacó.
+Ejemplo: un spec dedicado a "redefinir → PUT → `mutate({force})` → aviso del SW → repintar", flujo que ya recorren
+otros cinco specs. Si el mecanismo se rompe caen todos; si el dedicado cae solo y a ratos, es entorno o el spec, y no
+aporta nada que los demás no cubran: se saca.
 

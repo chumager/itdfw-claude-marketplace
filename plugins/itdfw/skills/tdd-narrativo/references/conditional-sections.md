@@ -1,7 +1,6 @@
 # Secciones condicionales del TDD (§2d, §2e, §2f)
 
-Aplican según el tipo de módulo. El `SKILL.md` trae el litmus de cada una; acá está la regla completa y el caso que
-la originó.
+Aplican según el tipo de módulo. El `SKILL.md` trae el litmus de cada una; acá está la regla completa y su ejemplo.
 
 ## 2d · 🔴🔴 Si el dominio es una NORMA EXTERNA, se lee la norma VIGENTE antes de escribir una línea
 
@@ -35,13 +34,11 @@ antigüedad. En un dominio propio eso no importa (el código está ahí para mir
 justo lo que caduca. **La antigüedad no se percibe desde adentro**: recordar mal se siente exactamente
 igual que recordar bien.
 
-**El caso que lo prueba (2026-09-10, plugin `openid`):** se escribió el nivel 3 completo con el registro
-dinámico de clientes (RFC 7591) como pieza central — modelo, puntas, casos, decisiones blindadas. Un sapeo
-posterior encontró que la spec vigente de MCP (2026-07-28) lo marca **`MAY` y deprecated**, *"retained for
-backwards compatibility"*, y que lo preferido (`SHOULD`) es otra cosa que el TDD ni mencionaba. El nivel
-completo hubo que parquearlo. jcmunoz: *"esto no es diseño personalizado, es diseño sobre la RFC ya
-establecida... no podemos hacer el TDD de recuerdos, hay que mamarse toda la documentación necesaria antes
-de definir el TDD"*.
+**Ejemplo:** un nivel 3 completo escrito con el registro dinámico de clientes (RFC 7591) como pieza central —
+modelo, puntas, casos, decisiones blindadas— mientras la spec vigente de MCP lo marca **`MAY` y deprecated**,
+*"retained for backwards compatibility"*, y lo preferido (`SHOULD`) es otra cosa que el TDD ni mencionaba: el nivel
+completo no sirve. Es diseño sobre una norma ya establecida, y no se hace de recuerdos: se lee toda la documentación
+necesaria antes de definir el TDD.
 
 **Litmus para saber si tu TDD cae acá**: *¿el nombre de lo que estoy escribiendo lo eligió alguien de
 afuera?* Si en el TDD aparecen siglas que no inventamos nosotros —un número de RFC, un `grant_type`, un
@@ -49,9 +46,8 @@ afuera?* Si en el TDD aparecen siglas que no inventamos nosotros —un número d
 
 ## 2e · 🔴 Antes de definir QUÉ construir, definir qué NO construir: adoptar → adaptar → implementar
 
-Es el paradigma con que está hecho el framework entero, y es de jcmunoz (2026-09-10): *"no reinventar
-nunca la rueda, tratar de adaptarme y usar lo mejor en base a mis requerimientos"*. El FW existe por esta
-lógica aplicada una y otra vez.
+Es el paradigma con que está hecho el framework entero: no reinventar la rueda, adaptarse y usar lo mejor en
+base a los requerimientos. El FW existe por esta lógica aplicada una y otra vez.
 
 **El orden, y el costo declarado de cada paso:**
 
@@ -62,7 +58,7 @@ lógica aplicada una y otra vez.
 | **3. IMPLEMENTAR** | ¿no existe, o lo que existe no sirve? | recién acá se escribe | `Mutex`, `PubSub`, `SSE` |
 
 🔴 **El paso 2 tiene un costo que hay que declarar en el TDD, no descubrir después**: el issue puede no
-recibir respuesta nunca (le pasó al del `autoincrement`). ⟹ "adapto" significa **asumir el mantenimiento
+recibir respuesta nunca. ⟹ "adapto" significa **asumir el mantenimiento
 del parche por tiempo indefinido**, incluida cada actualización de la dependencia. Si eso no se puede
 sostener, la respuesta honesta es 3, no 2.
 
@@ -117,14 +113,12 @@ responden preguntas distintas:
 4. **Las puntas abiertas se auditan primero.** Es donde el defecto viejo cuesta más caro y donde menos se
    mira, porque "lleva años andando".
 
-**El caso que lo prueba (2026-09-10, plugin `translate`):** el TDD ya declaraba *"el modelo no se
-rediseña, se muda"* y traía su diferencial completo, pieza por pieza. Al preguntarse por primera vez **qué
-viene malo**, dos peticiones anónimas contra el sitio de desarrollo bastaron: la única punta abierta a
-internet **se cae con parámetros incompletos y contesta el rastro del programa, con las rutas del
-servidor**; y como el error no es controlado, además le llega al administrador por correo — o sea que
-cualquiera puede llenarle la casilla pidiendo mal a propósito. Llevaba años ahí. Salieron ocho defectos:
-cinco verificados, tres por verificar. jcmunoz: *"este TDD es distinto al resto, este nace para crear un
-plugin sobre algo q ya opera, entonces el diferencial entre lo actual y lo correcto puede q falte"*.
+**Ejemplo:** un TDD que declara *"el modelo no se rediseña, se muda"* y trae su diferencial completo, pieza por
+pieza, sin preguntarse **qué viene malo**. Dos peticiones anónimas contra el sitio de desarrollo bastan para
+destaparlo: la única punta abierta a internet **se cae con parámetros incompletos y contesta el rastro del programa,
+con las rutas del servidor**; y como el error no es controlado, además le llega al administrador por correo — o sea
+que cualquiera puede llenarle la casilla pidiendo mal a propósito. Un defecto así lleva años ahí. Un TDD sobre algo
+que ya opera necesita el diferencial entre lo actual y lo correcto, no solo el diferencial de piezas.
 
 **Litmus para saber si tu TDD cae acá**: *¿alguna parte de esto ya está corriendo en alguna parte?* Si la
 respuesta es sí —aunque sea *"sí, pero lo vamos a reescribir entero"*— la sección va.
@@ -152,10 +146,10 @@ entregan. Por cada entrada, una línea y un caso que lo haría fallar:
 | **DoW** (denial of wallet): ¿un actor puede gastar plata nuestra (IA, SMS, mapas)? | `req.browserAuth` + cuota (skill `itdfw-api-system`) |
 | **Config**: ¿una llave editable por el admin abre algo de lo anterior? | no va en Config (rule `config-nunca-abre-un-hoyo`) |
 
-Caso canónico (30-oct-2026, plugin `notifications`): `subscribe` guardaba cualquier `endpoint` y el back le hace POST
-en cada aviso (así funciona Web Push, RFC 8030); un cliente podía apuntarlo a una IP interna, y la punta `send`
-devolvía lo que esa IP contestaba. Arreglo: `https` y solo los cuatro servicios de push, fijos en el código. El hoyo
-lo cazó una revisión automática, no el TDD: nunca habíamos pensado al atacante desde esa posición.
+Ejemplo canónico (un plugin de notificaciones push): `subscribe` guarda cualquier `endpoint` y el back le hace POST
+en cada aviso (así funciona Web Push, RFC 8030); un cliente puede apuntarlo a una IP interna, y la punta `send`
+devuelve lo que esa IP contesta. Defensa: `https` y solo los servicios de push conocidos, fijos en el código. El TDD
+debe pensar al atacante desde esa posición.
 
 ### Para servicios SaaS (cualquier multi-tenant) — además
 
@@ -166,7 +160,7 @@ En un SaaS aparecen dos actores que el AAA no ordena, y un plugin diseñado para
 | **admin del tenant** | todo SU site: datos, perfiles, Config nivel 2 | **nuestra infraestructura y los otros tenants** | el módulo, en el código: nada de lo que él configura puede alcanzar lo nuestro |
 | **arquitecto del SaaS** | qué capacidades se le dan al tenant | todo, si le da código o salidas libres | la infraestructura (abajo) |
 
-🔴 **Un SaaS se vende en TRES niveles de aislamiento, y el TDD declara para cuál se diseña** (jcmunoz 2-nov-2026). El
+🔴 **Un SaaS se vende en TRES niveles de aislamiento, y el TDD declara para cuál se diseña**. El
 nivel lo decide lo que el cliente paga, no el gusto del diseño:
 
 | Nivel | Cómo se aísla | Para quién |
@@ -177,8 +171,8 @@ nivel lo decide lo que el cliente paga, no el gusto del diseño:
 
 Consecuencias para el TDD:
 - **Medio y alto**: lo que un tenant haga dentro de su BD (un pipeline libre, un `$lookup`, un `$out`) solo alcanza sus
-  datos; el módulo **no recorta capacidades** para defender a un tenant de otro (caso del plugin `kpi`, 30-oct: la lista
-  blanca de etapas se descartó porque el hoyo era compartir la BD).
+  datos; el módulo **no recorta capacidades** para defender a un tenant de otro (por ejemplo, una lista
+  blanca de etapas de pipeline no aporta: el hoyo es compartir la BD).
 - **Bajo**: comparten BD, así que el módulo **sí recorta**: nada que el cliente configure o escriba puede saltarse el
   prefiltro (pipelines libres, `DBModelRaw`, Tools, `$lookup` a otra colección), los índices únicos incluyen al dueño, y
   cada modelo con datos del cliente declara su prefiltro y su caso de cruce (el cliente A no ve, no edita ni adivina
@@ -187,11 +181,11 @@ Consecuencias para el TDD:
   para que un cliente que conoce un id ajeno no lo enchufe a mano. 🔴 El nivel 1 de un SaaS de nivel bajo se prueba con
   **varios clientes y pruebas cruzadas, headless y e2e**: con la sesión de A se intenta leer, editar, borrar y
   **asignar como referencia** lo de B en cada par de modelos iguales, y se verifica que `getRef` (por `formOptions`) y el
-  `simpleName` de la ref corran sobre el `query` del type (jcmunoz 2-nov-2026: el riesgo no es el FW, es un dev que
+  `simpleName` de la ref corran sobre el `query` del type (el riesgo no es el FW, es un dev que
   define mal el prefiltro o el `query`).
 - **Zones** no es un nivel: es el caso especial de UN cliente con varios tenants que quiere verlos todos juntos. Se
   decide por servicio y va apagado por omisión.
-- 🔴 **En un SaaS compartido, lo que se define con código o consulta libre es NUESTRO** (jcmunoz 2-nov-2026): KPI, ML,
+- 🔴 **En un SaaS compartido, lo que se define con código o consulta libre es NUESTRO**: KPI, ML,
   `DBModelRaw`, `DBAPI`, Tools de `ai` y similares los implementamos y activamos nosotros; el tenant usa el resultado
   (sus KPI, su modelo entrenado) pero no los define. La defensa es el guard de quién puede qué: **esas capacidades nunca
   se asignan a un perfil de tenant** en un SaaS compartido, y el TDD lo declara con su caso (el perfil del tenant no

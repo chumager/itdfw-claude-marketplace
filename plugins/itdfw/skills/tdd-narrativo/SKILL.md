@@ -1,6 +1,6 @@
 ---
 name: tdd-narrativo
-description: Use when WRITING, READING or IMPLEMENTING a TDD.md — any agent that receives a TDD.md to implement MUST load this skill first and run its conformity checklist BEFORE writing code; if the TDD lacks a mandatory section (narrative, scopes, MODEL with fields/relations/endpoints, executors, tests with expected results, approval) the agent STOPS and reports what is missing instead of guessing. The mandatory order is narrative → scopes → model → executors → tests, APPROVED by jcmunoz, and only then code. Prevents the tautological TDD and the invisible model (models/fields/endpoints nobody designed). The module's TDD.md is the SSoT; jcmunoz does not read the code, he reads and approves the TDD.
+description: Use when WRITING, READING or IMPLEMENTING a TDD.md — any agent that receives a TDD.md to implement MUST load this skill first and run its conformity checklist BEFORE writing code; if the TDD lacks a mandatory section (narrative, scopes, MODEL with fields/relations/endpoints, executors, tests with expected results, approval) the agent STOPS and reports what is missing instead of guessing. The mandatory order is narrative → scopes → model → executors → tests, APPROVED by the owner, and only then code. Prevents the tautological TDD and the invisible model (models/fields/endpoints nobody designed). The module's TDD.md is the SSoT; the owner does not read the code, they read and approve the TDD.
 ---
 
 # TDD narrativo — el TDD.md es el contrato, no el reporte
@@ -9,7 +9,7 @@ description: Use when WRITING, READING or IMPLEMENTING a TDD.md — any agent th
 
 | Referencia | Qué trae | Léela cuando |
 |---|---|---|
-| [cases-and-quotes.md](references/cases-and-quotes.md) | Casos y citas que originaron las reglas: modos §0b, translate §0d, e2e que no pasa §0c, modelo invisible §2b, concurrencia §4, disciplina del código §5, rebanada 1 | necesitas el porqué histórico de una regla del contrato antes de defenderla o aplicarla |
+| [why-and-examples.md](references/why-and-examples.md) | Porqués y ejemplos de las reglas: modos §0b, solo lo propio §0d, e2e que no pasa §0c, modelo invisible §2b, concurrencia §4, disciplina del código §5, rebanada 1, tres archivos | necesitas el porqué de una regla del contrato antes de defenderla o aplicarla |
 | [conditional-sections.md](references/conditional-sections.md) | Secciones condicionales §2d (dominio = norma externa: leer la norma vigente), §2e (qué NO construir: adoptar→adaptar→implementar), §2f (módulo que ya opera: auditar corriendo), §2g (superficie de ataque) | el módulo implementa un protocolo/norma externa, ya opera en producción, o hay que decidir qué no construir y contra quién se defiende |
 | [design-ast.md](references/design-ast.md) | AST de diseño de componentes `Itd*` y puntas (tabla y árbol antes de codear), no solo de modelos | el TDD declara un componente o una punta y falta su forma |
 | [pipe.md](references/pipe.md) | El pipe §0: interrogatorio de propiedades al dueño, dummy primero, banco vivo, un eslabón a la vez, reescribir la narrativa al cambiar una propiedad | vas a convertir cada fila del TDD en verdad verificada y no en apariencia |
@@ -22,7 +22,7 @@ description: Use when WRITING, READING or IMPLEMENTING a TDD.md — any agent th
 ## El problema que esto resuelve
 
 **Un TDD escrito DESPUÉS de codificar no prueba el requerimiento: prueba lo que el dev entendió.** Si entendió mal, el
-test hereda el error y **siempre pasa**: el verde es una tautología. Y **jcmunoz no lee el código** ⟹ **el SSoT es el
+test hereda el error y **siempre pasa**: el verde es una tautología. Y **el dueño no lee el código** ⟹ **el SSoT es el
 `TDD.md` de cada módulo**, que él lee y aprueba; el código es el entregable automatizable. El porqué completo:
 [references/why.md](references/why.md).
 
@@ -45,12 +45,12 @@ Y antes de escribir el MODELO, tres puertas que evitan que salga contaminado:
 ```
 
 🔴 **El gate NO es el orden: es la aprobación.** Escribir el TDD antes y aprobarlo uno mismo deja el
-problema intacto. Nada de código hasta que jcmunoz haya leído y dado el visto bueno.
+problema intacto. Nada de código hasta que el dueño haya leído y dado el visto bueno.
 
 ### 🔴 El camino de un TDD hasta implementarse
 
 ```
-PMO escribe → CTO → designer → documentador → QA → aprobación de jcmunoz → se implementa
+PMO escribe → CTO → designer → documentador → QA → aprobación del dueño → se implementa
 ```
 
 **Antes de este camino, si lo que se construye lo ve un cliente final** (un site nuevo, o un plugin con pantallas de front de cliente), el PMO no parte por el TDD: `designer` estudia el producto de la competencia y presenta alternativas, el dueño elige una y sobre ella escribe el PMO (skill **`producto-antes-del-tdd`**). Las pantallas de back office no pasan por ahí. Cuando hubo estudio, la cabecera del TDD lleva la alternativa elegida y el enlace al estudio.
@@ -62,9 +62,9 @@ PMO escribe → CTO → designer → documentador → QA → aprobación de jcmu
 | **documentador** | **correctitud** contra el código: que lo que el TDD afirma exista, que no se contradiga y que sus referencias resuelvan. No entra en completitud | devuelve hallazgos al dueño (con `archivo:línea`); no edita el TDD |
 | **QA** | solo el TDD y el problema, nunca el código | aprueba o rechaza el **set de pruebas**; si rechaza, el caso concreto que falta o sobra; no edita el TDD |
 
-- 🔴 **Sin la aprobación de QA no hay aprobación de jcmunoz.** Los comentarios de los revisores no obligan al PMO: él
-  defiende lo establecido, y los hallazgos los resuelve jcmunoz con él.
-- 🔴 **Toda corrección posterior al TDD** (de jcmunoz o interna) vuelve a pasar por el documentador y por QA. El
+- 🔴 **Sin la aprobación de QA no hay aprobación del dueño.** Los comentarios de los revisores no obligan al PMO: él
+  defiende lo establecido, y los hallazgos los resuelve el dueño con él.
+- 🔴 **Toda corrección posterior al TDD** (del dueño o interna) vuelve a pasar por el documentador y por QA. El
   documentador lee **primero el historial** del TDD (`TDD-bitacora.md` y el git log) y revisa solo lo que ese historial
   muestra que le toca; QA recibe el diff con las filas de casos tocadas.
 - **Un fix también se escribe**: en `TDD-pendientes.md` o fusionado al TDD. Nada queda sin documentar.
@@ -82,12 +82,12 @@ PMO escribe → CTO → designer → documentador → QA → aprobación de jcmu
 4. **Un eslabón a la vez, con el dueño mirando.** La arquitectura emerge de los casos, no al revés.
 5. **Cuando cambia una propiedad, se reescribe la NARRATIVA**, no solo el estado de los tests.
 
-Detalle y el caso canónico (el TDD del plugin `translate`): [references/pipe.md](references/pipe.md).
+Detalle y un ejemplo canónico (el TDD del plugin `translate`): [references/pipe.md](references/pipe.md).
 
 ### 0b · 🔴 El MODO del TDD se declara en la cabecera: nuevo, refactor o incremental
 
 Son **tres formas distintas de tratar el código**; un cajarito que no sabe cuál es asume la más conservadora, y de ahí
-salen los wrappers y los parches sobre piezas recién hechas. El caso y la cita de jcmunoz: [references/cases-and-quotes.md](references/cases-and-quotes.md).
+salen los wrappers y los parches sobre piezas recién hechas. El porqué: [references/why-and-examples.md](references/why-and-examples.md).
 
 | Modo | Qué manda | El brief al cajarito dice |
 |---|---|---|
@@ -104,14 +104,14 @@ Cada fila de pruebas nombra una propiedad que el módulo DEFINE. Lo que define o
 fetcher, el SW, el core), el framework reactivo, el browser o la red **no tiene caso**: el módulo es cliente y asume que
 eso funciona. Si una prueba propia cae por culpa del otro, se informa a su dueño, no se le arma un set. Tampoco entran
 edges que en operación normal no ocurren (un PUT que pasa y otro que cae es red caída). Litmus: *si esta fila falla,
-¿el arreglo va en ESTE módulo?* Si no, la fila sobra. El caso de translate: [references/cases-and-quotes.md](references/cases-and-quotes.md).
+¿el arreglo va en ESTE módulo?* Si no, la fila sobra. El porqué: [references/why-and-examples.md](references/why-and-examples.md).
 
 ### 0c · 🔴 Un e2e que no pasa se le PASA al dueño, no se reinterpreta
 
 Playwright no es 100 % fiable (el navegador cambia entre versiones, hay flakes de timing, un arnés propio da verde
 donde el servidor real no). Cuando un caso e2e no pasa y la causa no es un defecto verificado en el código, **se le
-entrega a jcmunoz con la evidencia** (spec, versión de Chrome, `error-context.md`, conteos). No se reescribe la aserción
-para que pase, no se declara flake sin medirlo y no se apaga en silencio. El caso: [references/cases-and-quotes.md](references/cases-and-quotes.md).
+entrega al dueño con la evidencia** (spec, versión de Chrome, `error-context.md`, conteos). No se reescribe la aserción
+para que pase, no se declara flake sin medirlo y no se apaga en silencio. El porqué: [references/why-and-examples.md](references/why-and-examples.md).
 
 ### 1 · Narrativa
 
@@ -140,7 +140,7 @@ significa "la red" en ese lado.
 ### 2b · Modelo — lo que existe, con qué campos, y qué punta lo toca
 
 🔴 **Sin esto el TDD define flujos y el cajarito inventa el modelo.** Un flujo se conversa; un modelo se **declara**.
-Cuatro piezas, obligatorias (la cita de jcmunoz: [references/cases-and-quotes.md](references/cases-and-quotes.md)):
+Cuatro piezas, obligatorias (el porqué: [references/why-and-examples.md](references/why-and-examples.md)):
 
 🔴 **Usuarios** — va primero, con el skill **`itdfw-aaa`** cargado. Por cada tipo de usuario, la decisión **y su porqué,
 escrito como la rama del árbol de `itdfw-aaa` que la decide**, para que quien revise compare las dos contra el skill:
@@ -151,7 +151,7 @@ escrito como la rama del árbol de `itdfw-aaa` que la decide**, para que quien r
 
 **Entidades** — por cada modelo (nuevo o extendido), con las cuatro preguntas de `itdfw-models` §0 respondidas
 (fuerte o débil, una vez o por edición, 1:N o N:M, a qué nivel pertenece), **primero una o dos líneas con su ALCANCE**: qué es en
-el dominio, por qué existe, quién lo crea y cuánto vive (jcmunoz 2026-09-08: un modelo sin motivo escrito obliga
+el dominio, por qué existe, quién lo crea y cuánto vive (un modelo sin motivo escrito obliga
 a preguntar "¿y esto qué es?" en cada lectura). Ese alcance tiene que cerrar con la narrativa y los flujos: si un
 modelo no aparece en ningún ejecutor ni en ninguna prueba, sobra o falta algo. Después, la tabla:
 
@@ -179,21 +179,21 @@ que hay que leer una que toma diez decisiones para entregar cosas distintas.
 🔴 **Una interfaz junta solo lo que se implica.** Al diseñar desde la base, para cada par de capacidades: *si puedo
 hacer X, ¿por el hecho de poder hacerlo puedo hacer Y?* Si sí, son la misma punta con distintas extensiones y van en la
 misma interfaz. Si no, son capacidades distintas: una interfaz que las junta promete algo que el AAA puede no darle a
-quien la usa, y sacarlas después sale caro (jcmunoz 25-nov: el "Undo" de la caja, al lado de vender).
+quien la usa, y sacarlas después sale caro (por ejemplo, un "Undo" de caja al lado de vender).
 
 **Relaciones** — un mermaid de pocas líneas con cardinalidad (`Membership }o--|| PaymentCard`). Es lo que se
-lee en diez segundos y lo que jcmunoz revisa primero.
+lee en diez segundos y lo que el dueño revisa primero.
 
 ⟹ **La implementación se compara contra esta sección.** Modelos, campos o puntas fuera de ella = hallazgo.
 
 ### 2b' · 🔴 Componentes y puntas también llevan su AST de diseño — no solo los modelos
 
-Un **componente** o una **punta** que solo aparece en flujos y casos deja al implementador decidir el árbol, y el dueño termina leyendo código para opinar (*"sin AST de diseño no podemos dar el vamos a algo"*). Un requerimiento de diseño sin su AST no es diseño.
+Un **componente** o una **punta** que solo aparece en flujos y casos deja al implementador decidir el árbol, y el dueño termina leyendo código para opinar. Un requerimiento de diseño sin su AST no es diseño.
 
 - **Componente `Itd*`** — una tabla y un árbol ANTES de codear: **props** (nombre · tipo · default · qué significa en dominio), **cadena** (qué capa lo declara y cuál lo extiende, con el `name` de cada una), **métodos por capa** (cuál declara cada capa y **cuál pisa**), **render** (quién lo declara, una sola capa, y qué llama), **lo que NO hace**, y 🔴 **qué pieza del FW ES**: un conjunto de campos con guardar ES un form (`GenericForm` + definición de inputs + controller), no un componente nuevo.
 - **Punta** (`APP/…`, `options.API`) — `path · verbo · acceso · params (nombre, obligatorio, normalización) · body · respuesta (shape exacto y status posibles) · errores (código por causa)`. Sin la respuesta escrita, el front adivina el shape.
 
-⟹ Lo que un cajarito implemente fuera de ese árbol es **hallazgo**; si el árbol resulta mal, se corrige el TDD primero, no el código. La tabla completa y el caso de `ItdT` (2026-09-18): [references/design-ast.md](references/design-ast.md).
+⟹ Lo que un cajarito implemente fuera de ese árbol es **hallazgo**; si el árbol resulta mal, se corrige el TDD primero, no el código. La tabla completa: [references/design-ast.md](references/design-ast.md).
 
 ### 2c · 🔴 Cada sección se escribe CON SU SKILL cargado — este skill no los reemplaza
 
@@ -211,7 +211,7 @@ una punta ni cómo se define un type: cada una de esas cosas tiene dueño, y el 
 | cómo se cierra y qué se prueba | `itdfw-completeness` |
 
 ⟹ **El criterio no se copia acá**: duplicado, se desincroniza en silencio. El TDD **orquesta**; el conocimiento vive
-en un solo dueño, y vale para quien ESCRIBE el TDD y para quien lo IMPLEMENTA. Por qué: [references/cases-and-quotes.md](references/cases-and-quotes.md).
+en un solo dueño, y vale para quien ESCRIBE el TDD y para quien lo IMPLEMENTA. Por qué: [references/why-and-examples.md](references/why-and-examples.md).
 
 ### 2d / 2e / 2f · Secciones condicionales → [`references/conditional-sections.md`](references/conditional-sections.md)
 
@@ -264,7 +264,7 @@ concurrencia sobre un serial roto marea y termina rompiendo lo principal.
 🔴 **Una prueba de concurrencia FUERZA la carrera y AFIRMA que ocurrió.** Lanzar N cosas "a la vez" no prueba nada: un
 verde así pueden ser N operaciones que se serializaron solas. La carrera se fuerza con una **barrera** (todos entran a
 la zona crítica, esperan a estar todos y recién ahí actúan) y la prueba **afirma que hubo choque** (reintentos,
-conflictos, esperas) además del resultado. El caso canónico (`autoincrement`, N3.3/N3.4): [references/cases-and-quotes.md](references/cases-and-quotes.md).
+conflictos, esperas) además del resultado. Ejemplo canónico (`autoincrement`, N3.3/N3.4): [references/why-and-examples.md](references/why-and-examples.md).
 
 #### 🔴 Componentes y tipos propios: la vertical se prueba COMPLETA, hasta XLS y PDF
 
@@ -276,7 +276,7 @@ Cada caso dice **cómo se ejecuta solo**. Si el resultado esperado es un **NÚME
 
 #### 🔴 Las pruebas son un GRAFO, no un árbol
 
-La pregunta es si **con el set de pruebas queda todo el contrato encadenado o hay nodos colgando**. Cada test declara **qué nodos cubre**; se agrega uno solo para un **nodo colgando**; **no se prueba en una prueba la base de las demás**; **dos pruebas con intent distinto que hacen lo mismo son una** (se saca la redundante, no se fusionan). La tabla completa y el caso `itd-t-shared`: [references/tests-detail.md](references/tests-detail.md).
+La pregunta es si **con el set de pruebas queda todo el contrato encadenado o hay nodos colgando**. Cada test declara **qué nodos cubre**; se agrega uno solo para un **nodo colgando**; **no se prueba en una prueba la base de las demás**; **dos pruebas con intent distinto que hacen lo mismo son una** (se saca la redundante, no se fusionan). La tabla completa y un ejemplo: [references/tests-detail.md](references/tests-detail.md).
 
 ### 5 · Recién ahí, el código
 
@@ -294,7 +294,7 @@ Y con la disciplina que hace no-decorativos a los tests:
   al tiro, como una tilde que falta en una tesis. Sin una justificación 100 % correcta y escrita en el TDD, la
   firma se cambia, no se envuelve (rule `firma-nuestra-no-se-envuelve`).
 - 🔴 **Hay pasada de verificación de CÓDIGO, no solo de tests.** El "listo" exige leer el código contra el contrato
-  (firmas, capas, qué pisa a qué), aparte de la suite verde. Los casos que lo destaparon: [references/cases-and-quotes.md](references/cases-and-quotes.md).
+  (firmas, capas, qué pisa a qué), aparte de la suite verde. El porqué: [references/why-and-examples.md](references/why-and-examples.md).
 - **La rebanada probada termina en COMMIT, y el bump se decide contra el registry.** Verde no es
   "listo": listo es commiteado (rule `commit-al-cerrar`, con `itdfw-deps.sh files` si tocó un
   publicable) y con la versión decidida por `drift`, no por el diff anterior (rule `bump-al-arreglar`).
@@ -302,8 +302,7 @@ Y con la disciplina que hace no-decorativos a los tests:
 
 ### 6 · 🔴 OPERANDO — el término real, que no es "está probado"
 
-Un TDD que cierra en verde deja la cosa en el limbo (jcmunoz, 2026-09-15: *"nuestro flujo termina con las pruebas,
-no tiene término real"*; la evidencia: [references/cases-and-quotes.md](references/cases-and-quotes.md)).
+Un TDD que cierra en verde deja la cosa en el limbo ("está probado" no es "está implementado y funcionando"; la evidencia: [references/why-and-examples.md](references/why-and-examples.md)).
 
 ⟹ El TDD lleva una sección final **"Puesta en operación"** con cuatro campos, y **no está cerrado hasta que los
 cuatro tienen valor**:
@@ -322,7 +321,7 @@ Sin los cuatro, el estado es **"probado"**, no **"operando"**, y el documento NO
 
 Un TDD **no se manda a implementar** sin una sección "Rebanada 1": el recorrido más chico que un usuario real hace
 esta semana de punta a punta, con lo demás reemplazado por algo tonto. Cada modelo, campo y punta del Modelo nombra
-en qué rebanada se usa; lo que no está en la 1 va a una lista de UNA línea, sin diseñar. El caso canónico: [references/cases-and-quotes.md](references/cases-and-quotes.md).
+en qué rebanada se usa; lo que no está en la 1 va a una lista de UNA línea, sin diseñar. El porqué: [references/why-and-examples.md](references/why-and-examples.md).
 
 ## 🔴 El TDD inicial NO puede ser completo — y no debe intentarlo
 
@@ -353,17 +352,17 @@ Perseguir el 100% en un feature es el mismo error que no probar el must.
 
 ## 🔴 Escenarios que no existen
 
-El fallo más caro es un test **de algo que no debería pasar nunca**: cuesta código, mantenimiento, y blinda una conducta equivocada. Antes de escribir un caso: **1. ¿Quién pediría esto y por qué?** (sin nombre y motivo, el caso no existe). **2. ¿Qué gana el usuario si esto ocurre?** ("nada" o "queda peor" es un desatino, no una funcionalidad). 🔴 Las dos preguntas aplican también a los huecos que UNO propone: proponer un hueco sin filtrarlo es el mismo error que escribir el test de más. El caso real (2026-08-06) y la auditoría que lo ilustra: [references/scenarios-that-dont-exist.md](references/scenarios-that-dont-exist.md).
+El fallo más caro es un test **de algo que no debería pasar nunca**: cuesta código, mantenimiento, y blinda una conducta equivocada. Antes de escribir un caso: **1. ¿Quién pediría esto y por qué?** (sin nombre y motivo, el caso no existe). **2. ¿Qué gana el usuario si esto ocurre?** ("nada" o "queda peor" es un desatino, no una funcionalidad). 🔴 Las dos preguntas aplican también a los huecos que UNO propone: proponer un hueco sin filtrarlo es el mismo error que escribir el test de más. El ejemplo y la auditoría que lo ilustra: [references/scenarios-that-dont-exist.md](references/scenarios-that-dont-exist.md).
 
 ## 🔴 Checklist de conformidad — para quien RECIBE un TDD (cajaritos incluidos)
 
 Antes de escribir una línea, quien implementa **audita el TDD** contra esta lista. Si falta algo, **NO codea**:
 termina el turno con un reporte "TDD INCOMPLETO: falta X, Y" y para. Que el esclavo nos mande la PLR **antes**
-de gastar un token en código es el objetivo, no un fallo (jcmunoz 2026-09-08).
+de gastar un token en código es el objetivo, no un fallo.
 
 | # | Debe traer | Si falta |
 |---|---|---|
-| 1 | Cabecera con estado **APROBADO por jcmunoz + fecha** y el **MODO** (nuevo / refactor con cobertura completa / incremental; o la enmienda con su modo). 🔴 Si el TDD **trae o modifica front de cliente final**: además la **alternativa elegida** (una línea) y el **enlace al estudio** de `producto-antes-del-tdd` (para una pantalla suelta, el estudio corto va en la sección UI/UX y la cabecera lo nombra) | sin aprobación no hay código, aunque el TDD esté perfecto; sin modo, "TDD INCOMPLETO: falta el modo", porque cambia cómo se trata cada línea (§0b); sin la alternativa elegida y su estudio en un TDD de front de cliente, el cajarito se detiene y lo devuelve al PMO |
+| 1 | Cabecera con estado **APROBADO por el dueño + fecha** y el **MODO** (nuevo / refactor con cobertura completa / incremental; o la enmienda con su modo). 🔴 Si el TDD **trae o modifica front de cliente final**: además la **alternativa elegida** (una línea) y el **enlace al estudio** de `producto-antes-del-tdd` (para una pantalla suelta, el estudio corto va en la sección UI/UX y la cabecera lo nombra) | sin aprobación no hay código, aunque el TDD esté perfecto; sin modo, "TDD INCOMPLETO: falta el modo", porque cambia cómo se trata cada línea (§0b); sin la alternativa elegida y su estudio en un TDD de front de cliente, el cajarito se detiene y lo devuelve al PMO |
 | 2 | Narrativa en lenguaje de dominio | pedir la narrativa; no deducirla del código vecino |
 | 3 | Scopes (actor, concurrencia, quién mira, vida, red) | reportar; sin scope las pruebas se inventan |
 | 4 | **Modelo**: alcance escrito de cada entidad (qué es, por qué existe, quién la crea, cuánto vive), tabla de campos, tabla de puntas, mermaid de relaciones | 🔴 reportar; JAMÁS inventar campos, modelos ni puntas |
@@ -388,16 +387,16 @@ contra esa sección, no contra su memoria.
 ## 🔴 TRES archivos, no uno: contrato · bitácora · corridas
 
 Un TDD que junta el contrato con la historia de sus decisiones y con el resultado de cada corrida **se vuelve
-ilegible y caduca cada media hora** (el caso de `translate`: [references/cases-and-quotes.md](references/cases-and-quotes.md)).
+ilegible y caduca con cada corrida** (por qué: [references/why-and-examples.md](references/why-and-examples.md)).
 
 | Archivo | Qué lleva | Quién lo lee | Cuándo cambia |
 |---|---|---|---|
-| **`TDD.md`** | **solo el contrato**: narrativa corta, scope, modelo y AST **sin historia**, ejecutores, pruebas con estado en UNA palabra (✅ ⬜ ⛔), huecos, decisiones en una línea cada una, rebanada, puesta en operación | jcmunoz, para aprobar; el implementador, para conformidad | solo cuando cambia el contrato. Objetivo ≤ 300 líneas |
+| **`TDD.md`** | **solo el contrato**: narrativa corta, scope, modelo y AST **sin historia**, ejecutores, pruebas con estado en UNA palabra (✅ ⬜ ⛔), huecos, decisiones en una línea cada una, rebanada, puesta en operación | el dueño, para aprobar; el implementador, para conformidad | solo cuando cambia el contrato. Objetivo ≤ 300 líneas |
 | **`TDD-bitacora.md`** | el porqué fechado de cada decisión, las citas, lo que se descartó y por qué | quien necesite entender un porqué | se **agrega** al final; nunca se reescribe hacia atrás |
 | **`TDD-corridas.md`** | una fila por corrida: fecha · qué · rojo primero · verde · números | quien dude de si algo se probó y cuándo | se agrega una fila por corrida |
 | **`TDD-pendientes.md`** | las rebanadas declaradas y **no tomadas**: una por bloque, con qué y por qué, sin diseño fino; y 🔴 **un TDD en borrador que espera aprobación** (un TDD sin pendientes no aparece en ninguna búsqueda: es lo mismo que dejarlo en `ideas/`) | quien busque trabajo pendiente: **existir el archivo ES la señal** (`find -name "TDD*pendientes.md"`), sin leer contratos | cuando un cajarito toma una rebanada, **sale de acá y entra al contrato**; si queda vacío, se borra. 🔴 Un fix también se escribe acá o se fusiona al TDD: nada queda sin documentar |
 
-🔴 **El contrato no carga pendientes** (jcmunoz 5-oct-2026): si las rebanadas futuras viven dentro del `TDD.md`, saber
+🔴 **El contrato no carga pendientes**: si las rebanadas futuras viven dentro del `TDD.md`, saber
 qué falta exige leer cada TDD completo, y saber cuáles TDD tienen algo exige leerlos todos.
 
 **Por qué no es cosmética: el caché de lectura.** Cada lector carga el TDD en su contexto; si un cajarito anota un
@@ -415,7 +414,7 @@ Reglas de escritura que salen de ahí:
 - 🔴 **Una disyuntiva durante la implementación se decide, se escribe y se hace** (rule
   `disyuntiva-se-documenta-y-se-hace`). En la bitácora: el problema, las opciones, la decisión con su criterio y qué
   cuesta deshacerla. En §Decisiones del contrato: una línea marcada **"decidido al implementar, por revisar"**. En el
-  reporte, la lista arriba. No se para a preguntar lo que es de la capa propia; lo de jcmunoz (contrato público del
+  reporte, la lista arriba. No se para a preguntar lo que es de la capa propia; lo que es del dueño (contrato público del
   core, irreversible, acceso de terceros) va por pregunta con push, y se sigue con lo que no dependa de eso.
 - **Cada corrida agrega su fila en `TDD-corridas.md`** (fecha, conteo, tiempo) y, si cambió un estado, la palabra en
   el contrato. Es el respaldo de qué se probó y cuándo, sin invalidar la lectura del contrato.

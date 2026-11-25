@@ -1,10 +1,8 @@
 # §0 El pipe — cómo se hace verdad cada fila, completo
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
-
 El resto de este skill dice QUÉ lleva el `TDD.md`. Esta sección dice CÓMO se llega a que cada fila sea
 verdad y no apariencia — "el texto se ve en pantalla" no es lo mismo que "la propiedad prometida se
-cumple". Ver `feedback_verificado-es-la-propiedad-no-la-apariencia.md`.
+cumple".
 
 1. **Interrogatorio de propiedades al dueño.** Por cada promesa del módulo, tres preguntas:
    *¿qué propiedad la define? ¿qué prueba la haría FALLAR si no se cumpliera? ¿cómo se ve entrada /
@@ -22,4 +20,4 @@ cumple". Ver `feedback_verificado-es-la-propiedad-no-la-apariencia.md`.
    diseñarlos de antemano.
 5. **Cuando cambia una propiedad, se reescribe la NARRATIVA**, no solo el estado de los tests.
 
-Caso canónico: el TDD del plugin `translate` (16-sep-2026) — el helper `/t-test` con `caseBlock` por caso.
+Ejemplo canónico: el TDD del plugin `translate` — el helper `/t-test` con `caseBlock` por caso.
