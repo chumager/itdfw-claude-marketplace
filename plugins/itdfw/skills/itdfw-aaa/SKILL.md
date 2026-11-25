@@ -23,6 +23,16 @@ mezcla gente de un cliente con los admins, y la interfaz promete lo que el AAA n
 - No se pregunta ni se discute: en un SaaS, el usuario de un cliente es un clon **tenga las funciones que tenga**.
 - Un clon por **tipo** de usuario (el organizador, la caja, el vendedor), no por perfil.
 - Si un tipo crea a otro, el creado es otro clon. El padre nunca crea un `User`.
+- 🔴 **Si uno depende del otro, es otro tipo**: el vendedor cuelga del dueño del stand, así que son dos clones aunque
+  tengan la misma forma. Juntos, el admin tendría que sobrecargarse (filtros, campos condicionales, "si es dueño…")
+  solo para separarlos.
+- **Por qué sale más fácil** (el litmus de la paja: *¿cuál es la forma de no reimplementar nada para controlarlo?*):
+  cada clon tiene su propia lista, y el prefiltro del modelo pregunta el tipo de quien llama. Si es `User`, ve todo y
+  filtra a su pinta; si es un dueño de stand, ve solo los de su stand. Ver a los dueños o a los vendedores es directo,
+  y ver "mis vendedores" es trivial.
+- 🔴 **Un usuario pertenece al nivel que contiene todo lo que puede hacer.** El cliente que participa en varias ferias
+  pertenece al sistema, no a una feria, y su paso por cada feria es una relación. El vínculo inmutable con un padre lo
+  lleva solo quien vive dentro de un único segmento (la caja en su feria, el vendedor en su stand).
 
 ### Cómo entra cada tipo
 
