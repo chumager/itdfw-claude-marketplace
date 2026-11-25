@@ -1,6 +1,9 @@
 # Every test result comes with WHAT was tested and HOW, before the number
 
-When reporting a test (yours or a subagent's), in this order:
+🔴 **This is for the reviewer (the `CTO`, a session that reviews), never for the owner.** The owner gets only what
+deviated from the plan (`al-dueno-solo-lo-que-se-desvia`).
+
+When reporting a test (yours or a subagent's) for review, in this order:
 
 1. **The property**, in one domain line.
 2. **How it is attacked**: what is requested, to which endpoint or screen, with which data (no code).
