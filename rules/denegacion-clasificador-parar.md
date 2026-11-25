@@ -10,7 +10,7 @@ If the classifier denies a tool call (`[Auto-Mode Bypass]`, `[Security Weaken]`â
 
 ## The approved permission frees MY session, not the subagent's
 
-Measured with Claude Code 2.1.314 (30-oct-2026). The harness changes often: if the current version is another one and it matters, measure again. When a subagent is blocked:
+Measured with Claude Code 2.1.314. The harness changes often: if the current version is another one and it matters, measure again. When a subagent is blocked:
 
 1. I execute it myself from the main session, ONLY if the owner explicitly authorized me that action. If it overwrites something, back it up first (`verify-then-destroy`).
 2. If I am denied as well: a commented script, and he runs it with `! bash <path>`.

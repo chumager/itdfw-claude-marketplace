@@ -10,4 +10,4 @@ User-Agent: itdfw-agent/1.0 (+https://example.invalid/contact)
 - If the generic one is not enough for the site, the owner is asked what to hand over; it is not decided for him.
 - It applies to `curl -A`, `fetch` in a script, a header built by hand and whatever an agent does on his behalf.
 
-Measured on 12-nov-2026: the harness's WebFetch (Claude Code 2.1.322) sends `Claude-User (claude-code/…)` with no email, and 5.3 M nginx lines since 29-oct carry no User-Agent with an email. The `cc-plugin-privacy` plugin is the installed mitigation.
+Measured: the harness's WebFetch (Claude Code 2.1.322) sends `Claude-User (claude-code/…)` with no email, and 5.3 M nginx lines carry no User-Agent with an email. The `cc-plugin-privacy` plugin is the installed mitigation.

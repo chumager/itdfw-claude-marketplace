@@ -8,4 +8,4 @@
 | the task depends on what was discussed and does not fit in a brief | `fork` (inherits the thread and the parent's model), only under 75 % of context |
 | review with Opus's eyes | `base` with `model: "opus"` and `[fresh-eyes]` in the `description` |
 
-Why: a fresh Sonnet pays its base context once (rules, memory, CLAUDE.md) and reads it from cache at Sonnet price; the fork inherits Opus and the whole thread, including whatever contaminates it (8-nov-2026: a fork was cut off by the classifier because of the inherited context). `~/bin/claude-hooks/agent-type-gate.sh` enforces it (fork blocked above 75 %).
+Why: a fresh Sonnet pays its base context once (rules, memory, CLAUDE.md) and reads it from cache at Sonnet price; the fork inherits Opus and the whole thread, including whatever contaminates it. `~/bin/claude-hooks/agent-type-gate.sh` enforces it (fork blocked above 75 %).

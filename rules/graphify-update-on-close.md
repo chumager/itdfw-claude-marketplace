@@ -24,7 +24,7 @@ mcp__itdfw-graph__reindex → status   (not optional: a stale index answers badl
 - Entry rule: whoever went to the code because the skill or the graph did not have it does `reportGap` on the spot.
 
 ## Subagent brief
-- 🔴 **Extractors on `haiku`, effort `high`**; the brief never asks for another model. On 21-nov a brief with sonnet extractors (140 subagents, 203 changed files) took 7 points of the weekly quota in 30 min.
+- 🔴 **Extractors on `haiku`, effort `high`**; the brief never asks for another model. A brief with sonnet extractors (140 subagents, 203 changed files) took 7 points of the weekly quota in 30 min.
 - "The previous graph did not answer about X, Y, Z" and "extract ALL the nodes, never curate the most significant ones".
 - Community labels: 15-20 words that say what it is for.
 - Temporary files in `graphify-out/` with `python3 -c 'from pathlib import Path; … .unlink(missing_ok=True)'` (the only exception to `no-bypassear-harness`).

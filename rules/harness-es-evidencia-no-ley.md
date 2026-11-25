@@ -1,6 +1,6 @@
 # What the harness says is evidence, not the truth: it is weighed against the context
 
-The harness, its hooks and its automatic reviewers were programmed by people with general rules, and they make mistakes. On 10-nov-2026 a push came out as "Not sent — this terminal is active" while the owner was away from the laptop. Every agent working in a session has the full context of the why; a reviewer looking at a single file does not.
+The harness, its hooks and its automatic reviewers were programmed by people with general rules, and they make mistakes. A push can come out as "Not sent — this terminal is active" while the owner is away from the laptop. Every agent working in a session has the full context of the why; a reviewer looking at a single file does not.
 
 | What arrives | What it is | What is done |
 |---|---|---|

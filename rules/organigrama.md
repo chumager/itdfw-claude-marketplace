@@ -58,7 +58,7 @@ A new site, or a plugin with screens that an end customer sees, does not start w
 
 - 🔴 **Every e2e belongs to QA, however complex.** Neither the PMO nor designer nor `core` writes or commits an e2e spec: whoever tests their own work on screen tests what they understood. If QA needs definitions or an initial scope, the PMO gives them in prose (cases, data, what to observe), not as a spec. When a dev already has a spec written, it is handed to QA as input.
 - 🔴 **The specs live with their module, and the folder is QA's.** `<module>/test/e2e` (and `fronts/*/test`) is QA's. A PMO that needs an e2e that does not belong to QA asks QA for permission. The test bases (helpers, bench models, endpoints) are provided by test-suite, and are activated by the site's config. The ones that already exist stay where they are: they are not deleted or rewritten all at once.
-- 🔴 **Two separate runs, never mixed** (owner, 23-nov):
+- 🔴 **Two separate runs, never mixed**:
 
   | Who | Runs | What for |
   |---|---|---|

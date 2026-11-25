@@ -8,7 +8,7 @@
 | `CTO` | watches `~/.claude/state/compactables/`: for each mark, `~/bin/cajaritos-compactar.sh --solo <name> --umbral 0` and deletes the mark. At the end, the result goes to the owner |
 | `CTO` over 50 % | writes his thread, runs `hilo-listo.sh` and asks `itdfw` to compact him (`--solo CTO`): a session does not compact itself |
 
-- 🔴 **During the day, a session at rest over 50 % does its ritual and is compacted while its cache is warm**: the user timer `cajaritos-compactar.timer` runs `cajaritos-reposo.sh` every 10 min. At rest is the session's OWN status in `~/.claude/sessions/*.json` (`idle` or `shell`, since `statusUpdatedAt`), never the daemon's, which reads `busy` for a turn that ended with a background shell. Between 30 and 55 min at rest it gets the `hilo-pedir` message; once it leaves its mark it is compacted at the next round. One already cold is not woken: the close asks it. A big context re-read on every turn is where the weekly quota goes (21-nov: >80 % of the cost was cache reads). Each session's auto-compaction keeps going on its own.
+- 🔴 **During the day, a session at rest over 50 % does its ritual and is compacted while its cache is warm**: the user timer `cajaritos-compactar.timer` runs `cajaritos-reposo.sh` every 10 min. At rest is the session's OWN status in `~/.claude/sessions/*.json` (`idle` or `shell`, since `statusUpdatedAt`), never the daemon's, which reads `busy` for a turn that ended with a background shell. Between 30 and 55 min at rest it gets the `hilo-pedir` message; once it leaves its mark it is compacted at the next round. One already cold is not woken: the close asks it. A big context re-read on every turn is where the weekly quota goes (>80 % of the cost was cache reads). Each session's auto-compaction keeps going on its own.
 - 🔴 **Every compaction returns the thread**, manual or automatic: the `PreCompact` hook (`hilo-capturar.sh`) saves the last 100 messages (each cut to 4,000 characters) and the `PostCompact` hook (`hilo-devolver.sh`) sends the session its summary of the day and those messages, as a message from the sender `hilo`. On receiving it, it is read in full and work resumes from there.
 - The compaction script skips whatever is not idle or has tasks from the last 10 min, and leaves the session alive.
   🔴 **A skipped session is not forgotten**: the `CTO` keeps watching the ones that were still working at close and
@@ -17,7 +17,7 @@
 - 🔴 **Waiting for it to go idle is a subscription, not a retry loop**: `SendMessage({to: "<name>", notify_when_idle:
   true})` with no message, and the compaction runs when the notice arrives. The script decides by the daemon's status,
   which can read `busy` while the session's harness reports idle: if the script skips it on the notice, run it again
-  with `--quieto 15 --aunque-ocupada`, which trusts the last turn instead of the daemon. Measured 21-nov: a
+  with `--quieto 15 --aunque-ocupada`, which trusts the last turn instead of the daemon. Measured: a
   subscription to a session that is already idle fires at once, and two sessions read `busy` 30 min after their last
   turn.
 - Each session's % is in `~/.claude/state/ctx-<sessionId>.json`. Detail: `memory/reference_revivir-cajarito.md`.

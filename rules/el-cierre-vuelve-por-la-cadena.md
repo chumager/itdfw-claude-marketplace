@@ -6,4 +6,3 @@ An assignment that passed through several sessions (owner → itdfw → a projec
 - The notice is one line: what was closed and where the detail is. No opinions or analysis that nobody asked for.
 - In a room, speak only if you bring something the rest do not have; anything else is noise that drains context.
 
-Case: 11-nov-2026, a product built from photos: the implementer session reported to the CTO, the CTO closed it, and neither the project session nor itdfw found out.
