@@ -25,17 +25,13 @@ description: Use when creating or understanding an ITDFW FWPlugin — the back-t
 
 ## Qué ES un FWPlugin (y por qué existe)
 
-Un FWPlugin es una **capa que cruza TODO el stack back→front**. No es "un plugin de backend": es un
-objeto declarativo que puede traer **modelos, mongoose-plugins, types custom, endpoints API, libs
-compartidas Y su propio frontend** (componentes/vistas por framework), sobreescribiendo o creando lo
-que quiera. Un carro de compras completo —o todo un vertical de negocio— puede ser UN FWPlugin: las
-apps lo **importan y heredan todo**, y sobreescriben solo lo que necesiten (cascada normal del FW), sin
-copiar nada a su `DEFAULT`.
+Un FWPlugin es una **capa que cruza TODO el stack back→front**: un objeto declarativo que puede traer **modelos,
+mongoose-plugins, types custom, endpoints API, libs compartidas Y su propio frontend** por framework. Un vertical de
+negocio entero puede ser UN FWPlugin: las apps lo **importan y heredan todo** y sobreescriben solo lo que necesiten
+(cascada normal), sin copiar nada a su `DEFAULT`.
 
 **Dos motivos para que exista (y solo dos):**
-1. **Coherencia estructural** — agrupar piezas heterogéneas que pertenecen juntas. Ej: `Config.js`
-   junta `db` + `plugins` + `schemas`; separarlas "donde corresponde" (cada una en su carpeta) las
-   dispersaría. El FWPlugin es la "mini definición" que las mantiene como una unidad.
+1. **Coherencia estructural** — piezas heterogéneas que van juntas (`Config.js` junta `db` + `plugins` + `schemas`).
 2. **Plugin externo / distribuible** — un módulo instalable que se enchufa al deploy vía config.
 
 🔴 **Este skill NO detalla cada pieza** — solo define DÓNDE va cada cosa y delega:
@@ -48,38 +44,26 @@ copiar nada a su `DEFAULT`.
 | `plugins` | Mongoose plugins (global/filtered/specific) | leer `mongoosePlugins/` existentes |
 | `db` | Utilidades sobre el objeto `db` | leer `mongooseDB/` existentes |
 | `libs` | Librerías compartidas → `pool.libs` | abajo (§libs) |
-| `auth` | Autenticadores `{name, claims, authenticate, pos?}` o un arreglo: `claims(req)` es **síncrono** y barato; `authenticate(req)` devuelve `{model, user}` o `undefined`, o lanza si la credencial es suya y está mala. No escribe `req.auth`. Orden y `pos`: [references/keys-detail.md](references/keys-detail.md) | **`itdfw-api-system`** → "El acceso paso a paso" |
-| `wellKnown` | Aportes a `/.well-known/<nombre>`: `{<nombre>: {type, final?, content}}`, validados en el arranque y mezclados al pedirse. Las reglas: [references/keys-detail.md](references/keys-detail.md) | `wellKnown` (utilidad del core) |
-| `captcha` | Proveedores `{name, publicSpec(req, ctx), verify(req, token, ctx), challenge?(req, ctx), external: boolean}` o un arreglo. **El core no trae ninguno.** **Solo se usan** cuando el `formSpecs` de un modelo declara `captcha` para ese tipo. Cuál aplica, los códigos de error y el ejemplo: [references/keys-detail.md](references/keys-detail.md) | `captcha` (utilidad del core) |
+| `auth` | Autenticadores `{name, claims, authenticate, pos?}` o un arreglo: `claims(req)` **síncrono** y barato; `authenticate(req)` → `{model, user}`, `undefined` o lanza si la credencial es suya y está mala; no escribe `req.auth`. Orden y `pos`: [keys-detail](references/keys-detail.md) | **`itdfw-api-system`** → "El acceso paso a paso" |
+| `wellKnown` | Aportes a `/.well-known/<nombre>`: `{<nombre>: {type, final?, content}}`, validados en el arranque y mezclados al pedirse ([keys-detail](references/keys-detail.md)) | `wellKnown` (utilidad del core) |
+| `captcha` | Proveedores `{name, publicSpec(req, ctx), verify(req, token, ctx), challenge?(req, ctx), external: boolean}` o un arreglo. **El core no trae ninguno.** **Solo se usan** si el `formSpecs` de un modelo declara `captcha` para ese tipo. Cuál aplica y los errores: [keys-detail](references/keys-detail.md) | `captcha` (utilidad del core) |
 | `refs` | Fuentes de opciones de un select con nombre (`"plugin/nombre": (req, query) => [{value, text}]`) → `pool.refs`, que leen `getRef`/`getSimpleName`; el campo las pide con `myRef: "plugin/nombre"` | **`itdfw-models`** → `references/special-refs.md` §4 |
 | `vue2`/`vue3`/`react`/`svelte`/`solid`/`lit` | **Frontend** por framework | abajo (§frontend) — lo único exclusivo del FWPlugin |
 | `name` | Nombre para logging | — |
 
 ## Estructura
 
-Exporta un **objeto**, o una **función que retorna un objeto** (recibe `this` = instancia Schema → `db`,
-`pool`, `init`). Para un FWP distribuible, la **estructura de carpetas espeja el back + el front** (ver
-"Estructura de carpetas" abajo).
-
-```js
-// Objeto (simple): Currency.js, PDF.js
-export default { name: "My Plugin", API: {...}, types: [...] };
-
-// Función (necesita runtime): Config.js, Finance
-export default function () {
-  const { db, pool } = this;            // this = instancia Schema (ver schema-engine.md en itdfw-models)
-  return { name: "My Plugin", plugins: [...], schemas: [...] };
-};
-```
+Exporta un **objeto** (simple: `Currency.js`, `PDF.js`) o una **función que retorna un objeto** (necesita runtime:
+`Config.js`, Finance; `this` = instancia Schema → `db`, `pool`, `init`, ver `schema-engine.md` en `itdfw-models`). Los
+dos se escriben con el molde de §scope de abajo.
 
 ### 🔴 Estructura de carpetas — un FWP ESPEJA el back + el front, con `lib/` común
 
-Un FWP distribuible **espeja la estructura del back (`SITE/`) y del front**, con `lib/` para lo **isomorphic**
-(lo que usan AMBOS: Value Objects, helpers puros). El `index.js` solo ENSAMBLA, importando de esas carpetas:
+`lib/` guarda lo **isomorphic** (Value Objects, helpers puros); el `index.js` solo ENSAMBLA, importando de las carpetas:
 
 ```
 <plugin>/
-  index.js            → ensambla (name + keys types/plugins/schemas/API/db/db + <framework>)
+  index.js            → ensambla (name + keys types/plugins/schemas/API/db + <framework>)
   lib/                → COMPARTIDO back↔front (el VO, helpers isomorphic) — por eso el VO vive acá
   mongooseTypes/      → types custom        (espeja SITE/mongooseTypes/)
   mongoosePlugins/    → mongoose-plugins    (espeja SITE/mongoosePlugins/)
@@ -95,16 +79,14 @@ vue3); **`vue2`**/**`vue3`** solo cuando es específico de una versión (mismo c
 frameworks). El index apunta la key del framework a la carpeta:
 `vue: { <comp>: new URL('./vue', import.meta.url).pathname }`.
 
-🔴 **Es RECOMENDADA, no obligatoria**: salvo la carpeta del front, el motor solo lee las **keys del objeto** que
-exportás. Para arrancar bien, **copiá el template** (`assets/fwplugin-template/`), 🔴 **incluido su `package.json`**:
-trae la whitelist `files` (rule `package-files-whitelist`) con las carpetas del espejo y `README.md`, y **sin `TDD*.md`
-ni `test/`**: el README es la cara del paquete, el TDD va en git pero no en el tarball. El caso que lo destapó y por qué
-Currency y PDF viven inline en el core: [references/folder-structure.md](references/folder-structure.md).
+🔴 **Es RECOMENDADA, no obligatoria**: salvo la carpeta del front, el motor solo lee las **keys del objeto**. Se arranca
+**copiando el template** (`assets/fwplugin-template/`), 🔴 **incluido su `package.json`**: whitelist `files` (rule
+`package-files-whitelist`) con las carpetas del espejo y `README.md`, **sin `TDD*.md` ni `test/`** (el TDD va en git, no
+en el tarball). Caso y FWP inline del core: [references/folder-structure.md](references/folder-structure.md).
 
 ### 🔴 El scope se decide con `inFront`/`inBack` — NUNCA por el argumento
 
-El MISMO módulo se evalúa en **dos scopes** y lo que exporta cambia. La discriminación se hace con los
-**globales `inFront` / `inBack`**, decidiendo QUÉ SE EXPORTA:
+El MISMO módulo se evalúa en **dos scopes**; los **globales `inFront` / `inBack`** deciden QUÉ SE EXPORTA:
 
 - **`inFront`** → exporta **la ESTRUCTURA (objeto)** con las keys de framework (`vue`/`vue3`/`react`/…).
   Vite lee las keys directo, sin ejecutar nada.
@@ -113,7 +95,7 @@ El MISMO módulo se evalúa en **dos scopes** y lo que exporta cambia. La discri
 
 ```js
 /* global inFront, inBack */
-let exp;
+let exp = {};                         // nunca `let exp;` (ver abajo)
 
 if (inFront) exp = {vue: {miComp: new URL("./vue", import.meta.url).pathname}};
 
@@ -128,16 +110,14 @@ export default exp;
 ```
 
 🔴 **`let exp = {}`, nunca `let exp;`**: el módulo se importa en los dos scopes, y un plugin solo-back que deja
-`undefined` en el front hace caer el front de todo deploy que lo tenga (`Object.entries(undefined)` en el loader; caso
-real: el plugin `telegram`). Los imports solo-back van **dentro** de la rama (`await import(...)`). El caso:
-[references/scope-let-exp.md](references/scope-let-exp.md).
+`undefined` en el front hace caer el front de todo deploy que lo tenga (`Object.entries(undefined)` en el loader). Los
+imports solo-back van **dentro** de la rama (`await import(...)`). El caso: [references/scope-let-exp.md](references/scope-let-exp.md).
 
 #### 🔴🔴 El FWPlugin NO recibe `db` por argumento (y confundirlo lo deja MUDO)
 
 El motor invoca un FWPlugin función con `plugin.call(this)`, **sin argumentos**: `db`, `pool` e `init` salen de
-`this` (`const {db} = this`). Escribir `export default function (db) { if (!db) return {}; ... }` deja `db` **siempre
-`undefined`** → retorna `{}` → **el plugin carga y no aporta NADA, sin un solo error en el log**. La confusión viene
-del **mongoosePlugin**, que sí recibe `db` por argumento:
+`this`. `export default function (db) { if (!db) return {}; ... }` deja `db` **siempre `undefined`** → retorna `{}` →
+**el plugin carga y no aporta NADA, sin error en el log**. La confusión viene del **mongoosePlugin**, que sí lo recibe:
 
 | Qué | Cómo lo invoca el motor | Cómo obtiene db |
 |---|---|---|
@@ -149,8 +129,7 @@ destapó: [references/no-db-argument.md](references/no-db-argument.md).
 
 ## 🪄 Frontend — el hook de framework de reactividad (lo ultra-power)
 
-Lo que hace a un FWPlugin una capa COMPLETA: además de back, declara su **frontend por framework**. Una
-key por framework de reactividad soportado, cada una mapea nombres lógicos → rutas de los componentes:
+Una key por framework de reactividad; cada una mapea nombres lógicos → rutas de los componentes:
 
 ```js
 // self-declara sus paths con import.meta.url; los seis frameworks: references/front-mechanism.md
@@ -175,9 +154,8 @@ En el back **declarás** las keys del objeto y el espejo de carpetas es orden: r
 salís. En el front **no declarás nada**: se descubre por **ubicación**, la carpeta ES el contrato, y lo que se sale del
 molde **no existe**. La tabla: [references/front-mirror.md](references/front-mirror.md).
 
-Una vez que el plugin declara su carpeta de framework (`vue: {miPlugin: <path a ./vue>}`), esa carpeta
-**entra a la cascada como un nivel más**, exactamente igual que el core, el DEFAULT o la app. Y de ahí
-en adelante **el sistema absorbe lo que encuentre, por convención de ruta**:
+La carpeta de framework declarada **entra a la cascada como un nivel más** (igual que el core, el DEFAULT o la app) y el
+sistema **absorbe lo que encuentre, por convención de ruta**:
 
 | Ponés esto en tu carpeta | Qué pasa |
 |---|---|
@@ -189,37 +167,32 @@ en adelante **el sistema absorbe lo que encuentre, por convención de ruta**:
 | `mixins/`, `controllers/`, `injections/` | ídem — `customImport(nombre, base)` recorre la cascada por carpeta |
 | **`init.js`** (raíz) | 🔴 **entra al BOOTSTRAP** — ver abajo, es la puerta más ancha de todas |
 
-🔴 **`loaders/` NO está en esta lista, y es a propósito**: los loaders se cargan **por función**, no por
-cascada de carpeta — se dejaron fuera justamente para que **nadie te los pise**.
+🔴 **`loaders/` NO está en la lista, a propósito**: los loaders se cargan **por función**, así **nadie te los pisa**.
 
 Desde el `vue/init.js` del plugin, **un ítem en las barras** se agrega con `this.store.commit("app/setNavItem", {key,
 component, sink, position, pos, when})` y la fuente del menú con `commit("app/setMenu", {ref})`; un plugin deja elegir
 el `sink` al site. **Una punta propia se llama** con `this.$http.get/post/put(url, body, {params})`, nunca con `fetch` ni
 `axios` importados. Los valores y el ejemplo vivo: [references/front-nav-http.md](references/front-nav-http.md).
 
-🔴 **Pisar es SILENCIOSO y es la gracia, no el bug**: la cascada es *first-return* con la app en la punta más alta,
-así que un plugin pisa un componente del core solo por **nombrarlo igual**. El único aviso es un `console.warn` en rutas
-con el mismo `name`, y gana el último.
+🔴 **Pisar es SILENCIOSO y es la gracia, no el bug**: la cascada es *first-return*, así que un plugin pisa un componente
+del core solo por **nombrarlo igual**. El único aviso: un `console.warn` en rutas con el mismo `name` (gana el último).
 
 ### 🔴 `init.js` — el plugin no solo APORTA: puede REESCRIBIR el arranque
 
-El `init.js` del plugin corre en el bootstrap como un nivel más de la cascada y recibe el **pack**: **agrega** bloques,
+El `init.js` del plugin corre en el bootstrap y recibe el **pack**: **agrega** bloques,
 **registra loaders** con `addLoader("$opcion", fn, pos, hoist)` y **modifica lo que registraron OTROS**, por nombre:
 `pack.before/after("nombre", [items])`, `pack.replace("nombre", obj)` y `pack.delete("nombre")`. Un nombre se declara
-**una vez**: redeclararlo para pisarlo hace caer el arranque; se usa `replace`. Así un plugin trae **un vertical de front
-completo** (rutas + vistas + componentes + store + init) sin que la app toque una línea. Detalle, por qué existe
-`delete` y la verificación e2e: [references/front-init.md](references/front-init.md). El pack y los loaders → skill
+**una vez**: redeclararlo para pisarlo hace caer el arranque; se usa `replace`. Así un plugin trae un vertical de front
+completo sin que la app toque una línea. Detalle, `delete` y la verificación e2e: [references/front-init.md](references/front-init.md). El pack y los loaders → skill
 **`itdfw-core-init`**.
 
 ## Dónde vive y cómo se enchufa
 
-**FWPlugin del FW propio / del deploy**: archivo en `FWPlugins/` (cascada: `SITE/FWPlugins/`
-→ `<deploy>/DEFAULT/FWPlugins/` → app). El motor los descubre solo (`#getFiles("FWPlugins")`) — no hay
-que registrarlos.
+**FWPlugin del FW propio / del deploy**: archivo en `FWPlugins/` (cascada `SITE/` → `<deploy>/DEFAULT/` → app); el motor
+los descubre solo (`#getFiles("FWPlugins")`), sin registrarlos.
 
-**FWPlugin externo / distribuible**: se enchufa en el **`.itdfw.js`** del sitio (raíz del deploy/app),
-en el array `plugins`. Un FWPlugin es SOLO una estructura (objeto), así que hay **dos formas
-equivalentes** de ponerlo — y elegir una u otra es **decisión del dev**, no una regla:
+**FWPlugin externo / distribuible**: en el array `plugins` del **`.itdfw.js`** del sitio, de **dos formas equivalentes**
+(elegir es decisión del dev, no una regla):
 ```js
 import MCP from "@chumager/itdfw-mcp/plugin";
 export default {
@@ -229,16 +202,12 @@ export default {
   ]
 };
 ```
-- **(1) importar** un plugin existente (`import X; plugins:[X]`) — lo normal cuando ya es un módulo.
-  Trae su back y su front; las apps que comparten el `.itdfw.js` lo heredan (override por cascada,
-  **sin copiar a DEFAULT**).
-- **(2) inline** — escribir la estructura literal directo en el array. Válido por sí mismo: p.ej. el
-  dev necesita algo del scope local del `.itdfw.js`, o una pieza aún no se externalizó como módulo.
+- **(1) importar** un módulo (`import X; plugins:[X]`): trae su back y su front, y las apps que comparten el `.itdfw.js`
+  lo heredan (override por cascada, **sin copiar a DEFAULT**).
+- **(2) inline**: la estructura literal en el array (algo del scope local del `.itdfw.js`, o una pieza aún no externalizada).
 
-🔴 El `{ vue: { currency: <path> } }` de un deploy con moneda es la forma (2) como **parche temporal**, no por diseño.
-Por qué, y por qué el front se declara en el `.itdfw.js` y no en la config del back:
-[references/where-it-plugs.md](references/where-it-plugs.md). Los FWPlugins del core, con formato, keys y propósito:
-[references/existing-plugins.md](references/existing-plugins.md).
+Por qué el front se declara en el `.itdfw.js` y no en la config del back, y el caso del front de moneda inline:
+[references/where-it-plugs.md](references/where-it-plugs.md). Los FWPlugins del core: [references/existing-plugins.md](references/existing-plugins.md).
 
 ### 🔴 Plugin de INFRAESTRUCTURA vs plugin de PRODUCTO: la regla del core vale para el primero
 
@@ -248,20 +217,18 @@ Por qué, y por qué el front se declara en el `.itdfw.js` y no en la config del
 | **de producto** (una suite vendible que declara su front) | `restaurant` | se elige el front (NUI): primero el **wrapper del FW** si existe (`ItdModal`, `ItdButton`…), el componente pelado de NUI solo si no hay wrapper; la **lógica de negocio** aparte (mixin o base Vue sin componentes) |
 
 En un producto no se arma un render "core" con nativos para pisarlo después en NUI. En uno de infraestructura,
-**la funcionalidad nace en el CORE y un front solo le cambia la piel** (jcmunoz 5-oct-2026): lo que el plugin necesita
-del front lo provee el core, o lo declara como necesidad (gap); la versión NUI **hereda** la del core, y en un plugin con
-suite la carpeta `nui` hereda de la de `vue`. Las reglas completas y su porqué:
-[references/infra-vs-product.md](references/infra-vs-product.md).
+**la funcionalidad nace en el CORE y un front solo le cambia la piel**: lo que el plugin necesita del front lo provee el
+core, o lo declara como necesidad (gap); la versión NUI **hereda** la del core, y en un plugin con suite la carpeta `nui`
+hereda de la de `vue`. Reglas y porqué: [references/infra-vs-product.md](references/infra-vs-product.md).
 
 ### Plugin COMPUESTO — un arreglo de plugins
 
 Un FWPlugin puede exportar un **arreglo** de otros plugins: el back (`#expandPlugins`) y el front
 (`itdfw-vite-plugin`) aplanan a cualquier profundidad, así que cada uno se procesa como si se importara solo. Es
-una lista, no un merge. Casos vivos: `financial` (`[duration, currency, finance]`) y `xumon` (la edición premium:
-los transversales en un import). El orden importa: primero los que aportan types que usan los de después.
+una lista, no un merge. El orden importa: primero los que aportan types que usan los de después.
 
 🔴 **Un plugin que DEPENDE de otro trae la base dentro de su export** (`export default [Base, lo propio]`) y la declara
-en su `package.json`: el site pone solo el hijo y no tiene por qué saber que la base existe (jcmunoz 27-sep-2026).
+en su `package.json`: el site pone solo el hijo y no tiene por qué saber que la base existe.
 
 Con **dos hijos de la misma base**, la base entra dos veces: el back **no deduplica** (lo que no tolera la repetición
 tumba el arranque; por eso **la base registra su Config con `canOverride: true`**), `libs`, `API` y un NAMED sobreviven,
@@ -284,8 +251,7 @@ referencia, no la pisa). Dos gotchas que viven acá:
   (`if (!onDev) return {};` antes del `init`). Deshabilitado = `{}`, nunca `null`. Detalle:
   `itdfw-completeness` → `references/test-discipline.md` §"El archivo se hace cargo".
 
-Propiedades del endpoint (verbos, `isAnonymous`, `hidden`, `defaultMethods`, `noProfile`, metadata) y
-el resto del sistema de puntas → **`itdfw-api-system`**.
+Propiedades del endpoint (`isAnonymous`, `hidden`, `defaultMethods`, `noProfile`…) → **`itdfw-api-system`**.
 
 ## Timing / orden de carga
 
@@ -297,14 +263,9 @@ cascada FW→DEFAULT→App); `pool.API`/`pool.libs` se mergean sobre la misma re
 
 | Mistake | Fix |
 |---------|-----|
-| Detallar schemas/types/API en este skill | Es solo coherencia + dónde va cada cosa — **refiere** al skill de cada key |
 | Prefijar key API con `APP/` | El router agrega `/APP/` — usa `rpc`, no `APP/rpc` |
-| Olvidar CSRF skip en POST | `skipCSRF.push(req => ...)` |
 | Arrow fn en virtual de Mongoose | Virtuals necesitan `function()` para bindear `this` |
 | Olvidar `this.init()` para deps de schema | Schemas que dependen de otros DEBEN await init (ver schema-engine.md) |
-| `export default null` para deshabilitar | Usa `{}` — `null` rompe `Object.entries` |
-| Pensar que un FWPlugin es "solo backend" | Puede traer su front completo por framework (§frontend) y ser un vertical entero distribuible |
-| 🔴 `export default function (db)` en un FWPlugin | `db` llega `undefined` y el plugin falla **MUDO**: se saca de `this`, y el scope se decide con `inFront`/`inBack` |
 
 ---
 
