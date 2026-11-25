@@ -23,14 +23,14 @@ description: Use when creating or understanding an ITDFW FWPlugin — the back-t
 | [scope-let-exp.md](references/scope-let-exp.md) | `let exp = {}` y no `let exp;` en plugins solo-back; imports dinámicos dentro de la rama | Escribes un plugin solo-back o solo-front, o cae el front por `Object.entries(undefined)` |
 | [where-it-plugs.md](references/where-it-plugs.md) | Front de Currency inline y por qué el front se declara en el `.itdfw.js` y no en la config del back | Tu plugin vive dentro del back y su front no se descubre |
 
-## Qué ES un FWPlugin (y por qué existe)
+## Qué ES un FWPlugin
 
 Un FWPlugin es una **capa que cruza TODO el stack back→front**: un objeto declarativo que puede traer **modelos,
 mongoose-plugins, types custom, endpoints API, libs compartidas Y su propio frontend** por framework. Un vertical de
 negocio entero puede ser UN FWPlugin: las apps lo **importan y heredan todo** y sobreescriben solo lo que necesiten
 (cascada normal), sin copiar nada a su `DEFAULT`.
 
-**Dos motivos para que exista (y solo dos):**
+**Dos motivos para que exista:**
 1. **Coherencia estructural** — piezas heterogéneas que van juntas (`Config.js` junta `db` + `plugins` + `schemas`).
 2. **Plugin externo / distribuible** — un módulo instalable que se enchufa al deploy vía config.
 
@@ -127,7 +127,7 @@ El motor invoca un FWPlugin función con `plugin.call(this)`, **sin argumentos**
 Si el FWPlugin **no necesita lógica** → forma **objeto**. El código del motor, por qué no lo pasa y el caso que lo
 destapó: [references/no-db-argument.md](references/no-db-argument.md).
 
-## 🪄 Frontend — el hook de framework de reactividad (lo ultra-power)
+## 🪄 Frontend — el hook de framework de reactividad
 
 Una key por framework de reactividad; cada una mapea nombres lógicos → rutas de los componentes:
 
@@ -204,7 +204,8 @@ export default {
 ```
 - **(1) importar** un módulo (`import X; plugins:[X]`): trae su back y su front, y las apps que comparten el `.itdfw.js`
   lo heredan (override por cascada, **sin copiar a DEFAULT**).
-- **(2) inline**: la estructura literal en el array (algo del scope local del `.itdfw.js`, o una pieza aún no externalizada).
+- **(2) inline**: la estructura literal en el array (scope local del `.itdfw.js`, o pieza no externalizada). La ruta a
+  `vue2` del ejemplo es el caso inline real (una carpeta por versión); `vue` sin versión sirve a las dos.
 
 Por qué el front se declara en el `.itdfw.js` y no en la config del back, y el caso del front de moneda inline:
 [references/where-it-plugs.md](references/where-it-plugs.md). Los FWPlugins del core: [references/existing-plugins.md](references/existing-plugins.md).
@@ -240,11 +241,11 @@ flujo (`[]`) y no con un 5XX. La tabla y la medición: [references/composite-bas
 `libs: { helper, ...lib }` → `Object.assign(pool.libs, value)`: disponibles vía `pool.libs` para cualquier modelo o
 plugin del proceso (el pool y `shareData`→req: `itdfw-models` → `schema-engine.md`).
 
-## API — solo lo propio del canal (detalle en itdfw-api-system)
+## API — lo propio del canal
 
 Key = ruta bajo `/APP/` (sin prefijo `APP/`): `API: { rpc: { POST(req,res){...}, isAnonymous, hidden,
 defaultMethods:["POST"] } }` → `/APP/rpc.json`. El motor hace `Object.assign(pool.API, value)` (misma
-referencia, no la pisa). Dos gotchas que viven acá:
+referencia, no la pisa). Dos gotchas:
 - **CSRF en POST**: `skipCSRF.push(req => req.path.includes("/rpc."))` (`/*global skipCSRF*/`).
 - **Dev-only**: el archivo se hace cargo de su existencia, no el `index.js`. Una punta por archivo escapa en la
   raíz (`export default onDev ? {...} : {}`); un schema, en la primera línea de su función
@@ -265,7 +266,7 @@ cascada FW→DEFAULT→App); `pool.API`/`pool.libs` se mergean sobre la misma re
 |---------|-----|
 | Prefijar key API con `APP/` | El router agrega `/APP/` — usa `rpc`, no `APP/rpc` |
 | Arrow fn en virtual de Mongoose | Virtuals necesitan `function()` para bindear `this` |
-| Olvidar `this.init()` para deps de schema | Schemas que dependen de otros DEBEN await init (ver schema-engine.md) |
+| Olvidar `this.init()` para deps de schema | Si depende de otro schema, `await this.init` (schema-engine.md) |
 
 ---
 
