@@ -25,7 +25,7 @@ Esto es la diferencia operativa clave vs un form crudo: el dev puede mandarle el
 (`input.inputs`) **o no mandar nada** y el embedded se auto-abastece. Mismo componente, dos modos,
 cero configuración extra del dev.
 
-🔴 **`childrenLazy: true`** (2026-07-13): el Embedded declara que sus HIJOS emiten al blur SIN ser lazy
+🔴 **`childrenLazy: true`**: el Embedded declara que sus HIJOS emiten al blur SIN ser lazy
 él — su canal de subida queda libre (solo recibe `valueUpdate`). Compone recursivo solo (embedded L2
 gratis). JAMÁS `lazy` en el Embedded mismo (gatearía su assignVSR → bloquea el flujo). Detalle:
 value-pipeline.md §NESTED-LAZY.

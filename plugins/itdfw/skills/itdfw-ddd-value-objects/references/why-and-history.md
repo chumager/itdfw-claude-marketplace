@@ -1,8 +1,8 @@
-# Por qué el contrato es así — historia y decisiones
+# Por qué el contrato es así — razones
 
-> El contrato corto vive en `SKILL.md`. Aquí está el porqué de cada regla y cómo se llegó a ella.
+> El contrato corto vive en `SKILL.md`. Aquí está el porqué técnico de cada regla.
 
-## El contrato reemplazó al canon "VO inmutable"
+## El contrato en lugar del canon "VO inmutable"
 
 La inmutabilidad dura era dogma custodiando una puerta sin camino. Piloto del core: **Rut** (la base simple); luego
 Currency (el completo).
@@ -41,25 +41,18 @@ flexibilidad y paga con seguridad falsa. El contrato es de COMPORTAMIENTO, no de
 un módulo de conformance externo. Sirve también para auditar las clases existentes (Address, Duration) sin
 acoplamiento estructural.
 
-## Cómo nació el VO compuesto
+## Por qué existe el VO compuesto
 
-Del descuadre del motor de cuotas: "compute RAW + la capa redondea" era definirse por condicionantes EXTERNOS. El back
-redondeaba de carambola vía setters de mongoose y el front no redondeaba, así que la dispersión se acumulaba y la
-validación por reconstrucción estaba condenada por diseño: un peso corrido con premisa de identidad invalida la premisa,
+"compute RAW + la capa redondea" es definirse por condicionantes EXTERNOS. Si el back
+redondea de carambola vía setters de mongoose y el front no, la dispersión se acumula y la
+validación por reconstrucción está condenada por diseño: un peso corrido con premisa de identidad invalida la premisa,
 y la tolerancia era la alfombra. Canon: `FeeFullClass`.
 
 **La lección de las tasas.** Un cap de precisión en una tasa genera bloques de error groseros sobre capital grande; el
-display a 2 decimales escondía 0,8333 % como 0,83 %: la pintura capada, el cálculo intacto. Por eso las tasas son raw
+display a 2 decimales muestra 0,8333 % como 0,83 %: la pintura capada, el cálculo intacto. Por eso las tasas son raw
 puro y su `precision` es solo de display.
 
-## Orden de implementación que siguió el core
+## Labels singulares
 
-1. **Rut**: el núcleo del contrato sin challa (instancia-siempre, `setValue` triple, validate transversal de esencia,
-   auto-dirty). Sin anillos 2 y 3.
-2. **Currency**: el completo (externalidades por wrapper, pub/sub, formatters, hooks GI).
-3. Rama futura: distribuir las clases de types al front para los types del core o del DEFAULT que no vienen en un FWP.
-
-## Labels singulares (cómo se verificó)
-
-Verificado con una matriz de conteos 1/2/5/10/20/100/1000 en 12 locales: no existe "plural genérico" sin conteo
+En una matriz de conteos 1/2/5/10/20/100/1000 en 12 locales no existe "plural genérico" sin conteo
 (eslavos 3 formas, árabe 5, galés muta la raíz).

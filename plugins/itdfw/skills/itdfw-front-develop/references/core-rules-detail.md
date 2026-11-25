@@ -1,6 +1,6 @@
 # Reglas core — detalle
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto de cada regla vive en `SKILL.md`; aquí está la prosa completa, los casos y el origen.
+> El contrato corto de cada regla vive en `SKILL.md`; aquí está la prosa completa y los casos.
 
 ## Traducción: `t`, `rt` y el `text` compuesto
 
@@ -13,8 +13,7 @@
   (devuelven el texto). El web component `<itd-wc-t>` **salió del core en 7.1.0**: un site que lo use lo migra a
   `rt()`; el WC vive solo dentro del plugin `translate`.
   🔴 **Lo que NO se traduce: datos.** El nombre de un documento o cualquier valor que el usuario escribe en la BD
-  pasa crudo. 🔴 **Excepción: `name`/`description` de una función del perfil son SEMIESTÁTICOS** (jcmunoz
-  28-sep-2026, corrige la regla del 17-sep): nacen de la declaración del modelo o la punta y se escriben una vez;
+  pasa crudo. 🔴 **Excepción: `name`/`description` de una función del perfil son SEMIESTÁTICOS**: nacen de la declaración del modelo o la punta y se escriben una vez;
   quedan editables porque un perfil puede recibir un acceso acotado a un administrador (deja de ser "Administración
   de X" y pasa a ser "Visor de X"). Uno es el *intent* (lo declarado) y el otro el que define al final (lo que el
   perfil fija), y **los dos se traducen siempre**, sobre su valor, con la coordenada `Interface` ·
@@ -23,7 +22,7 @@
   con ellas. Un select traduce sus opciones con la `optionsTranslation` que le declara quien las manda
   (`references/translation-front.md` §Opciones de un select). Nadie pasa los `name` de los modelos a español para
   "arreglar" el menú.
-  🔴 **El `text` puede ser COMPUESTO, no solo un string** (core `init.js`, verificado 18-sep-2026). Tres formas:
+  🔴 **El `text` puede ser COMPUESTO, no solo un string** (core `init.js`). Tres formas:
 
   | Forma | Qué hace |
   |---|---|
@@ -39,17 +38,17 @@
   del back + una aclaración de la UI) sin concatenar strings ya traducidos, que es lo que rompe el orden en
   otros idiomas. `ItdT` con un array pinta exactamente ese join, porque su `content()` llama a `t`.
   ⚠️ El relleno final es **Mustache sobre `data`**: si el `data` no trae la key, `{{loQueSea}}` sale vacío
-  (hallazgo #201, 18-sep: `{{input.label}}` vacío en los mensajes de validación).
+  (p. ej. `{{input.label}}` sale vacío en los mensajes de validación).
 
 ## Clone guards
 
-- **🔴🔴 REGLA DE ORO — CLONE GUARDS (2026-07-13)**: todo dato que CRUZA una frontera viaja CLONADO,
+- **🔴🔴 REGLA DE ORO — CLONE GUARDS**: todo dato que CRUZA una frontera viaja CLONADO,
   jamás por referencia compartida — y el clonador ES el helper **`GI.clone(v)`** (Blob/File pasan por
   ref — no son deep-clonables; el resto `cloneDeep`): memorias de comparación (`vModelLastEmitted`,
   old-values de guards), asignación de `input`/config a estado local, transferencia de objetos entre
   componentes (definir el dueño, clonar en la frontera). JAMÁS `cloneDeep` pelado en una frontera —
   saltarse la regla del Blob rompe campos File. El getter del VSV y vModelEmit/Sync ya lo usan. Una ref compartida entre dos dueños "se pierde en las pasadas": guards
-  que se auto-actualizan (el GF no emitía JAMÁS — auth muerto), inputs que quedan reactivos y suben la
+  que se auto-actualizan (el GF no emite jamás), inputs que quedan reactivos y suben la
   cadena (sobrecargas en todos lados). Red flag: un `=` de objeto cruzando frontera sin clone; ante un
   bug raro de reactividad/transferencia, probar IDENTIDAD COMPARTIDA antes que nada. Excepción
   DELIBERADA: la mutación in-place del contenedor del GF (performance) — legítima porque sus observadores
@@ -63,7 +62,7 @@
   (`const base = {...Parent, watch: {...Parent.watch}}; delete base.watch.x; export default {extends: base, watch: {x: …}}`).
   Los `methods` y `computed` sí se pisan (gana el hijo). Y si lo que hay que pisar vive INLINE en un `render()`
   monolítico, el seam mínimo (`renderX()`) se agrega en la capa dueña sin cambiar conducta y recién ahí se pisa
-  (caso `ViewNUI.renderDeleteModal`, 21-sep-2026). Gap #45.
+  (p. ej. `ViewNUI.renderDeleteModal`).
 
 ## Un valor con type pasa por la base de su type
 
@@ -72,8 +71,8 @@
   (decide la precedencia en la cascada), siempre extendiendo esa base. En una vista propia: `renderGI` en modo
   `detail`. Nunca un `Intl.NumberFormat` o un formateo a mano: la base (saneo, locale, moneda, máscara, VO) es lo que
   da las capacidades, y saltársela rompe en silencio reglas ya establecidas (rule `datos-por-sus-componentes`). Monto: `this.renderGI({name, key, type: "Currency", component: "ItdCurrency", currency: doc._currency}, valor,
-  null, {viewType: "detail"})` (el componente declara `$renderGI: true`). Caso: la carta del restorán formateaba con
-  `Intl` fijo en es-CL y al elegir otro idioma los precios no cambiaban (25-oct-2026).
+  null, {viewType: "detail"})` (el componente declara `$renderGI: true`). Ejemplo: formatear con
+  `Intl` fijo en es-CL hace que al elegir otro idioma los precios no cambien.
 
 ## Todo HTML inyectado pasa por `ItdHtml`
 
@@ -84,7 +83,6 @@
   `javascript:`, conserva el formato) y deja pasar intacto el texto sin etiquetas, así que no hay que preguntarse si lo
   que llega es texto o HTML. El back además sanea el type `Html` al guardarlo (setter con `sanitize-html`). Vale para
   la ayuda de un modelo, alertas, acciones, traducciones y cualquier texto que venga del back o de un usuario.
-  Origen: 20-oct-2026, XSS por campos Html y por textos redefinibles.
 
 ## `contextType`, `hasFormBus` y los buses
 
@@ -92,7 +90,7 @@
 
 ## Quien extiende una base de `lib/` la carga con `applyLoaders`
 
-- **🔴 Quien EXTIENDE una base de `lib/` la carga con `applyLoaders`** — `const Base = await import("core/lib/X.jsx").applyLoaders().get("default")` (canon: GI NUI, 2026-07-05). Los loaders que la base DECLARA ($vModel, $emitter, $validateSelf…) se aplican A SU objeto (singleton de módulo → todo el universo hereda; el mixin queda en el nivel de precedencia correcto → un computed del front pisa legítimo al mixin del loader). Import directo pelado deja los loaders huérfanos (con hoist:false nadie los aplica); el hoist:true viejo los aplicaba en la HOJA y su mixin pisaba los computeds del front — así murió por meses la regla lazyFormatter⟹"value" (sobrevivía solo por estáticos `$vModelChildProp` por componente, vestigio junto al `delete $validateSelf` del NUI — ambos eliminados).
+- **🔴 Quien EXTIENDE una base de `lib/` la carga con `applyLoaders`** — `const Base = await import("core/lib/X.jsx").applyLoaders().get("default")` (canon: GI NUI). Los loaders que la base DECLARA ($vModel, $emitter, $validateSelf…) se aplican A SU objeto (singleton de módulo → todo el universo hereda; el mixin queda en el nivel de precedencia correcto → un computed del front pisa legítimo al mixin del loader). Import directo pelado deja los loaders huérfanos (con hoist:false nadie los aplica); con hoist:true se aplicarían en la HOJA y su mixin pisaría los computeds del front.
 
 ## Derivar datos: el contenedor crudo, nunca `validateSelfValue`
 
@@ -103,7 +101,4 @@
   🔴 Se accede por su DECLARACIÓN: **`this[this.$options.$validateSelfValue]`** — `localValue` es solo el
   DEFAULT de esa opción (`:218`), es declarable por componente; escribir `this.localValue` a mano es bug
   latente. **VSV = COMPARAR/emitir/guardar (el todo como unidad); contenedor = DERIVAR (un dato de
-  adentro).** Litmus: *¿necesito el objeto entero comparable, o UN dato?* Caso #115: 32 renders y 106 ms
-  por tecla → 1 render y 1–3 ms.
-  la doc de arquitectura «derivacion-vsv-vs-localvalue».
-
+  adentro).** Litmus: *¿necesito el objeto entero comparable, o UN dato?* Doc de arquitectura: «derivacion-vsv-vs-localvalue».

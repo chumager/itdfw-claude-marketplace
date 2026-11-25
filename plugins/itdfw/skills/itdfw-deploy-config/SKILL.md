@@ -36,7 +36,7 @@ Hay dos lugares donde vive configuración, y **la pregunta que decide no es de c
   todo el sistema. Si no está desde el arranque, no tiene cómo polutar el sistema de queries — llega tarde.
   🔴 **Apagarlo en un deploy mono-zona NO es `Zones: false`**: el motor hace `pluginOptions[name] || undefined`,
   así que `false` se vuelve "sin options" y el plugin (GLOBAL) corre con defaults. La perilla está adentro del
-  plugin: `Zones: {zoneOptions: false}` → `zones.js` retorna antes de tocar el schema (verificado 2026-09-03).
+  plugin: `Zones: {zoneOptions: false}` → `zones.js` retorna antes de tocar el schema.
 - **`Currency`** → va en el **nivel 2**. Un deploy arranca perfectamente sin saber su moneda; la necesita
   recién cuando alguien opera plata. Por eso un deploy que opera plata tiene su configuración de moneda **y no está en
   el yaml**: subió a nivel 2, con su `configDefinition`.
@@ -149,14 +149,13 @@ export default {
 La prueba: *si hago `git pull` del site en otra máquina, ¿tengo que tocar esta llave?* Si la respuesta es sí, la
 llave es del ambiente y va en `/etc`. Un `devHost` en el `.itdfw.js` obliga a editar el site en cada máquina, y
 además **le gana** al yaml (el `.itdfw.js` del site manda), así que el admin no lo puede corregir desde `/etc`. Se
-puede escribir ahí, pero está mal (jcmunoz, 7-oct-2026: todos los sites del lab lo tenían, copiado de un ejemplo de
-este skill).
+puede escribir ahí, pero está mal.
 
 🔴 **Un secreto que es la IDENTIDAD del site** (el par VAPID del push, la llave de firma de sus tokens) es igual en
 toda máquina donde corra el site: por la prueba de arriba no es del ambiente. Dónde va lo decide **cada deployer**:
 en el `.itdfw.js` viaja con el site (menos configuración de máquinas, pero lo ve todo el que tenga el git o el tar);
 en `/etc` no queda en el repo (pero hay que copiarlo a cada máquina). El plugin lo lee con `configGet` y anda en los
-dos lugares; no se le impone uno (jcmunoz 30-oct-2026, VAPID de notifications).
+dos lugares; no se le impone uno.
 
 🔴 **Un nombre en texto no se puede resolver, y no es un problema de sintaxis.** Al consumidor le llega el
 **merge ya hecho** — perdió de qué archivo vino cada entrada. Entonces `"mi-plugin"` ¿contra qué
@@ -273,7 +272,7 @@ propia no es opcional.
 
 ⚠️ El usuario de la base tiene que tener permiso sobre la BD nueva; eso se resuelve en el motor, no acá.
 
-🔴 **Así se aíslan los tenants de un SaaS: una BD por tenant, no zones** (jcmunoz 31-oct-2026). Misma réplica, una
+🔴 **Así se aíslan los tenants de un SaaS: una BD por tenant, no zones**. Misma réplica, una
 base por tenant, cada una con **su propio usuario de Mongo**, con permiso solo sobre su base. Un usuario administrador
 del cluster crea esos usuarios, y ningún site usa el usuario de poder total. Así nadie ve ni entra a otra base, y lo
 que un tenant haga en la suya solo alcanza sus datos. Zones (varios tenants en una misma BD) es para el servicio que

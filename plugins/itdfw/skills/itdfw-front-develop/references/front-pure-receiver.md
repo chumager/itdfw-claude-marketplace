@@ -15,15 +15,15 @@ NO shape de data, sí:
 - Render DOM, event wiring, lifecycle integration con la UI lib.
 - Engineering interno del componente: un componente PUEDE construir inputs derivados desde su `localInput` (ej: ItdBetween construye operator-pair inputs), siempre que el shape de esos inputs derivados esté acordado con el back via dedicated keys (`subComponent`, `subInput`) — NUNCA por reverse-engineering del `component` del padre.
 
-## Contexto histórico
+## Por qué
 
-En un momento cada front tenía su propio plugin del back (ej: `BootstrapVue.js`) para shipping de data pre-shaped. Eso escaló a one-plugin-per-front maintenance — abandonado. La línea pragmática hoy: data shape estandarizado en `formFilter`/`toInput`; UI engineering por-front. NO blur la línea.
+Un plugin del back por front (ej: `BootstrapVue.js`) para shipping de data pre-shaped escala a un mantenimiento por front: no se hace. La línea pragmática: data shape estandarizado en `formFilter`/`toInput`; UI engineering por-front. NO blur la línea.
 
 ## Excepción — la View layer (Vista) ES el contrato front↔back
 
 Las views (`views/Form.jsx`, `views/View.jsx`, `views/Detail.jsx`) están en el boundary entre back response y component tree. PUEDEN transformar shapes de fields cuando adaptan back data a un componente específico de UI lib (ej: mapear schema `fields` → NDataTable's `columns` shape, o BTable's `fields` shape; armar filter input lists desde form definitions).
 
-La view es el "jamón del sandwich" — conoce el back contract Y las necesidades de la UI lib. Sin esta excepción necesitaríamos one back plugin per front (el approach abandonado de BootstrapVue.js).
+La view es el "jamón del sandwich" — conoce el back contract Y las necesidades de la UI lib. Sin esta excepción necesitaríamos one back plugin per front (un plugin de back por front).
 
 **La línea**: components stay dumb (ItdGrid, ItdFilter, GI, GF, ItdBetween, GIW); views adapt.
 

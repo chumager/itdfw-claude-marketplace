@@ -21,9 +21,9 @@ datos colgando no son vacío, y esos los juzga `validate` como COHERENCIA (ej. A
 ## Patrón SNAPSHOT
 
 El singleton VO es MUTABLE por la cadena reactiva del front (campos LAZY: la re-bajada lo pisa mid-ciclo). Un validate
-ASYNC o lento que lea `#value` después de un `await` valida OTRO valor: se cazó en e2e un campo prístino que validaba
-"OK" con basura adentro, vía un delay de prueba. Regla: primera línea `const value = this.#value` y todo el cuerpo
-valida el snapshot; así aguanta validadores foráneos lentos. Verificado con un delay inyectado de 500 ms. Canon:
+ASYNC o lento que lea `#value` después de un `await` valida OTRO valor (un campo prístino puede validar
+"OK" con basura adentro). Regla: primera línea `const value = this.#value` y todo el cuerpo
+valida el snapshot; así aguanta validadores foráneos lentos. Canon:
 `Rut.validate()`. Pendiente aparte: dos ciclos de validación solapados (generación).
 
 ## `{VALUE}` en los mensajes

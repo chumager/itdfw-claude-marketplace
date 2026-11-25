@@ -1,6 +1,6 @@
 # Keys `auth`, `wellKnown` y `captcha` — la fila completa
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 | Key | Qué aporta | Skill / fuente para el detalle |
 |-----|-----------|-------------------------------|

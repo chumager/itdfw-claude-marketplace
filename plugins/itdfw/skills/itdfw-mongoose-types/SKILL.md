@@ -61,7 +61,7 @@ mongooseTypes/      (carpeta de la cascada, en cualquier capa; los nombres son i
 | Saber qué FORMA tiene el valor guardado (para escribir un `default`) | 🔴 `listTypes` **NO la entrega** — da `component`/`measures`/`forceAttrs`, no el shape. Sácala con `mcp query <Modelo>` sobre datos REALES de un modelo que ya use ese type (ej. `Duration` → `LoanScenario.periodicity` = `{months: 1}`). ⚠️ Solo funciona si ese type YA tiene consumidor; si es un type sin uso previo, no hay fuente fuera del código |
 | Opciones NATIVAS de mongoose que sobreviven al pipe | `trim`, `lowercase`, `uppercase`, `default`, `immutable`, `min`/`max`, `minlength`/`maxlength` funcionan normal sobre los types base (evidencia en el propio catálogo: `String` trae `trim:true`, `Email` trae `lowercase:true`). No hay que reimplementarlas con formatters |
 
-## 🔴 validate — UNA firma, dos mundos (estándar 2026-07-03, props desde back 7.5.3)
+## 🔴 validate — UNA firma, dos mundos (props desde back 7.5.3)
 
 El `validate` de un custom type es **SIEMPRE una función `(value, props)` que LANZA**. El back es opinionado: el
 loader la registra con `propsParameter: true`, así que mongoose la llama con `this` = el documento (o la Query en
@@ -95,7 +95,7 @@ siendo los de mongoose (homologarlos y llevarlos al front es otra etapa).
   ACUMULA con los `validate` del campo (mongoose los guarda en arreglo — verificado).
 - Types con `class:` (DDD) normalmente NO declaran validate — la esencia de la clase valida sola
   (skill `itdfw-ddd-value-objects`). Declararlo es para reglas EXTRA del type.
-- Canon: Rut (clase) · Email/Url/Cuit (types con validate función pelá, homologados 2026-07-03).
+- Canon: Rut (clase) · Email/Url/Cuit (types con validate función pelá, homologados).
 
 ## toInput Pipeline
 
@@ -125,7 +125,7 @@ se reemplaza por su valor; `disabled`/`readonly` además se colapsan a boolean s
 (create/update). Al front NUNCA viaja una función (`pure:true`). Detalle en toinput-pipeline.md §2.
 
 🔴 **VIRTUALES no viajan a los forms por DEFAULT** — opt-in explícito con `hidden: false` en la
-declaración del virtual (jcmunoz 2026-07-14).
+declaración del virtual.
 
 🔴 **`hidden` ⊥ `send` (ortogonal)**: `hidden`=infra (¿se renderiza el input?), `send`=dato (¿viaja el
 valor?). `hidden:true+send:true` = oculto pero el dato viaja (ej. `creationUserModel` para que el
@@ -155,7 +155,7 @@ Hay dos lugares donde aparece el string del componente. Las reglas son distintas
 - 🔴 **SIEMPRE con prefijo `Itd`**, sin excepción: `name:"ItdEmbedded"`, `name:"ItdForm"`, `name:"ItdCode"`, etc.
 - Razón: el `name` es identificador interno Vue (Vue DevTools, registros). Mantenerlo siempre prefijado evita ambigüedad + futuras colisiones si algún día el name se usa como tag.
 
-**Caso real 2026-05-18**: `Config Banco` quedaba con ItdCode pegado al cambiar a sub-form porque `z99base` declaraba `Object.set("component", "Code")` y el endpoint `Config.getDefinition` retornaba `component:"form"`. Vue lowercaseaba a `<code>`/`<form>` HTML built-in → reconciliation rota. Fix: migrar Code/Select/Form → `Itd*` en el back. Embedded/ArrayAdd/Range/Currency etc. NO necesitan prefijo en la declaración (no colisionan), pero el archivo front se llama `ItdEmbedded.jsx` y declara `name:"ItdEmbedded"` siempre.
+**Ejemplo**: una Config con ItdCode pegado al cambiar a sub-form porque `z99base` declaraba `Object.set("component", "Code")` y el endpoint `Config.getDefinition` retornaba `component:"form"`. Vue lowercaseaba a `<code>`/`<form>` HTML built-in → reconciliation rota. Fix: migrar Code/Select/Form → `Itd*` en el back. Embedded/ArrayAdd/Range/Currency etc. NO necesitan prefijo en la declaración (no colisionan), pero el archivo front se llama `ItdEmbedded.jsx` y declara `name:"ItdEmbedded"` siempre.
 
 **Lista de HTML built-in tags a evitar como `component` declarado**: `code, select, form, input, button, textarea, table, tr, td, th, details, summary, dialog, menu, output, progress, meter, datalist, optgroup, option, fieldset, legend, label, a, p, span, div, ul, ol, li, img, video, audio, canvas, svg`. Si dudas, prefija con `Itd`.
 

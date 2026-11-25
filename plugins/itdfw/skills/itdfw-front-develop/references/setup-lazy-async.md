@@ -9,7 +9,7 @@ Ver también las filas de setup+loader (silent reactivity loss, bridge regular-f
 ## 🔴 NO asumir dato-on-create (paradigma lazy/async)
 
 🔴 **Los LOADERS/plugins ($validateSelf, $vModel…) también tienen created — y quedaron FUERA de las
-limpiezas de GI/GF** (cazados 2026-07-18, DOS fósiles en el MISMO created de validateSelf): (1) la
+limpiezas de GI/GF** (dos fósiles típicos en el mismo created de validateSelf): (1) la
 `assignVSR(true)` forzada — con valor async corría con VSV VACÍO → VSR = null ASIGNADO → el watcher
 EMITÍA null al form PISANDO el valor bueno; el lazy gate sellaba el desacople hasta el blur (Number/
 Percentage rojos en update con display válido — la firma: VSR null + modelValue null = el roundtrip
@@ -18,7 +18,7 @@ el null activó el VS (error) → el valor real llega al VSV pero SIN assign (la
 su watcher jamás re-dispara → el VS nunca re-corre → el delivery final re-valida sobre el VSR null y el
 error persiste con el display sano; solo un focus/blur lo recuperaba. Muerta: la emisión inicial no la
 necesita nadie — el form YA tiene el valor. (2) el snapshot `doubleCheckValue = externalValue` — capturaba
-vacío → Profile partía en rojo; mudado al GI (la estructura del DC es del GI, VS solo VALIDA) como espejo
+vacío → el form partía en rojo; mudado al GI (la estructura del DC es del GI, VS solo VALIDA) como espejo
 reactivo mientras-COMPLETAMENTE-prístino (primer tipeo en principal O DC corta el espejo — un espejo que
 sigue al tipeo vuelve el DC adorno). ⟹ al auditar created, revisar TAMBIÉN los de los loaders.
 

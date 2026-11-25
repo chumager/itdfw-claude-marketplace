@@ -1,6 +1,6 @@
 # `previousField` — renombrar campos de un modelo YA en producción, sin escribir migración
 
-El caso: un modelo que ya corre sobre ITDFW cambia el nombre de un campo. Los documentos en Mongo
+Situación: un modelo que ya corre sobre ITDFW cambia el nombre de un campo. Los documentos en Mongo
 tienen el nombre viejo; el schema declara el nuevo. **Sin migración, esos datos quedan huérfanos.**
 
 Es un mongoose plugin del framework: `previousField`.
@@ -16,7 +16,7 @@ lastname: {type: String, name: "Apellido", previousField: "surname1"}
 Al arrancar el servicio, el FW busca los documentos que todavía tienen `surname1` y los renombra.
 **Cero código de migración, cero script que alguien tenga que acordarse de correr.**
 
-## Qué cubre (verificado en el código)
+## Qué cubre
 
 | Forma del campo | Cómo lo resuelve |
 |---|---|

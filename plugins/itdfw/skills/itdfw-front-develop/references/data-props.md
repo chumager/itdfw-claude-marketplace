@@ -24,7 +24,7 @@ this.$attrs.tag || this.localInput.tag || this.tag || inputTag
 
 ## Event Resolution (`localLazy` computed)
 
-🔴 **`forceLazy` va PRIMERO** (2026-07-13): si `this.forceLazy` es boolean, `localLazy` lo retorna
+🔴 **`forceLazy` va PRIMERO**: si `this.forceLazy` es boolean, `localLazy` lo retorna
 DIRECTO — veto declarativo que manda sobre todo el OR (en el OR "false no veta"; forceLazy sí). Detalle
 y casos (ArrayAdd, Radio/CheckboxGroup NUI): value-pipeline.md §NESTED-LAZY.
 

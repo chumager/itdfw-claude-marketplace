@@ -47,7 +47,7 @@ options: async function ({req}) { return await req.db.model("X").distinct("y"); 
 Punto del pipeline: tras normalizar type/component/value, ANTES de validate/forceAttrs/transform. El
 valor llega al front ya resuelto a su tipo final.
 
-#### `requiredForm` también es `attrAsFunction` (2026-08-27)
+#### `requiredForm` también es `attrAsFunction`
 
 Está en la lista base junto a options/readonly/disabled/hidden, así que puede ser **función de
 contexto** y se resuelve antes de que `toInput` lo consuma (`validate.required = requiredForm || …`).
@@ -78,7 +78,7 @@ campo `hidden` para un contexto no se puede colar en el guardado de ese contexto
 `hidden` controla la **infra** (¿se renderiza el input/componente?); `send` controla el **dato**
 (¿viaja el valor al front?). Son **ejes independientes** — las 4 combinaciones tienen sentido:
 
-| `hidden` | `send` | Infra (input visible) | Dato (valor viaja) | Caso real |
+| `hidden` | `send` | Infra (input visible) | Dato (valor viaja) | Ejemplo |
 |---|---|---|---|---|
 | falsy | true (default) | sí | sí | campo normal |
 | **true** | **true** | NO | **sí** | `creationUserModel` (plugin): nunca se muestra, pero el dato viaja → su hermano `creationUser` (refPath) SABE a qué modelo pedir, aunque el modelo nunca se renderice |
@@ -89,7 +89,7 @@ campo `hidden` para un contexto no se puede colar en el guardado de ese contexto
 suele ir `hidden:true + send:true` (dato necesario para resolver, UI innecesaria).
 
 **`keepOnEmpty`** (complementa `send:false`): si el front NO manda el dato, el back se queda con
-`undefined` en vez de `null` → **no borra** el valor existente. Caso `password`: dejar el input vacío
+`undefined` en vez de `null` → **no borra** el valor existente. Ejemplo `password`: dejar el input vacío
 no borra el password guardado (sin esto, vacío→null lo borraría).
 
 > **`required` NO es de la familia contextual**: se mueve a `input.validate.required` y el `required`
@@ -148,7 +148,7 @@ input (`FrontEnd.js`). Dos regímenes opuestos:
   = props del campo en `localInput`, NO en `.attrs`.
   - El uso LEGÍTIMO de `attrs` es justamente atributos HTML del control: `File` acepta
     `attrs: {accept: "image/*", capture: "environment"}` y llegan al `<input type=file>` (abre la cámara
-    directo en Chrome Android y en el WebView de Capacitor; probado 2026-09-04 en `MemberCompletionAdult`).
+    directo en Chrome Android y en el WebView de Capacitor).
     🔴 Solo pasan los que el control interno DECLARA como prop: el trigger de `ItdFile` tiene `inheritAttrs:
     false` y su root es un `<span>`, así que un atributo no declarado no cae en el input — se agrega la prop
     (`accept`, `capture` hoy; `multiple` NO: el handler toma `files[0]`).
@@ -156,7 +156,7 @@ input (`FrontEnd.js`). Dos regímenes opuestos:
 Código: `pickAttrs` en `FrontEnd.js:~236` (tableFields); `omitAttrs` en `~350` (tableForm), `~422`
 (formCreate), `~434` (formUpdate).
 
-## 🔴 El sub-schema se pasa como ARGUMENTO, nunca por `req.schema` (2026-09-03, #172)
+## 🔴 El sub-schema se pasa como ARGUMENTO, nunca por `req.schema`
 
 `toInputs({req, filter, schema})` acepta `schema` explícito, y toda la familia `pick*` de FrontEnd.js lo recibe
 como último parámetro opcional: `pickGeneric(filter, req, schema)`, `pickInput(type, req, schema)`,

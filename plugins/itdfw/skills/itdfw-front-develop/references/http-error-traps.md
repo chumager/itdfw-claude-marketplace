@@ -18,8 +18,7 @@ El código viejo que hace `.then(r => r.data)` recibe `undefined` sin error, y e
 | status o headers | `{dataOnly: false}` en esa llamada → la respuesta completa (`{data, status, headers}`) |
 | el error | rechaza con la respuesta entera: `err.status`, `err.data` |
 
-No se vuelve al comportamiento viejo con un interruptor global: el contrato es el cuerpo. Gap #69, cazado por la
-sesión de coop2 en demo al subir al front 7.1.1 (27-sep-2026): tres pantallas del DEFAULT de demo lo usaban.
+No se vuelve al comportamiento viejo con un interruptor global: el contrato es el cuerpo.
 
 ## La matriz de traps (estado actual)
 
@@ -42,10 +41,10 @@ sesión de coop2 en demo al subir al front 7.1.1 (27-sep-2026): tres pantallas d
 $http.get(url, {noBlock: true, noError: true})
 ```
 
-🔴 `noError` es config de los TRAPS del core, no de smart-fetch (2-oct-2026, 8b8cff5d): smart-fetch solo la
+🔴 `noError` es config de los TRAPS del core, no de smart-fetch: smart-fetch solo la
 transporta. La respetan los traps de los 4xx de contenido (400, 404, 423, 429; 401/403 son de sesión y siguen su
 camino): sin alerta, y la respuesta completa queda en el `error` de la Query (`result` en su default). Quien quiera
-un texto ante el error lo pone mirando `error` (caso `simpleName`: "Value not found").
+un texto ante el error lo pone mirando `error` (p. ej. `simpleName`: "Value not found").
 
 El trap 400 lee `config.noError`: si es truthy, **NO** dispara el `Alert/error` visual, pero
 **igual** hace `Promise.reject(response)`. Así el caller conserva su propio `.catch` para manejar el
@@ -65,14 +64,13 @@ El resto del FW devuelve errores como **objeto** (`{message, errors, errmsg}` �
 status ES la señal para el consumer automático). El parser `processErrors`→`findKey` recursa sobre
 objetos buscando esas 3 keys; al recibir un string, `findKey` corta en la raíz
 (`if (typeof obj === "string") return [obj]`). Como `processErrors` itera las 3 keys, el mismo
-string llega triplicado a `res` → el `[...new Set(res)]` lo colapsa a uno. **Ese `Set` ya estaba**
-desde antes: Mongoose manda el mismo mensaje repetido en varios atributos del error, y el `Set`
+string llega triplicado a `res` → el `[...new Set(res)]` lo colapsa a uno. **Ese `Set` existe**
+porque Mongoose manda el mismo mensaje repetido en varios atributos del error, y el `Set`
 deduplica. El caso string se beneficia gratis de esa limpieza.
 
-> Lección transversal (no solo HTTP): una función que **llama** a otra en otro scope necesita que la
-> dependencia esté en un scope COMÚN. El handler 400 llamaba `processErrors` cuando estaba declarada
-> dentro del scope del 500 → `undefined` en runtime. Se sube `processErrors` al scope de
-> `async options()` para que TODOS los handlers la vean por closure.
+> Regla transversal (no solo HTTP): una función que **llama** a otra en otro scope necesita que la
+> dependencia esté en un scope COMÚN. `processErrors` se declara en el scope de
+> `async options()` para que TODOS los handlers (400, 500…) la vean por closure.
 
 ## Override del front/site — lo que se puede hoy
 

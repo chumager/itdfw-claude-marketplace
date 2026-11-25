@@ -59,14 +59,14 @@ export default {
 El cast de un SchemaType recibe **`cast(value, doc, init, prev, options)`** y **`this` = la instancia del
 SchemaType**. 🔴 Declara SOLO los parámetros que uses: mongoose agrega args con el tiempo y el 5º
 (`options`) es **API privada suya** (hoy `{_skipMarkModified}`, que usa al aplicar un `default`) — NO son
-las options del campo, esas se leen de `this.options`. Verificado en el código de mongoose 9.9.2
+las options del campo, esas se leen de `this.options`. Según el código de mongoose 9.9.2
 (`lib/schemaType.js` de mongoose), no en la doc pública, que declara menos args de los que pasa. ⟹ la config del campo se lee de **`this.options`** (`this.options.measures`, `this.options.multiple`, etc.), NO de `this.schema.path(this.path).options` (frágil: `this.path` viene `undefined` durante `init`/hidratación → crash silencioso tipo `Cannot use 'in' operator … in undefined`).
 
 - `value` = el valor a castear · `doc` = el documento · `init` = `true` si es hidratación desde BD.
 - Patrón DDD (valor con lógica): cast THIN **genérico** que retorna la clase: `cast(...args){ const [v]=args; if(v instanceof RegExp) return v; if(!v) return null; if(v instanceof VO) return v; return new VO(v, this.options.measures, …); }`. **Declará `cast(...args)`** (forward nativo, inmune a versionado de mongoose), no posicional. El detalle completo del VO (parse, toBSON/toJSON, niveles, pub/sub, atomicidad) → [value-objects-ddd.md](value-objects-ddd.md).
-- ⚠️ **RegExp en el cast — ZONA GRIS (no es un sinsentido)**: hoy ES necesario por coherencia del flujo de queries — `castForQuery` sin handler → `applySetters` → `cast`; un cast que no castea RegExp **revienta la query** (caso real `Rut`). No se pone dogmáticamente ni se saca hasta arreglar el flujo. 🛣️ **Roadmap**: la nueva implementación hará **overload de `castForQuery`** en los custom types (control total), o un `toFilter` que convierta los `conditionalHandlers` en cascada → ahí el filtro deja de pasar por `cast` y el `if (v instanceof RegExp)` se retira. Hasta entonces se queda, **documentado como deuda**, no como patrón.
+- ⚠️ **RegExp en el cast — ZONA GRIS (no es un sinsentido)**: hoy ES necesario por coherencia del flujo de queries — `castForQuery` sin handler → `applySetters` → `cast`; un cast que no castea RegExp **revienta la query** (p. ej. `Rut`). No se pone dogmáticamente ni se saca hasta arreglar el flujo. 🛣️ **Roadmap**: la nueva implementación hará **overload de `castForQuery`** en los custom types (control total), o un `toFilter` que convierta los `conditionalHandlers` en cascada → ahí el filtro deja de pasar por `cast` y el `if (v instanceof RegExp)` se retira. Hasta entonces se queda, **documentado como deuda**, no como patrón.
 
-🔴 **El wrapper que carga los types DEBE llamar el cast bindeado y con la firma completa**: `(types[type].cast).call(this, val, doc, init)`. Llamarlo unbound (`(types[type].cast)(val)`) mata el contexto para TODOS los casts custom (`this` undefined → sin `this.options`, sin `init`). Bug de base fixed 2026-06-26 (`mongooseSchema/index.js`); ver Hallazgo #95.
+🔴 **El wrapper que carga los types DEBE llamar el cast bindeado y con la firma completa**: `(types[type].cast).call(this, val, doc, init)`. Llamarlo unbound (`(types[type].cast)(val)`) mata el contexto para TODOS los casts custom (`this` undefined → sin `this.options`, sin `init`). El wrapper vive en `mongooseSchema/index.js`.
 
 ## 🔴 Las 3 formas de declarar el comportamiento del type (caster de `#loadTypesFromObject`)
 
@@ -80,7 +80,7 @@ boilerplate del cast a mano, declará tu intención:
 | **`extends: "Base"`** | el SchemaType **hereda de `Schema.Types[Base]`** → reusás su cast/validación + pisás con `options` | tu type es una **especialización** de uno conocido (String/Number/…) |
 | *(nada de lo anterior)* | `super.cast` | — |
 
-🔴 **Por qué `extends` es oro** — reusás un type conocido en vez de reimplementar su cast. Caso real, **Email**:
+🔴 **Por qué `extends` es oro** — reusás un type conocido en vez de reimplementar su cast. Ejemplo, **Email**:
 ```js
 // ❌ ANTES: cast + set manuales reimplementan trim/lowercase de String (12 líneas)
 Email: { cast(v){ return typeof v==="string" ? v.trim().toLowerCase() : v; }, set(v){ /* idem */ }, options:{…} }

@@ -47,7 +47,3 @@ Example from `ItdView.jsx`: `localSpecs` composes props (striped/bordered/single
 | "already referenced in 3 places" | Change the 3 references to `localX` |
 | "keeping both for clarity" | Reactivity waste — one computed is clearer |
 | "the render uses `tableColumns`, not `localFields`" | Rename. Don't add a parallel computed. |
-
-## Memory
-
-Originated from user correction 2026-04-17. See `memory/feedback_local-pascal-pattern.md`.

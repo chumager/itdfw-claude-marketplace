@@ -6,7 +6,7 @@
 - **DECLARACIÓN en back** (`component:"X"` en schemas): puede ir SIN prefijo si NO colisiona con HTML built-in (`"Embedded"`, `"ArrayAdd"`, `"Range"` están OK). Si colisiona — `"Code"`, `"Select"`, `"Form"`, `"Input"`, `"Button"`, etc. — **OBLIGATORIO** prefijo `Itd*`.
 - Razón Vue 3 JSX: render directo usa el string como identificador interno; si coincide con HTML built-in, Vue lo trata como tag nativo y la **reconciliación se rompe en swaps dinámicos** (controllers que mutan `component` post-mount). Vue 2 lo perdonaba porque operaba vía `<component :is=...>` con resolución indirecta.
 - Acepta tanto PascalCase (`"ItdCode"`) como kebab-case (`"itd-code"`) — el FW resuelve ambas.
-- Caso real 2026-05-18: Config Banco quedaba pegado en ItdCode al swap a ItdForm porque el back mandaba `component:"Code"` → Vue veía `<code>` HTML built-in → no destruía+remontaba.
+- Ejemplo: una pantalla queda pegada en ItdCode al swap a ItdForm si el back manda `component:"Code"` → Vue veía `<code>` HTML built-in → no destruía+remontaba.
 
 ## resolveTags / resolveComp / resolveTag
 
@@ -49,4 +49,4 @@ render() {
 **Anti-patrón** (Form.jsx, deuda estética): `components: ci("itdForm")` + `<itd-form>` en el render.
 - `ci` (en el `init`) = `{Pascal: resolveTag(comp)}` para asignar a `components:`. PERO **en JSX la opción `components` NO se lee** para resolver tags del render. Lo que hace andar el `<itd-form>` es el **side-effect global** de resolveTag (llamado dentro de ci), NO el objeto asignado a `components`.
 - ⟹ mecanismo visible (`components:`) ≠ mecanismo real (registro global) → **confunde**: el dev mira `components: ci(...)` y asume Options-API-components, que JSX no usa. Mismo costo que resolveTag directo, peor claridad.
-- **Regla**: en render JSX → `const X = resolveTag("itdX")` explícito. `components: ci(...)` solo tiene sentido en un SFC `.vue` real (donde la opción `components` SÍ se lee). En JSX es cruce de funcionalidades que enreda. (Aprendizaje 2026-06-09: asumir que `<itd-form>` "resuelve global por casualidad" estaba mal — resuelve por el side-effect de resolveTag, explicitarlo es lo correcto.)
+- **Regla**: en render JSX → `const X = resolveTag("itdX")` explícito. `components: ci(...)` solo tiene sentido en un SFC `.vue` real (donde la opción `components` SÍ se lee). En JSX es cruce de funcionalidades que enreda. (`<itd-form>` no "resuelve global por casualidad": resuelve por el side-effect de resolveTag; explicitarlo es lo correcto.)

@@ -18,4 +18,4 @@ data() {
 }
 ```
 
-**Real-world bug**: ItdDate with `dateType: "year"`. `initVal` used `this.dateType` (computed) → undefined in GI's `data()` → fell to default case → returned `"2024-07-21"` (date format) instead of `2024` (number) → emitter choked → `RangeError: Invalid time value` → watcher died silently → component never emitted. 2h debugging.
+**Example**: ItdDate with `dateType: "year"`. `initVal` used `this.dateType` (computed) → undefined in GI's `data()` → fell to default case → returned `"2024-07-21"` (date format) instead of `2024` (number) → emitter choked → `RangeError: Invalid time value` → watcher died silently → component never emitted.

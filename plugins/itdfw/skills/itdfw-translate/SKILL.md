@@ -59,8 +59,7 @@ for the FW). The current locale is `store.getters["Config/getLocale"]`.
 | anonymous visitor | **never redefines.** With config `Translate.anonymousTranslate` on he only catalogues the texts he sees (site bootstrap); close it afterwards. A redefined `t-href` would send every visitor elsewhere, so the write is profiled, always |
 | the MCP | `getTranslatables(model, locale)` / `setTranslations` (plugin `mcp`); it must send `x-locale` to consult another language |
 
-The plugin's config is named **`Translate`** (it was `Traducciones` until 30-sep-2026; every deploy's Config document
-was renamed): `anonymousTranslate` (the bootstrap key above) and `cache` `{maxAge, swr}` in seconds, the life of the
+The plugin's config is named **`Translate`** (a former `Traducciones` name no longer applies): `anonymousTranslate` (the bootstrap key above) and `cache` `{maxAge, swr}` in seconds, the life of the
 resolve endpoint's cache (default `{0, 604800}`). Half of that life is how often a text's `lastSeen` is written: the
 date it was last asked for, which tells live coordinates from dead ones and never travels to the client.
 

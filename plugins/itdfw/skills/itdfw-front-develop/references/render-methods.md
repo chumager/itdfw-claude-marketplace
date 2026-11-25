@@ -34,10 +34,10 @@ renderView() → defaultRenderView()
 **Pa un componente compuesto (ArrayForm, Embedded) basta `hasDetail: true` en data** — el default ya
 muestra "Ver"/count clickeable y emite el toggle. Los puntos de extensión FINOS son los datos que el
 default consume (`tableViewDisplay`, `viewTag`, `localLeft/localRight`, `formatter`), NO el método.
-Error real 2026-06-11: override de renderView con un `<span>` estático → botón vivo reemplazado por
+Error típico: override de renderView con un `<span>` estático → botón vivo reemplazado por
 texto muerto, detail inalcanzable.
 
-### 🔴 gTVV en la CELDA (grilla): formato COMPLETO desde el CRUDO — caso #106 (2026-07-18)
+### 🔴 gTVV en la CELDA (grilla): formato COMPLETO desde el CRUDO
 
 En la celda de grilla el display sale de `getTableViewValue`, y ahí el componente cuyo formato de input
 DESPLAZA parte del formato a `left/right` debe override-arlo con el formato COMPLETO. Caso Number/
@@ -47,11 +47,11 @@ valor va con `style: undefined`) → la celda salía con precisión pero SIN sí
 pone el símbolo Y multiplica ×100 solo — cero pipeline EV/VSV/VSR, cero scale, cero herencia al gTVV
 del GI: pa un escalar numérico ninguna de sus ramas aplica).
 
-**Por qué se pasó**: Number/Percentage era el ÚNICO componente que enchufaba formato en left/right —
-Currency lo resolvió solo porque su VO formatea COMPLETO en view (tableViewValue con símbolo incluido).
+**Por qué**: Number/Percentage es el ÚNICO componente que enchufaba formato en left/right —
+Currency no lo necesita porque su VO formatea COMPLETO en view (tableViewValue con símbolo incluido).
 Regla: si tu input desplaza formato a los LADOS, tu celda necesita SU gTVV con el formato entero.
 
-**Precisión de tasas** (lección TIR, misma pasada): Percentage `precision` default 4 declarable, piso
+**Precisión de tasas**: Percentage `precision` default 4 declarable, piso
 visual 2 — y es SOLO display: la tasa operacional es raw sagrado (sin VO/caster a propósito — las
 definiciones no se redondean; ver skill DDD §qué cierra y qué no).
 

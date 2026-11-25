@@ -98,7 +98,7 @@ export default {
 - **`showValidation: false`**: on inner inputs prevents duplicate error display. VFG errorsHandler skips display but validation still runs (form validator collects errors). Use in composite components where errors show at parent level only
 - **`addCast`**: required for GF-as-input types (e.g., `addCast("timeframe", "form")`) so auto-validator cascades to find form validators
 - **formBus.addInput/removeInput**: for dynamic forms (e.g., Between changing inputs based on type selector). Includes `$forceUpdate`
-- 🔴 **`childrenLazy: true`** (2026-07-13): un GF contenedor nested (ItdEmbedded, SubdocRow de ArrayForm) lo declara pa que sus HIJOS emitan al blur SIN ser lazy él (su canal de subida libre — jamás `lazy` en el padre: gatea su assignVSR y bloquea todo). ArrayAdd en cambio es `forceLazy: false` SIEMPRE (su infra de crecimiento muere sin blur; el lazy va en `input.lazy` del sub). Detalle: value-pipeline.md §NESTED-LAZY
+- 🔴 **`childrenLazy: true`**: un GF contenedor nested (ItdEmbedded, SubdocRow de ArrayForm) lo declara pa que sus HIJOS emitan al blur SIN ser lazy él (su canal de subida libre — jamás `lazy` en el padre: gatea su assignVSR y bloquea todo). ArrayAdd en cambio es `forceLazy: false` SIEMPRE (su infra de crecimiento muere sin blur; el lazy va en `input.lazy` del sub). Detalle: value-pipeline.md §NESTED-LAZY
 
 ## GF created guard — localForm vacío
 

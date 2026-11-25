@@ -49,7 +49,7 @@ el trigger por defecto; un **front** lo reemplaza si su librería de UI lo exige
 extraé el subcomponente a un método (ej. `buildTrigger()`) y que el created llame `this.buildTrigger()`; el
 front override ese método.
 
-**Caso real**: `ItdFile` core usa `<input type="file">` nativo; NUI lo reemplaza por el `n-upload` de Naive
+**Ejemplo**: `ItdFile` core usa `<input type="file">` nativo; NUI lo reemplaza por el `n-upload` de Naive
 (cuyo `onChange` no es enchufable en un input nativo bajo el binding GI-NUI). Mismo `this.tag`, distinto
 trigger por framework.
 

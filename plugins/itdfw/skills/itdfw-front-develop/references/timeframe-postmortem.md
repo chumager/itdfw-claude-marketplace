@@ -1,9 +1,9 @@
-# TimeFrame Postmortem — What Went Wrong
+# TimeFrame — Mistakes to Avoid in a Composite
 
 ## Context
-Level 5 composite (object value, two selects: measure + duration). Final result: ~150 lines core+front. Took 5+ compactations of failed attempts.
+Level 5 composite (object value, two selects: measure + duration). Correct result: ~150 lines core+front.
 
-## Mistakes in order
+## Typical mistakes
 
 1. **Built render from scratch** — resolveComp for selects, manual JSX, ignoring that `tag:"ItdForm"` + GI's renderMainInput handles it
 2. **Defined custom ItdForm** — one already existed in the framework
@@ -13,10 +13,10 @@ Level 5 composite (object value, two selects: measure + duration). Final result:
 6. **Validator scope issues** — couldn't resolve Mustache lambdas because of manual scope instead of using GI's formatM pattern
 
 ## Root cause
-Not reading GI's defaults before implementing. Every mistake was reimplementing something GI already provided.
+Not reading GI's defaults before implementing. Every mistake is reimplementing something GI already provides.
 
 ## The fix
-Read GI's default methods first. The implementation became trivial:
+Read GI's default methods first. The implementation becomes trivial:
 - Core: `tag:"ItdForm"`, `lazy:false`, `getInputProps()` with spread, `form` computed, type validator
 - Front: extends core, `{tag: "b-select"}` in extras, wrapper div in renderInput calling `this.defaultRenderInput()`
 

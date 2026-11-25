@@ -65,7 +65,7 @@ La solución sale de ese análisis. Por ejemplo, un tablero de unos cientos de t
 una lista virtual con todos los datos en memoria, y paginar por red al bajar quedó para cuando la medición lo pida
 (cerca de diez mil ítems).
 
-Una palabra ambigua del dueño ("infinito", "rápido", "simple") no se traduce a una regla: se pregunta qué quiso decir.
+Una palabra ambigua de quien pide ("infinito", "rápido", "simple") no se traduce a una regla: se pregunta qué quiso decir.
 
 ## 4 · Los estados de toda pantalla
 

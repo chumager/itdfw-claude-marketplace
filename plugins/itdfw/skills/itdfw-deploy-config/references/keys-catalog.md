@@ -12,14 +12,14 @@
 | Correo | `emailTransport` `masterEmail` `recoveryEmail` `errorRecipients` `recaptcha` |
 | Licencia | `instanceId` `machineLockedMessage` |
 | Operación | `logLevel` `logs` `Locale` `withDefault` `plugins` `test` (ver §«El modo test») |
-| Formularios | `genericPlaceholder` — objeto por **type** (`{generic: "Ingrese un valor", Email: "correo@dominio.cl"}`), leído con `configMerge` (el site pisa por llave); `toInput` lo pone en todo input que no declare `placeholder` ni lo traiga su type, y sin la llave usa `"Enter data"`. Fijo por site → `.itdfw.js`; por deploy → el yaml. El front lo traduce como cualquier texto (back desde 22-sep-2026; versión al publicar) |
+| Formularios | `genericPlaceholder` — objeto por **type** (`{generic: "Ingrese un valor", Email: "correo@dominio.cl"}`), leído con `configMerge` (el site pisa por llave); `toInput` lo pone en todo input que no declare `placeholder` ni lo traiga su type, y sin la llave usa `"Enter data"`. Fijo por site → `.itdfw.js`; por deploy → el yaml. El front lo traduce como cualquier texto |
 
 🔴 **`Procs` multiplica por SITE, y el peso son los modelos.** Cada carpeta del `documentRoot` es un host (el FW no
 resuelve DNS: escucha en la IP y solo mira el `Host` para enrutar), y cada host levanta `Procs` workers. Un worker
 pesa ~250 MB de base (los modelos de `DEFAULT/` + los del FW, 10-15 MB cada uno; las puntas y el proceso en sí son
 marginales) y cada modelo propio suma de verdad. Regla rápida: `RAM ≈ sites × Procs × 250 MB` + lo que más corra en
-la máquina. Caso real 2026-09-11 (demo, 4 GB): tres carpetas nuevas en la raíz × `Procs: 5` + tres Claude Code de
-~400 MB = thrashing y reboot. El arreglo fue `Procs: 2` y raíz limpia, no el FW. (Capacity planning fino queda
+la máquina. Ejemplo (máquina de 4 GB): tres carpetas nuevas en la raíz × `Procs: 5` + tres procesos de
+~400 MB = thrashing y reboot. El arreglo es bajar `Procs` y limpiar la raíz, no el FW. (Capacity planning fino queda
 para su propio skill.)
 
 Con valor por omisión aunque no los declares: `documentRoot` (`/var/www/itdfw`), `logs` (`/var/log/itdfw`),
@@ -38,7 +38,7 @@ Va en el archivo (nivel 1) porque el parser arranca antes de que carguen los mod
 (los webhooks firmados verifican el HMAC sobre los bytes exactos). Los archivos van por multipart (`multer`), no por
 este límite; desde 7.3.6 el nombre del archivo subido llega en UTF-8 (`defParamCharset`), antes en latin1.
 
-🔴 **Dos llaves obligatorias para ARRANCAR que no se adivinan** (verificado 2026-09-03 armando `/etc/itdfw/dev.yaml`):
+🔴 **Dos llaves obligatorias para ARRANCAR que no se adivinan** (al armar `/etc/itdfw/dev.yaml`):
 
 | Llave | Sin ella | Qué poner en un deploy nuevo |
 |---|---|---|

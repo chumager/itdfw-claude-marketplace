@@ -4,7 +4,7 @@
 
 Toda función del FW es potencialmente heredable (cadena `GI → GF → componente hoja`, o cualquier `core → front → site`). Si pisás una función con una implementación que NO llama al original, **cortás la cadena**: las hojas que esperaban encadenar su lógica quedan huérfanas — su método existe pero **nadie lo invoca**. Patrón de override correcto (el del FW: noop/default sobrecargables): **sobrecargá el `defaultX`, NO el wrapper `X`**; y si necesitás pisar el wrapper, **llamá al `default` del padre bindeado a tu instancia** (`Parent.methods.x.call(this, ...)`), reprocesá, retorná. Nunca "piso porque yo lo necesito" — eso rompe la cadena y el síntoma aparece **lejos** de la causa (dificilísimo de pesquisar).
 
-**Caso real 2026-06-12→14**: `GF` pisó `emitter` con identidad (`return v`) → cortó el wrapper `emitter = emptyEmit(defaultEmitter)` del GI → los `defaultEmitter` de los GF hijos (`ItdBetween` saca el `type`) quedaron sin ejecutarse → between dejó de limpiar y mandó `{type}` crudo, reventando el filtro. Funcionaba "antes" porque between pisaba `emitter` directo; al migrarlo a `defaultEmitter` (correcto), el `emitter` identidad del GF intermedio lo dejó huérfano. El error NO era de between (estaba bien) — era del eslabón intermedio que rompió la cadena. Fix: el wrapper se hereda, los hijos solo sobrecargan `defaultX`.
+**Ejemplo**: `GF` pisó `emitter` con identidad (`return v`) → cortó el wrapper `emitter = emptyEmit(defaultEmitter)` del GI → los `defaultEmitter` de los GF hijos (`ItdBetween` saca el `type`) quedaron sin ejecutarse → between dejó de limpiar y mandó `{type}` crudo, reventando el filtro. Si between pisa `emitter` directo funciona de casualidad; al usar `defaultEmitter` (correcto), el `emitter` identidad del GF intermedio lo deja huérfano. El error NO era de between (estaba bien) — era del eslabón intermedio que rompió la cadena. Fix: el wrapper se hereda, los hijos solo sobrecargan `defaultX`.
 
 Ver también [value-pipeline.md](value-pipeline.md) y la fila de `defaultGetInputProps`/`emitter` en [anti-patterns.md](anti-patterns.md).
 
@@ -14,9 +14,9 @@ El patrón de arriba SOLO funciona si `Parent` **define `X` propio**. `.methods`
 capa — **NO** incluye los métodos heredados. Si tu `localImport` resuelve a una capa que **hereda** `X` de SU
 propio extends, entonces `Parent.methods.X` es **`undefined`** → `.call(this)` revienta.
 
-**Caso real 2026-07-01 (ItdCurrency)**: `const Extends = await localImport("ItdNumber")` resuelve al ItdNumber
+**Ejemplo (ItdCurrency)**: `const Extends = await localImport("ItdNumber")` resuelve al ItdNumber
 de **NUI**, que **extiende** el core y **hereda** `reverseVal` (no lo define) → `Extends.methods.reverseVal` =
-`undefined` → reventaba el componente entero, con el error apareciendo lejos de la causa.
+`undefined` → revienta el componente entero, con el error apareciendo lejos de la causa.
 
 🔴 **No lo "arregles" con `Extends.extends.methods.X`** para bajar a la capa que sí lo define — es frágil por:
 (a) si **cambian la rama** de herencia, te cagan; (b) si alguien mete **otra capa intermedia** (otro Number

@@ -1,6 +1,6 @@
 # La asimetría back/front del espejo de carpetas
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 Acá está la **asimetría** con el back, y es de naturaleza, no de estilo:
 

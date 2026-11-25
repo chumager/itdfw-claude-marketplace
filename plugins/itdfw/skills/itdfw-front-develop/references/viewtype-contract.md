@@ -21,7 +21,7 @@ viewTypes: {
 }
 ```
 Los siete modos son del GI; ningún componente agrega un modo. Lo que agregan son **capacidades** sobre modos que ya
-existen (core, 11-oct-2026; NUI y los plugins no declaran ninguna):
+existen (core; NUI y los plugins no declaran ninguna):
 
 | Componente | Capacidad | En qué modos |
 |---|---|---|
@@ -37,7 +37,7 @@ existen (core, 11-oct-2026; NUI y los plugins no declaran ninguna):
 // ItdSubset: el universo acotado solo se pide donde se elige
 for (const vt of ["input", "filter"]) this.viewTypes[vt].fetchUniverse = true;
 ```
-(El typeahead remoto de `ItdSelect` nació así, como `handleSearch` en su `created`; hoy vive en el GI como
+(El typeahead remoto de `ItdSelect` vive en el GI como
 `refSearch`, dentro de `refAsks`, y `ItdSelectNUI` solo lo consulta.)
 Un `false` **explícito** no es obligación, es un mensaje: *"la estoy probando y todavía no la habilito"*
 (estado intermedio deliberado).
@@ -60,7 +60,7 @@ aviso.
     lo posible: declarar **es** el opt-in, y no declarar significa exactamente "no la tengo".
   - **viewType sin fila (ni fallback) → warn + `false`.** Es raro —debería estar declarado en el
     componente o global— pero raro no es fatal.
-  - (Ex-diseño, corregido 2026-08-14: ambos casos eran PLR. La PLR compraba cazar el typo, que el warn de
+  - (Descartado: tratar ambos casos como PLR. La PLR compraba cazar el typo, que el warn de
     la rama `false` ya delata, y cobraba declarar llaves que siempre serían `false` en las 7 filas — un
     mapa de capacidades TOTALES en vez de declaradas. Ver `supportOrThrow` para quien quiera severidad.)
 - **RESULTADO**: capability `false` → retorna `false` + **warn condicional por DEFAULT** (`this.log` —
@@ -96,7 +96,7 @@ sistema mata (una whitelist ad-hoc envejece con cada viewType nuevo).
 
 ## Nota hermana: dependencias de un loader viven en SU mixin
 
-Caso `vModelChildProp` (2026-07-02): el computed base (null) se definió primero en GI, pero quien lo lee
+Ejemplo `vModelChildProp`: el computed base (null) se definió primero en GI, pero quien lo lee
 es el **loader vModel** — y el loader lo usa CUALQUIER componente con `$vModel`, no solo GIs → un no-GI
 warneaba "property not defined". Regla: **el mixin que genera un loader garantiza SUS propias
 dependencias** (defaults incluidos); los overrides viven donde está la regla específica (GI NUI:

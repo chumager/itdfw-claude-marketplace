@@ -1,6 +1,6 @@
 # Re-cast de un path existente — los ejemplos completos
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 El ejemplo de `nationalId` → `Rut` (plugin tenant `NationalId`):
 

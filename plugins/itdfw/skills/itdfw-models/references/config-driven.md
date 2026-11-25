@@ -178,5 +178,4 @@ usuario, tenant), el mecanismo necesita `req`, y ahí aplica la disciplina:
   —`findById(this._id).preQuery()…` en el `pre("save")` que diffea versión actual vs almacenada—. El save
   dispara ese hook sin req, así que **sin `preQuery(false)` el guardar de CUALQUIER modelo con query
   dinámica (ej. `Config`, que hace `req.isAuth`) explota**. Regla mecánica: **todo find dentro de un hook
-  que corre sin req → `preQuery(false)`**. Pendiente: barrer el FW por otros finds-en-hook inocuos
-  (standby + TDD que cree un modelo con query dinámica y verifique que guardar no revienta).
+  que corre sin req → `preQuery(false)`**.

@@ -166,7 +166,7 @@ nivel lo decide lo que el cliente paga, no el gusto del diseño:
 | Nivel | Cómo se aísla | Para quién |
 |---|---|---|
 | **alto** | máquinas y motores propios: aislamiento 100 % | el cliente que paga infraestructura dedicada |
-| **medio** | un site y una BD por tenant (`mongoURL` por site), con su propio usuario de Mongo sin privilegios sobre las otras bases; comparten máquina y motor, aislados por worker y por BD. Cuesta ~250 MB × `Procs` por tenant | el cliente que paga su porción de infraestructura |
+| **medio** | un site y una BD por tenant (`mongoURL` por site), con su propio usuario de Mongo sin privilegios sobre las otras bases; comparten máquina y motor, aislados por worker y por BD. Cuesta aprox. ~250 MB × `Procs` por tenant | el cliente que paga su porción de infraestructura |
 | **bajo** | un solo site que crece por cantidad de clientes; el aislamiento es un **prefiltro** (`query` del modelo): los clientes entran por un modelo autenticable propio, y el prefiltro mira qué modelo es el usuario actual: si es cliente, filtra por lo suyo; si es usuario interno, ve todo | el volumen que no paga infraestructura; con un site por cliente saldría muy caro |
 
 Consecuencias para el TDD:

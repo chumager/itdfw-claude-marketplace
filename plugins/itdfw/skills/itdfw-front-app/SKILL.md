@@ -25,7 +25,7 @@ ITDFW uses a vertical cascade where each layer can override the one below. Files
    highest                                                                                 lowest
 ```
 
-🔴 There is **no `itdfw` alias** (TDD-cli, 4-oct-2026): NUI is the plugin `nui`. The core never imports `nui/…`; only a
+🔴 There is **no `itdfw` alias** (TDD-cli): NUI is the plugin `nui`. The core never imports `nui/…`; only a
 plugin's `nui` folder may (it exists only when the suite is active). Anything the core loads from the levels goes
 through the cascade (`localImport`, `frontLevels()`), never through a fixed alias.
 
@@ -39,11 +39,11 @@ through the cascade (`localImport`, `frontLevels()`), never through a fixed alia
 | Add behavior to existing component | Create `injections/<base>/CompName.js` — 🔴 la ruta ESPEJA la base del componente, y `App` se carga con base **vacía** → `injections/App.js`. Path malo = silencio total, sin error. Ver [injection-system.md](references/injection-system.md) |
 | Add init logic | Create `init.js` exporting `async function(pack)` |
 | Override store module | Create same filename in `store/modules/` (deep-merges) |
-| Add routes | Create `router.js` exporting route array — 🔴 **SOLO para rutas que NO van al menú** (un detalle al que se llega desde otra pantalla). Las que van al menú se declaran en el **back** (`schema.options.route` o la `route` de la punta), porque el menú se arma desde `userData.functions`: skill `itdfw-api-system` §"Rutas del front se declaran en el BACK". Un router.js con la pantalla principal del site = pantalla inalcanzable desde el menú (caso real 2026-09-15) |
+| Add routes | Create `router.js` exporting route array — 🔴 **SOLO para rutas que NO van al menú** (un detalle al que se llega desde otra pantalla). Las que van al menú se declaran en el **back** (`schema.options.route` o la `route` de la punta), porque el menú se arma desde `userData.functions`: skill `itdfw-api-system` §"Rutas del front se declaran en el BACK". Un router.js con la pantalla principal del site = pantalla inalcanzable desde el menú |
 | Afinar estilos desde tu nivel | `src/css/mergedStyle.css` — se ACUMULA (core → … → site). 🔴 NO uses `cascadeStyle.css`: es first-return y **reemplaza el del core**. Un CSS de UN componente va en su SFC (`<style src="core/css/x.css">`), no acá. Detalle: [cascade-system.md](references/cascade-system.md) |
-| Add a static asset (PWA icons, `assetlinks.json`, favicon) | Put it in `public/` at ANY level: the vite-plugin copies `public/` of core → front → plugins → default → site onto `html/` at `closeBundle` (site wins). Vite alone only copies the root's `public/` (2026-09-07) |
+| Add a static asset (PWA icons, `assetlinks.json`, favicon) | Put it in `public/` at ANY level: the vite-plugin copies `public/` of core → front → plugins → default → site onto `html/` at `closeBundle` (site wins). Vite alone only copies the root's `public/` |
 | Override controller | Create same filename in `controllers/` |
-| Add service-worker logic | `sw.js` in your level's folder (next to `components/`): the core's `vite.config` lists every level that has one (`frontLevels()`) and its SW imports them statically, core first and site last. Plugins' levels included (20-oct-2026) |
+| Add service-worker logic | `sw.js` in your level's folder (next to `components/`): the core's `vite.config` lists every level that has one (`frontLevels()`) and its SW imports them statically, core first and site last. Plugins' levels included |
 | Cambiar el LOGO del site | 🔴 NO es un archivo ni un deploy: es **Config** (modelo, se edita en el admin del site); `App.js` lo lee de ahí. El favicon SÍ es archivo: `public/favicon.*` en el nivel del site (fila de arriba) |
 | Menú / barras / drawer | NO reescribir el shell del `ContentWrapper`. Las barras son sinks (`nav`, `side`, `drawer`) y todo lo que va en ellas es un ítem del store `app`, incluidos logo, hamburguesa, login, avatar y menú (skill `itdfw-nui` §5). Otro aspecto de un ítem: su componente por cascada (`components/`) o cambiado en el ítem |
 | Barra lateral, sin nav, solo hamburguesa, sin login | 🔴 Es configuración, no cirugía del shell: en el `init.js` del site, `this.store.commit("app/setDisplay", {xs: ["nav", "drawer"], xl: ["nav", "side"]})` (sinks por breakpoint, mobile-first) y los ítems con su `sink` (string, arreglo o función de `{atLeast, breakpoint, touch, store, route}`). Sacar algo es `removeNavItem(key)`; un front sin barras es `setDisplay({xs: []})`. Si el site saca el login, no hay login: es su decisión. Contrato: el TDD de nav-items de NUI (enmienda 4) |
@@ -51,7 +51,7 @@ through the cascade (`localImport`, `frontLevels()`), never through a fixed alia
 | Otro menú, o el menú con otra fuente | el menú lee `app.menu`: un `init.js` enchufa `commit("app/setMenu", {ref: "…"})` o `{options: [...]}` y el core ya no pone las funciones del usuario. Otra presentación: otro componente en el ítem `menu`. Contrato: el TDD de menu de NUI |
 | Saber en qué tramo de pantalla estoy, en cualquier componente | `store.state.app.breakpoint` y el getter `app/atLeast(nombre)` (tramos `xs`…`5xl` en px CSS, pisables con `setBreakpoints`): reactivos y solo cambian al cambiar de tramo. El ancho exacto no está en el store: se mide |
 | Saber en qué barra está un componente | `inject: {sink: {default: "nav"}}`: cada barra hace `provide("sink")` |
-| Overlay de "cargando" | `ItdOverlay` (core dummy + NUI con `n-spin`), montado en `App.vue`: visible mientras hay requests **bloqueantes** en vuelo (store `loading.loadCount`, que alimenta la option `pending` de smart-fetch desde el init; la baja va diferida 250 ms, el orden del reflejo humano: con menos solo se ve flicker, y una ráfaga se ve como una sola aparición). Se apaga o se ajusta **en el `init.js` del site**, que corre después de crear los stores y antes de cualquier request (`store.state.loading.enabled = false`; también `showCount`, `spinner`), no pisando el módulo del store (jcmunoz 26-sep: un override de store obliga a documentar y buscar en otro lado). El componente se reemplaza por cascada. 🔴 Todo request de FONDO va con `noBlock: true` (traducciones, revisiones, pings): no cuenta y no tapa la pantalla |
+| Overlay de "cargando" | `ItdOverlay` (core dummy + NUI con `n-spin`), montado en `App.vue`: visible mientras hay requests **bloqueantes** en vuelo (store `loading.loadCount`, que alimenta la option `pending` de smart-fetch desde el init; la baja va diferida 250 ms, el orden del reflejo humano: con menos solo se ve flicker, y una ráfaga se ve como una sola aparición). Se apaga o se ajusta **en el `init.js` del site**, que corre después de crear los stores y antes de cualquier request (`store.state.loading.enabled = false`; también `showCount`, `spinner`), no pisando el módulo del store (un override de store obliga a documentar y buscar en otro lado). El componente se reemplaza por cascada. 🔴 Todo request de FONDO va con `noBlock: true` (traducciones, revisiones, pings): no cuenta y no tapa la pantalla |
 | Idioma del código | 🔴 Identificadores, funciones, variables, archivos y comentarios en **inglés**, camelCase. Solo los textos que ve el usuario van en español (y por el sistema de traducción, no hardcodeados) |
 
 ## Horizontal Search (6 Name Variants)
@@ -71,7 +71,7 @@ export default createViteConfig(__dirname, myVitePlugin);
 
 Core handles: aliases (@, default, one per plugin level, core), transformIndexHtml (auto-injects main.js), skipDefault logic.
 
-## El CLI: `dev` y `build` son AUTÓNOMOS (2026-08-19)
+## El CLI: `dev` y `build` son AUTÓNOMOS
 
 🔴 **Ni `dev` ni `build` necesitan el back.** No hay que tenerlo corriendo, ni en dev, ni en absoluto.
 
@@ -93,7 +93,7 @@ Lo único que cruza esa frontera es el entorno.
 
 ### Las tres capas del "host", que NO son la misma
 
-Confundirlas es el error que costó la mañana del 2026-08-19:
+Confundirlas es un error caro:
 
 | | Quién lo resuelve |
 |---|---|
@@ -124,7 +124,7 @@ puerto. 🔴 Un `devHost` en el `.itdfw.js` del site le gana al del yaml.
 ### Qué desapareció
 
 El mini-servidor del puerto **8877** (`if (onDev)` en `server.js`) que devolvía por HTTP un script shell
-con el comando de vite. Era **vestigio**: nació cuando el front no podía resolver solo qué config leer.
+con el comando de vite. Era **vestigio**: existía cuando el front no podía resolver solo qué config leer.
 Y además era **incorrecto** — devolvía la config **con la que arrancó el back**, no la del site donde
 está parado el dev; si el back corría con otro deploy, te daba la config equivocada sin decir nada.
 

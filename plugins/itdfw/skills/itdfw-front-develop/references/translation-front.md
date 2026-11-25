@@ -1,7 +1,6 @@
 # Traducción en el front: quién declara, quién rinde, cómo se prueba
 
-Contrato completo: el TDD del plugin `translate`. Este reference responde las preguntas que los gaps del grafo
-(#28, #30, #32, #36, #37, #38, #47, #48, #50, #51, #52) dejaron sin respuesta el 22-sep-2026.
+Contrato completo: el TDD del plugin `translate`. Este reference responde cómo se declara, se rinde y se prueba la traducción en el front.
 
 ## Las puertas (globales del pack, sin import)
 
@@ -13,11 +12,10 @@ Contrato completo: el TDD del plugin `translate`. Este reference responde las pr
 
 `t` y `rt` son **globales inyectados por el pack** (`init.js` del core, bloque `t`/`rt`/`localT`): no hay
 import que seguir, así que ni Serena ni el grafo listan sus llamadores. La única vía para "¿quién usa `t()`?" es
-texto: un `grep` de `t(` y `rt(` sobre el core front, NUI y los `vue/` de los plugins (gaps
-#47/#48/#52). Cualquier otra `var` del pack que un componente necesite se expone igual: como global desde su bloque
-del `init.js`, nunca leyendo `vars` desde el componente (#36).
+texto: un `grep` de `t(` y `rt(` sobre el core front, NUI y los `vue/` de los plugins ). Cualquier otra `var` del pack que un componente necesite se expone igual: como global desde su bloque
+del `init.js`, nunca leyendo `vars` desde el componente.
 
-## Dónde se declara y dónde se lee (el side effect, #37)
+## Dónde se declara y dónde se lee (el side effect)
 
 **Siempre sé qué voy a traducir**: un componente declara sus textos en `created()` (Options API pura, se hereda por
 `extends`) y el render solo lee `.value`. Declarar en el render o en un `computed` crea una Query por reevaluación y
@@ -39,10 +37,10 @@ render() { return <span>{this.emptyText.value}</span>; }   // o rt(...) directo 
   registra su front (`plugin:translate`, `plugin:restaurant`). Un texto heredado conserva la coordenada de quien lo
   declaró; el hijo solo declara los nuevos (detalle en `itdfw-translate` §3).
 - Compuestos: el padre declara `childrenModel` para que los sub-inputs traduzcan bajo el modelo que corresponde;
-  pasarle `model` al GI hijo no alcanza porque el wrapper lo crea el form padre (#32).
+  pasarle `model` al GI hijo no alcanza porque el wrapper lo crea el form padre.
 - El locale es parte de la coordenada: viaja en el query string, una URL por idioma. `Vary` no existe para nosotros.
 - El locale vigente sale del store: `store.getters["Config/getLocale"]` (`forceLocale ? Locale : language ||
-  navigator.language`); smart-fetch lo manda además en `X-Locale` (#38).
+  navigator.language`); smart-fetch lo manda además en `X-Locale`.
 
 ## Opciones: las traduce el GI del core, entera (texto y descripción), según el momento
 
@@ -67,7 +65,7 @@ optionsTranslation: {context: "Interface", text: "name-{{value}}", description: 
 `interfaceTranslation` (en `core/lib/translation.js`) es la de las interfaces: la declaran `checkLogin` y quien enchufe
 un `ref` de interfaces en el menú (`app.menu.optionsTranslation`, junto con su `minMatchingChars`).
 
-### El contrato de una opción (22-oct-2026)
+### El contrato de una opción
 
 ```js
 option = {value, text, disabled, icon, description, translation}
@@ -88,14 +86,14 @@ translation:
 - El nombre hace par con `optionsTranslation` (lo que declara el input). No confundir con `translatable: false` del
   campo, que es "se ve traducido pero sin lápiz".
 
-## Placeholder (#30)
+## Placeholder
 
 Nace en el **back**: `toInput` pone el del campo, si no el del type, si no el genérico por type del deploy
 (`genericPlaceholder`), si no `"Enter data"`. En el front lo consume UN solo punto, `GenericInput.declarePlaceholders`
 (`lib/GenericInput.jsx`), que declara las coordenadas con `t()` y elige rama (`own`/`doubleCheckOwn`). Ningún otro
 componente construye ni pisa el placeholder; envolverlo con `t()` en otro lado duplica la traducción.
 
-## Un form del framework suelto (#28)
+## Un form del framework suelto
 
 Para montar un form con definición de inputs a mano dentro de un componente propio (no como input de otro form):
 `ItdForm` con `form={[...inputs]}`, `modelValue`, `onUpdate:modelValue`, `buttons` y `onSubmit({errors, value})`,
@@ -105,7 +103,7 @@ lo que se muestra sale del prop (`externalValue`); `formBus.getValue` lee el con
 construye UNA vez (`data()`): si cambia de identidad, el watcher del GF reconstruye `localForm` y pisa lo que el
 controller puso.
 
-## Cómo se prueba desde un spec (#50, #51)
+## Cómo se prueba desde un spec
 
 - **El lápiz del editor es HERMANO del nodo**, no hijo: `page.locator("#tt-paragraph + [data-test='itd-t-edit']")`.
   Una marca puesta a mano muere en el repintado que trae la traducción.

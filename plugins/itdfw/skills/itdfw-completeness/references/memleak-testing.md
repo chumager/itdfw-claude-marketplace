@@ -64,7 +64,7 @@ else if (!canaryAlive)         console.log("✗ harness roto: el canario murió,
 else                           console.log("✗ MEMLEAK: el sujeto sobrevive — algo lo retiene");
 ```
 
-## Material vivo (ejemplos reales, 2026-06-30)
+## Material vivo (ejemplos reales)
 
 Tres pruebas que cerraron el diseño pub/sub del FW:
 - `doc-gc-weakref.test.js` — listeners cruzados internos → el doc se recolecta (autocontenido).

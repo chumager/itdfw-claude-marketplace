@@ -74,7 +74,7 @@ del dev (no hay cerca técnica: data lo envuelve, markRaw es solo preventivo).
   `localCurrency: "setCurrency"`, `localMask: "setMask"`) — las cadenas de conversión (externalValue,
   getTableViewValue) tocan el mapa y gotean al VO. 🔴 NADA global: el `setLocale` FIJO en el GI (régimen
   anterior) volvía el EV de TODOS reactivo al locale — GF incluido → al cambiar locale el GF root (sin
-  vModelValue) re-computaba `initVal(undefined)` y PISABA su contenedor → wipe en cascada (2026-07-13).
+  vModelValue) re-computaba `initVal(undefined)` y PISABA su contenedor → wipe en cascada.
   Locale es una externalidad más: quien la necesita la declara (Currency sí, Rut no, GF jamás).
 - **SIN props "por fuera"** (`currency`/`$attrs.precision` = API muerta): el `input` es OBLIGATORIO y
   reactivo — TODO lo per-campo viaja en él. "Solo quiero cambiar el currency" → cámbialo en el input.
@@ -84,7 +84,7 @@ del dev (no hay cerca técnica: data lo envuelve, markRaw es solo preventivo).
 - `localCurrency` (resolución de contexto): `localInput.currency → row._currency → rootBus` + **error
   logueado** si no hay de dónde (no silencio).
 
-## 🔴 El REGRESO del contrato (2026-07-12) — onChange: el VO cambia → VSV, la cascada corre sola
+## 🔴 El REGRESO del contrato — onChange: el VO cambia → VSV, la cascada corre sola
 
 El contrato tiene DOS direcciones y ambas son del GI (cero watchers de hoja):
 
@@ -101,7 +101,7 @@ silent-error en producción):
 - **`onChange` es OBLIGATORIA en todo VO enchufado como `$VO`** — noop legítimo (`onChange() { return
   this; }`) si el VO no tiene reactividad externa (Rut, Address). El GI la registra en `beforeCreate`.
 - **`initVal` es DECLARATIVA, no optional**: con VO presente el GI delega PELADO (un VO sin initVal o con
-  bug EXPLOTA — el try/catch tragón que colapsaba sin-vo/sin-hook/hook-con-bug en un fallback mudo murió).
+  bug EXPLOTA — no hay try/catch tragón que colapse sin-vo/sin-hook/hook-con-bug en un fallback mudo).
   El valor que `onChange` entrega viene YA pasado por el initVal DEL VO — el GI no re-transforma.
 - **Ruta especial** → override de `voUpdated` en el componente (ItdQuotes: inyecta la PK sintética del AF;
   un componente-imagen mete su flujo propio). El handler es la punta overrideable, no re-registrar.
@@ -112,7 +112,7 @@ silent-error en producción):
   watchers (`localCurrency → validateSelf` a mano) — funciona pero es el invariante replicado en la hoja
   que este contrato mata. Migrar a `$VO` + onChange + onSymbol. Canon del regreso: ItdQuotes (Credit VO).
 
-## 🔴 VO PURE-EXTERNALITY (2026-07-15) — derivación pura: SIN onChange, initVal retorna la derivación
+## 🔴 VO PURE-EXTERNALITY — derivación pura: SIN onChange, initVal retorna la derivación
 
 Refina el REGRESO para el caso donde el VO en modo external **NO tiene valor propio** — su valor es 100%
 DERIVADO de las externalidades ("mi externalidad me define; no tengo valor, lo crean ellas"). Canon:
@@ -121,9 +121,8 @@ Credit VO / ItdQuotes.
 - **Regenerar es DERIVAR, no un evento → CERO onChange por externalidades.** De la propagación se encarga
   el propio computed `externalValue` (EV): la MISMA externalidad que gatilla el drip re-evalúa el EV, el
   drip actualiza el VO en esa pasada, y el `initVal` al final retorna la derivación fresca. Un solo ciclo,
-  cero eventos. Emitir onChange dentro del goteo era **escritura-dentro-de-lectura** (el goteo corre
-  DENTRO del EV → voUpdated→VSV a MITAD de la evaluación → la cola del computed la pisaba con stale). Así
-  murió semanas la tabla de ItdQuotes.
+  cero eventos. Emitir onChange dentro del goteo es **escritura-dentro-de-lectura** (el goteo corre
+  DENTRO del EV → voUpdated→VSV a MITAD de la evaluación → la cola del computed la pisa con stale).
 - **`initVal` = derivación pura**: retorna SIEMPRE la derivación (se presume el cálculo en vivo correcto),
   ignorando el descenso. El PRIMER descenso no-vacío (caso update) se GUARDA (`#initial ??=`) — cubre
   datos malos llegando y deja en standby el flujo de validación futuro contra las fees iniciales.
@@ -132,19 +131,19 @@ Credit VO / ItdQuotes.
 - **Las dos patas quedan cubiertas por el early-return del valor final** (el match del EV): externalidades
   que cambian el resultado del EV sin coincidir con VSR (declarada, sin caso conocido aún) y externalidades
   que cambian formateo + initVal — ambas convergen porque initVal entrega el valor final derivado.
-- **Construcción PURA en el componente**: sin sobrecarga/precarga inicial (murió el preAssign de
+- **Construcción PURA en el componente**: sin sobrecarga/precarga inicial (sin preAssign de
   `Array(n).fill({})`) — el VO construye al completarse el goteo y el flujo lo recoge por initVal.
 
 Distinción de contratos del regreso: VO con reactividad externa PARCIAL (Currency: locale re-pinta un
 valor que SÍ es propio) → onChange clásico. VO pure-externality (Credit external) → derivación pura, mudo.
 
-## 🔴 VOs vs LA REACTIVIDAD DE VUE (2026-07-17) — la frontera SIEMPRE serializa
+## 🔴 VOs vs LA REACTIVIDAD DE VUE — la frontera SIEMPRE serializa
 
 **Operar VOs vivos dentro del front con Vue es territorio inexplorado y HOSTIL**: `reactive()` envuelve
 en Proxy EN PROFUNDIDAD todo lo que cae al estado (VSV incluido), y el Proxy es una trampa doble para
 clases con `#private`: `proxy instanceof VO` da **true** (transparente al instanceof) pero los getters
-corren con `this` = Proxy, que NO declara los `#privates` → `Cannot read private member #value` (cazado
-2026-07-17: 63 throws en un burst de montaje — celdas Currency leyendo instancias proxificadas).
+corren con `this` = Proxy, que NO declara los `#privates` → `Cannot read private member #value` (p. ej. celdas Currency
+leyendo instancias proxificadas).
 
 **LA REGLA: una instancia VO JAMÁS cruza hacia estado reactivo.** Las instancias viven DENTRO de su
 dueño (el VO singleton del GI, los hijos de un VO compuesto); lo que cruza la frontera es TRANSPORTE:
@@ -168,4 +167,4 @@ herencia MUERE (ItdCurrency: extendía ItdNumber por el 95% manual; con el VO pa
 GenericInput` — y murieron los data reactivos `group`/`decimal` que contaminaban `externalValue` vía
 formatter). El componente queda mínimo: **contexto** (localCurrency), **wrapper/conectores**,
 **coreografía** (refreshDisplay) y **pintura** (left/right vía `symbol` del VO). Un dominio, tres
-consumidores (cast mongoose, hooks GI, formatters de vista). Piloto: Currency (2026-07-02/03).
+consumidores (cast mongoose, hooks GI, formatters de vista). Piloto: Currency.

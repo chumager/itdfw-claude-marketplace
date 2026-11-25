@@ -1,6 +1,6 @@
 # libs y orden de carga — el texto original
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 ## libs — interconexión runtime
 

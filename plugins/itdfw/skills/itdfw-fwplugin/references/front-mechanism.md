@@ -1,6 +1,6 @@
 # Frameworks soportados y el mecanismo de Vite — detalle
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 ```js
 // índice del plugin (o key del FWPlugin) — self-declara sus paths con import.meta.url

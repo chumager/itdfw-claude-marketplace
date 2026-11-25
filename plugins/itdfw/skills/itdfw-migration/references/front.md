@@ -34,7 +34,7 @@ El conteo de archivos engaña. Antes de estimar:
 
 1. **Duplicados**: buscar el mismo nombre en `views/` y `components/`. Un sistema con dos entry points
    paralelos tiene la misma pantalla dos veces, divergida.
-2. **Huérfanos**: componentes que nadie importa. En el caso minero eran el **27%** de la carpeta, casi
+2. **Huérfanos**: componentes que nadie importa. Suelen ser buena parte de la carpeta, casi
    todos residuo del template de admin.
 3. **Reutilización real**: contar importadores por componente. Si los únicos con 10+ usos son campos de
    formulario, no hay biblioteca de componentes — hay pantallas que repiten inputs. Y esos inputs los
@@ -42,8 +42,8 @@ El conteo de archivos engaña. Antes de estimar:
 4. **Dónde vive la lógica**: `<template>` vs `<script>` en las vistas más grandes, y si usan composables
    o todo está inline. Si está inline, **la vista ES la lógica** y no hay nada reutilizable que rescatar.
 
-*(Caso minero: 195 archivos `.vue` → 77 vistas reales, 14 duplicados divergidos, 23 huérfanos, y los
-únicos componentes compartidos eran 7 inputs de formulario.)*
+*(Ejemplo: de ~200 archivos `.vue` pueden salir menos de 80 vistas reales, con duplicados divergidos, huérfanos, y como
+únicos componentes compartidos unos pocos inputs de formulario.)*
 
 ## Lo que sí conviene rescatar
 

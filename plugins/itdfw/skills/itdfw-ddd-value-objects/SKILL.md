@@ -11,7 +11,7 @@ description: Use when an ITDFW custom type's value has behavior of its own (form
 |---|---|---|
 | [externalities-gi.md](references/externalities-gi.md) | El regreso `initVal`/`onChange`, el VO pure-externality (por qué no emite), el wrapper de externalidades con su regla de fuentes planas, y la máxima del componente pelado | enchufas un VO al GI, el VO tiene locale/moneda/mask, o su componente está creciendo |
 | [validation-detail.md](references/validation-detail.md) | `validateSelf` como adaptador, el patrón snapshot y por qué, `{VALUE}` en mensajes, la cadena `required` doble punta y la serialización de `validators.js` | escribes `validate()`/`isEmpty`/`checkRequired` o un validador del front |
-| [why-and-history.md](references/why-and-history.md) | Por qué murió la inmutabilidad dura y por qué `setValue` no valida, el pecado original del constructor, por qué no hay clase base, cómo nació el VO compuesto, la lección de las tasas, el orden en que se implementó el core | quieres el porqué de una regla, o vas a discutirla |
+| [why-and-history.md](references/why-and-history.md) | Por qué murió la inmutabilidad dura y por qué `setValue` no valida, el pecado original del constructor, por qué no hay clase base, por qué existe el VO compuesto, la lección de las tasas | quieres el porqué de una regla, o vas a discutirla |
 
 Un type custom cuyo valor tiene lógica = una **clase de dominio** transversal back↔front: la MISMA clase la usa el
 SchemaType (cast/validate/persistencia) y el front (hooks GI/formato/validación). El objetivo: **el dato es dueño de su
@@ -109,7 +109,7 @@ Detalle: [references/validation-detail.md](references/validation-detail.md).
 - **TRANSPORTE**: se serializa SOLO (`toJSON()`: hijos raw ya cerrados + contexto plano). 🔴 Las instancias JAMÁS entran
   al estado reactivo del front: el Proxy de Vue no declara los `#privates` → throw. Raw + externalidades por su vía.
 
-Cómo nació y la lección de las tasas: [references/why-and-history.md](references/why-and-history.md).
+Por qué existe el VO compuesto y la lección de las tasas: [references/why-and-history.md](references/why-and-history.md).
 
 ## 🔴 Externalidades: JAMÁS en la clase ni en el doc — WRAPPER en el componente
 

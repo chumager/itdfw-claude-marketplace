@@ -90,7 +90,7 @@ verificación real, no "compila y se ve bien".
 | **mongoose plugin (global/filtered/named)** | que el modelo objetivo lo reciba (o NO, si no aplica) + idempotencia del re-cast |
 | **cualquier cosa** | completitud critic + logs con niveles + validación externa |
 | **cualquier cosa, para decir TERMINADO** | 🔴 **está OPERANDO**: commit + versión publicada + deploy nombrado + alguien lo usó (evidencia). "Probado" ≠ "terminado": el auth-chain estuvo 90 verdes y cuatro días sin deploy (skill `tdd-narrativo` §6) |
-| **pruebas contra el back con JWT / headless** | 🔴 JWT es el camino headless/MCP, ya autenticado; el front espera SESIÓN (un 401 corta, encola y pide login). Un arnés por JWT no reproduce el flujo del navegador: dos "defectos" reportados el 15-sep-2026 eran el arnés |
+| **pruebas contra el back con JWT / headless** | 🔴 JWT es el camino headless/MCP, ya autenticado; el front espera SESIÓN (un 401 corta, encola y pide login). Un arnés por JWT no reproduce el flujo del navegador: dos "defectos" reportados eran el arnés |
 
 ## 🔴 Por qué este skill existe
 

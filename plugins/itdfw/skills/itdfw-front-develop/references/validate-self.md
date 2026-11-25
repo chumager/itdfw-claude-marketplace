@@ -65,14 +65,14 @@ $validator.addValidator("min", "number", fn);    // generic numeric
 $validator.addValidator("min", "currency", fn);  // override for currency
 ```
 
-## 🔴 Emisión y validación corren por CARRILES DISTINTOS (2026-07-13)
+## 🔴 Emisión y validación corren por CARRILES DISTINTOS
 
 **SIEMPRE se emite** (gate único: ¿cambió el VSR?) y el error viaja en paralelo
 (`validateState`/mensajes) — llega COMPLETO al sendForm, y aguas arriba deciden qué hacer con datos
 inválidos. El componente provee todo; jamás gatea su emisión por validación.
 
-`$validateSelfEmitOnError` MURIÓ (eliminado 2026-07-13): era una rama completa de gateo de emisión
-creada solo para salvaguardar ItdDatalist — un invariante replicado. La solución correcta era la
+`$validateSelfEmitOnError` no existe: sería una rama completa de gateo de emisión
+para salvaguardar un solo componente (ItdDatalist) — un invariante replicado. La solución correcta es la
 declarativa: Datalist es typeahead LIBRE ("el dato es tuyo, la lista es sugerencia"); si un deploy lo
 quiere estricto, se declara un `validate` (valor ∉ options → error) — decisión por validador, no por
 capa de emisión.
@@ -121,7 +121,7 @@ if (viewType === "input" && !(validateAttr === false || noValidateAttr || valida
 - `localConfig.validate = false` → viene del input definition
 - `$attrs.noValidate` → flag directo
 
-**Caso real**: CheckboxGF con `validate: false` en data. Los checkboxes hijos emiten valores, el GF emite su value, PERO no valida ni emite `validateSelfErrors`. Solo el CheckboxGroup padre valida con validators de type array.
+**Ejemplo**: CheckboxGF con `validate: false` en data. Los checkboxes hijos emiten valores, el GF emite su value, PERO no valida ni emite `validateSelfErrors`. Solo el CheckboxGroup padre valida con validators de type array.
 
 ## VFG Overrideable en GenericForm
 
@@ -137,7 +137,7 @@ computed: {
 
 Permite que un GF inline (como CheckboxGF) use su propio VFG sin afectar el VFG global. `renderFormGroup` usa `this.localVFG` en vez de componente hardcoded.
 
-**Caso real**: CheckboxGroup con VFG inline que solo renderiza `<label>{checkbox}{text}</label>` sin errores/required.
+**Ejemplo**: CheckboxGroup con VFG inline que solo renderiza `<label>{checkbox}{text}</label>` sin errores/required.
 
 ## Async / Endpoint Validators
 

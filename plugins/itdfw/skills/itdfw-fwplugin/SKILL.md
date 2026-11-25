@@ -19,7 +19,7 @@ description: Use when creating or understanding an ITDFW FWPlugin — the back-t
 | [infra-vs-product.md](references/infra-vs-product.md) | Plugin de infraestructura vs de producto, y la regla de que la funcionalidad nace en el core | Decides dónde vive la lógica y cómo se declara el front de un plugin nuevo |
 | [keys-detail.md](references/keys-detail.md) | Filas completas de las keys `auth`, `wellKnown` y `captcha`: forma, orden, `pos`, validación, errores | Implementas autenticadores, aportes a `/.well-known` o proveedores de captcha |
 | [libs-timing.md](references/libs-timing.md) | Key `libs` (`Object.assign(pool.libs)`) y orden de carga db → types → plugins → schemas | Dudas cuándo está disponible una lib o en qué fase se aplica cada key |
-| [no-db-argument.md](references/no-db-argument.md) | El FWPlugin no recibe `db` por argumento: `#expandPlugins`, `plugin.call(this)`, por qué queda mudo y el caso | Tu plugin función no hace nada o `db` llega `undefined` |
+| [no-db-argument.md](references/no-db-argument.md) | El FWPlugin no recibe `db` por argumento: `#expandPlugins`, `plugin.call(this)`, por qué queda mudo | Tu plugin función no hace nada o `db` llega `undefined` |
 | [scope-let-exp.md](references/scope-let-exp.md) | `let exp = {}` y no `let exp;` en plugins solo-back; imports dinámicos dentro de la rama | Escribes un plugin solo-back o solo-front, o cae el front por `Object.entries(undefined)` |
 | [where-it-plugs.md](references/where-it-plugs.md) | Front de Currency inline y por qué el front se declara en el `.itdfw.js` y no en la config del back | Tu plugin vive dentro del back y su front no se descubre |
 
@@ -82,7 +82,7 @@ frameworks). El index apunta la key del framework a la carpeta:
 🔴 **Es RECOMENDADA, no obligatoria**: salvo la carpeta del front, el motor solo lee las **keys del objeto**. Se arranca
 **copiando el template** (`assets/fwplugin-template/`), 🔴 **incluido su `package.json`**: whitelist `files` (rule
 `package-files-whitelist`) con las carpetas del espejo y `README.md`, **sin `TDD*.md` ni `test/`** (el TDD va en git, no
-en el tarball). Caso y FWP inline del core: [references/folder-structure.md](references/folder-structure.md).
+en el tarball). FWP inline del core: [references/folder-structure.md](references/folder-structure.md).
 
 ### 🔴 El scope se decide con `inFront`/`inBack` — NUNCA por el argumento
 
@@ -111,7 +111,7 @@ export default exp;
 
 🔴 **`let exp = {}`, nunca `let exp;`**: el módulo se importa en los dos scopes, y un plugin solo-back que deja
 `undefined` en el front hace caer el front de todo deploy que lo tenga (`Object.entries(undefined)` en el loader). Los
-imports solo-back van **dentro** de la rama (`await import(...)`). El caso: [references/scope-let-exp.md](references/scope-let-exp.md).
+imports solo-back van **dentro** de la rama (`await import(...)`). El porqué: [references/scope-let-exp.md](references/scope-let-exp.md).
 
 #### 🔴🔴 El FWPlugin NO recibe `db` por argumento (y confundirlo lo deja MUDO)
 
@@ -124,8 +124,7 @@ El motor invoca un FWPlugin función con `plugin.call(this)`, **sin argumentos**
 | **FWPlugin** (función) | `plugin.call(this)` | `const {db} = this` |
 | **mongoosePlugin** (función) | `res.call(this, this.db)` | argumento **o** `this` |
 
-Si el FWPlugin **no necesita lógica** → forma **objeto**. El código del motor, por qué no lo pasa y el caso que lo
-destapó: [references/no-db-argument.md](references/no-db-argument.md).
+Si el FWPlugin **no necesita lógica** → forma **objeto**. El código del motor, por qué no lo pasa: [references/no-db-argument.md](references/no-db-argument.md).
 
 ## 🪄 Frontend — el hook de framework de reactividad
 
@@ -207,7 +206,7 @@ export default {
 - **(2) inline**: la estructura literal en el array (scope local del `.itdfw.js`, o pieza no externalizada). La ruta a
   `vue2` del ejemplo es el caso inline real (una carpeta por versión); `vue` sin versión sirve a las dos.
 
-Por qué el front se declara en el `.itdfw.js` y no en la config del back, y el caso del front de moneda inline:
+Por qué el front se declara en el `.itdfw.js` y no en la config del back, y el front de moneda inline como ejemplo:
 [references/where-it-plugs.md](references/where-it-plugs.md). Los FWPlugins del core: [references/existing-plugins.md](references/existing-plugins.md).
 
 ### 🔴 Plugin de INFRAESTRUCTURA vs plugin de PRODUCTO: la regla del core vale para el primero

@@ -1,6 +1,6 @@
 # Infraestructura vs producto, y la funcionalidad nace en el core — detalle
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 ### 🔴 Plugin de INFRAESTRUCTURA vs plugin de PRODUCTO: la regla del core vale para el primero
 
@@ -11,10 +11,9 @@
 
 En un producto no se arma un render "core" con nativos para pisarlo después en NUI: es una semana de trabajo para
 tener un card pelado, y se pierde lo que NUI resuelve (expandir, modal, carrusel, tema). La lógica separada cubre el
-caso raro de cambiar de framework (jcmunoz 24-oct-2026: *"si vamos a usar nui hay que usar los providers que nos da
-nui, si no, ¿pa qué tenemos nui? ¿pa armar un card pelao?"*).
+caso raro de cambiar de framework: si se usa NUI, se usan los providers que da NUI, no un card pelado.
 
-### 🔴 La funcionalidad nace en el CORE; un front solo le cambia la piel (jcmunoz 5-oct-2026) — plugins de infraestructura
+### 🔴 La funcionalidad nace en el CORE; un front solo le cambia la piel — plugins de infraestructura
 
 - Lo que un plugin necesita del front (un modal, un switch, un color por estado) lo provee el **core**, aunque sea
   feo: componente y lógica funcionan sin ningún front. Si el core no lo tiene, el plugin lo **declara como

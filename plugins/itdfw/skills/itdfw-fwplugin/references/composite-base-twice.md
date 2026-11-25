@@ -1,6 +1,6 @@
 # Plugin compuesto: la base que entra dos veces — tabla y medición
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 | Con dos hijos de la misma base, la base entra DOS veces | Qué pasa |
 |---|---|
@@ -11,4 +11,4 @@
 
 Y la base expone un **guard** (`enabled`, con un interruptor `enabled` en su Config; no `active`, que es nombre
 reservado) para que un hijo apagado o sin configurar responda como flujo (`[]`) y no con un 5XX que termina en correo
-al admin. Medido 27-sep-2026 en un site de prueba con los plugins `typesafe` + `typesafe-icon`.
+al admin. Ejemplo: los plugins `typesafe` + `typesafe-icon`.

@@ -1,6 +1,6 @@
 # Pisar en el front e `init.js` del plugin — detalle
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 🔴 **Pisar es SILENCIOSO y es la gracia, no el bug**: la cascada es *first-return* con la app en la punta
 más alta, así que un plugin puede sobreescribir un componente del core solo por **nombrarlo igual**. Es la
@@ -34,5 +34,4 @@ Detalle del pack, flags de registro y cómo escribir loaders → skill **`itdfw-
 ⟹ Un plugin puede traer **un vertical de front completo** (rutas + vistas + componentes + store + init)
 sin que la app toque una línea, y sin declarar más que la carpeta.
 
-*(Verificado e2e el 2026-08-15 con el plugin `conversation`, cuyo `vue/` ya no existe: una ruta y una vista del
-plugin se renderizaron sin tocar el site. Ejemplo vivo hoy: el plugin `openid` (su `vue/` con router y una vista).)*
+*(Ejemplo: el plugin `openid` (su `vue/` con router y una vista): la ruta y la vista del plugin se renderizan sin tocar el site.)*

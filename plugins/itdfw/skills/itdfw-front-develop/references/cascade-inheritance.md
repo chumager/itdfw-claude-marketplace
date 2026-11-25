@@ -76,9 +76,9 @@ Pregunta antes del import:
 2. ¿Quiero los renders/tags del front, o solo la lógica? Si solo lógica + render propio → directo.
 3. Si dudas → `localImport`. Es el default seguro.
 
-## Caso real (2026-05-01): ItdModelInput
+## Ejemplo: ItdModelInput
 
-`ItdModelInput` extiende `ItdSelect`. Mi primer intento usó `import ItdSelect from "./ItdSelect.jsx"` directo del core. NUI front tiene override de ItdSelect que usa `<n-select>` con UX adecuada. Mi import directo cortaba la cadena → ItdModelInput renderizaba con `<select>` HTML feo en NUI.
+`ItdModelInput` extiende `ItdSelect`. Con `import ItdSelect from "./ItdSelect.jsx"` directo del core, el override de ItdSelect de NUI (que usa `<n-select>` con UX adecuada) queda fuera: la cadena se corta y ItdModelInput renderiza con `<select>` HTML feo en NUI.
 
 Fix: `const ItdSelect = await localImport("ItdSelect");` — restablece la transitividad.
 
@@ -97,9 +97,9 @@ Patrón (mismo modelo transitivo que el componente):
 
 Así el setup se resuelve `site → front → core` en cascada, igual que render/tags. Si un nivel deja el setup **inline** (sin re-exportar), **corta la transitividad**: el nivel superior no puede componer sobre él.
 
-**NO usar lib-cascade** (`localImport("useX","lib")` + `lib/useX.js`) para esto — fue el approach viejo (archivo intermedio, más enredado). El named-export-setup es directo y mantiene la cascada.
+**NO usar lib-cascade** (`localImport("useX","lib")` + `lib/useX.js`) para esto — approach descartado (archivo intermedio, más enredado). El named-export-setup es directo y mantiene la cascada.
 
-Caso real (2026-05-27): **ContentWrapper** migrado de lib-cascade (`useContentWrapper.js`) a named-export-setup. Core exporta `setup` (`useBackend` → checkHelp/getHelp); NUI `import {setup as coreSetup}` + compone (`useDialog` + `provide("NUIdialog")`) + re-exporta.
+Ejemplo: **ContentWrapper** migrado de lib-cascade (`useContentWrapper.js`) a named-export-setup. Core exporta `setup` (`useBackend` → checkHelp/getHelp); NUI `import {setup as coreSetup}` + compone (`useDialog` + `provide("NUIdialog")`) + re-exporta.
 
 ## Real-world components
 

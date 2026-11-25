@@ -1,6 +1,6 @@
 # Test discipline — green/red, onDev, e2e, validación externa
 
-> 🔴 **Quién escribe qué (desde 2026-11-15):** el e2e es de QA; quien implementa entrega headless y el scope del
+> 🔴 **Quién escribe qué:** el e2e es de QA; quien implementa entrega headless y el scope del
 > e2e en prosa (SKILL.md, § "Quién prueba qué"). Donde esta referencia dice "el e2e del plugin" o "el spec del
 > componente", describe **cómo es** ese e2e (estructura, parámetros, login, capturas); **lo escribe y lo corre QA**.
 > Los specs que ya viven en `plugins/*/test/e2e` y `fronts/*/test` siguen donde están y son de QA.
@@ -94,7 +94,7 @@ transversal DEBE cubrir las dos patas:
   estado del root (`rootBus._dep`). Playwright sobre el test-form, o al menos la clase ejercida en el front-runtime.
 
 🔴 **Y el test VIVE EN EL PLUGIN** (FWP), gateado por `onDev` — NO suelto en `tests/`. El FWP trae su propio
-TDD e2e (patrón #93): el plugin es la unidad distribuible, su prueba viaja con él. Un test del VO en
+TDD e2e: el plugin es la unidad distribuible, su prueba viaja con él. Un test del VO en
 `tests/mongoose/` es válido para iterar el DISEÑO, pero el done del FWP exige la suite e2e (back+front)
 contenida en el plugin.
 
@@ -103,8 +103,8 @@ contenida en el plugin.
 La regla inversa de la anterior. Lo que prueba el **framework** (AAA, `changeMethod`, `Profile.canSee`, parsers,
 multer, timezone, wellKnown…) va en **`tests/back/`** del monorepo, porque es lo que corre en el release del back.
 Un test del core escrito dentro de un plugin **no corre cuando se publica el back**: es un test que existe y no
-protege nada (jcmunoz 2026-09-16, tras encontrar el espejo `checkUpdate` probado desde un plugin de producto: *"un
-plugin que prueba cosas del core es un total sinsentido"*).
+protege nada: un plugin que prueba cosas del core (p. ej. el espejo `checkUpdate` probado desde un plugin de producto)
+es un sinsentido.
 
 Cómo se escriben, para que el gallinero se ordene solo:
 
@@ -124,7 +124,7 @@ Cómo se escriben, para que el gallinero se ordene solo:
 - **Fixtures del core**: puntas `onDev` (la API `test`: `test/exec`, `test/anonFn*`,
   `test/readonlyUser`). Nacen perfiladas: el test las asigna al admin del runner con `MCP/assignFunction` antes de
   usarlas. Sin modo desarrollo responden 404 y el caso se salta con `ctx.skip`, no falla.
-- 🔴 **Un modelo o punta de prueba de un plugin tiene DOS cosas, ORTOGONALES** (jcmunoz 18-sep-2026):
+- 🔴 **Un modelo o punta de prueba de un plugin tiene DOS cosas, ORTOGONALES**:
   1. **Su existencia** la decide `onDev`, y **la decide el propio archivo** (ver "El archivo se hace cargo"
      abajo): quien lo enchufa (`index.js` del plugin, la carpeta del site) no condiciona nada. En prod no
      existe, no hay que limpiarlo.
@@ -132,7 +132,7 @@ Cómo se escriben, para que el gallinero se ordene solo:
      **no lleva `isAnonymous`** y el e2e **se loguea de verdad**: el spec de Playwright hace el login por la
      interfaz o por `POST /APP/AAA/checkLogin.json` con usuario y clave leídos del entorno (como el runner de
      `tests/back`: `-U`/`-P` → `ITDFW_PASSWORD`), nunca escritos en el spec.
-  🔴 **Un cajarito nunca le pide a jcmunoz que "pruebe logueado" a mano** (gap #34, translate 18-sep). Y el
+  🔴 **Quien implementa nunca le pide al dueño del producto que "pruebe logueado" a mano**. Y el
   bloqueo del harness al mandar una contraseña existe solo con los **MCP de browser**, que no se usan para
   probar (rule `e2e-programatico-nunca-mcp`); en un spec por consola el login es código y no lo frena nadie.
   🔴 `TestAuth` (`FWPlugins/TestAuth.js`, header `x-test-auth`) **no es la vía**: es el aportante de juguete que
@@ -144,7 +144,7 @@ Cómo se escriben, para que el gallinero se ordene solo:
   `test/e2e/mytype.e2e.spec.js` (Playwright por consola, sin login, se salta si el modelo no está). Se renombra
   y se rellena; si la prueba necesita un usuario, se quita `isAnonymous` y el spec se loguea como dice arriba.
 
-### 🔴 El archivo se hace cargo de su existencia (jcmunoz 9-oct-2026)
+### 🔴 El archivo se hace cargo de su existencia
 
 Si el origen de una pieza de prueba es un archivo, **ese archivo decide si existe**, no quien lo importa. El
 escape es rápido y va donde el archivo entrega su valor:
@@ -175,8 +175,8 @@ function Schema() {
 ```
 
 Casos vivos: `anonGate.test.js` (las tres formas de `isAnonymous`), `permissionMirror.test.js` (un perfil con solo
-GET recibe 403 de `checkUpdate/checkCreate/checkDelete/formUpdate/formData`; el bug estuvo de mayo a septiembre
-2026 porque el único test del espejo se hacía con perfiles completos).
+GET recibe 403 de `checkUpdate/checkCreate/checkDelete/formUpdate/formData`; un test del espejo hecho solo con
+perfiles completos no detecta el hueco).
 
 ## 🔴 La prueba REAL de un type: modelo MULTINESTED anónimo + onDev
 
@@ -201,10 +201,9 @@ desaparece sola al pasar a prod. Para un VO N2 (depende de un valor del root, ej
 DOBLEMENTE necesario: prueba que el virtual ascendente (`ownerDocument()._dep`) y la propagación del cambio
 (pub/sub) alcanzan los 4 niveles — no solo el root.
 
-🔴 **NESTING × RESTRICCIONES — el cruce ORTOGONAL obligatorio** (gap cazado 2026-07-06, jcmunoz): el
+🔴 **NESTING × RESTRICCIONES — el cruce ORTOGONAL obligatorio**: el
 modelo multinested prueba los NIVELES, pero las RESTRICCIONES del campo (`required`, `min`, `max`…) son
-definiciones INDEPENDIENTES del nesting — probarlas solo en el root deja el cruce sin cobertura (el
-CurrencyTest original tenía min/max en el root y los nested PELADOS). El modelo de prueba DEBE cruzar:
+definiciones INDEPENDIENTES del nesting — probarlas solo en el root deja el cruce sin cobertura (p. ej. min/max en el root y los nested PELADOS). El modelo de prueba DEBE cruzar:
 - **root × restricción** (ej. `home: {type: "Address", required: true}`),
 - **root × SIN restricción** (el control: vacío debe GUARDAR),
 - **nested × restricción** (el sub-schema con `required`/`min`/`max` INTERNOS — embedded Y docArray).
@@ -227,7 +226,7 @@ Son dos artefactos distintos:
 niveles (root/array/embedded/docArray), form y grilla. Eso es lo que prueba que el type aguanta de verdad —
 no leer un doc que ya existía, sino el ciclo completo de datos hecho por el script, sin asistencia humana.
 
-**Estructura del e2e en el plugin** (probado con Currency, 2026-07-01): vive en `<plugin>/test/e2e/`:
+**Estructura del e2e en el plugin** (ejemplo: Currency): vive en `<plugin>/test/e2e/`:
 - `<name>.e2e.spec.js` — el spec Playwright, **parametrizable** por `BASE_URL` (env, default localhost:8080);
   el PATH del modelo (`/APP/AAA/<Model>`) sale de la ruta AAA. Como el modelo es `isAnonymous`, el spec hace
   `goto` directo, sin login.
@@ -253,15 +252,12 @@ El test es lo que ata el número a su régimen: si el régimen cambia, el test s
 
 Litmus: *¿el resultado de esto es un número, un conteo o un "¿reaccionó alguien más?"* → es test, no ritual.
 
-**Caso fundacional (2026-08-14, #115)**: el over-render del GF se midió a mano al migrar a Vue 3 —con los
-stoppers de reactividad puestos— y dio bien. Después se restauró la reactividad con roundtrips completos
-(sin ella el flujo quedaba roto) y **la medición no se repitió**: era carísima. Vivió ~un año como verdad
-sobre un sistema que ya no era el medido. Lo destapó un `debug` olvidado en un componente, no una revisión:
-una tecla en un campo hacía reaccionar a 12 componentes, 32 renders, **106 ms bloqueantes** con 17 campos.
-La causa: el render leía el computed `validateSelfValue`, cuyo getter **clona** para ser comparable — y
-clonar lee TODAS las llaves, así que el render quedaba dependiente del objeto entero en vez de su llave.
+**Por qué**: una medición hecha a mano vale para el sistema que se midió, no para el que viene después. Un cambio de
+reactividad invalida el número sin avisar. Ejemplo de lo que un conteo atrapa: un render que lee un computed cuyo
+getter **clona** (p. ej. `validateSelfValue`) lee TODAS las llaves, así que depende del objeto entero en vez de su
+llave, y una tecla en un campo hace reaccionar a decenas de componentes.
 
-**La automatización que correspondía desde el principio** (barata, con lo que ya existe): el modelo
+**La automatización** (barata, con lo que ya existe): el modelo
 multinested anónimo `onDev` ya da el form grande; los logs ya dicen QUIÉN reaccionó. Un spec Playwright
 que tipea UNA tecla en un campo y **cuenta los componentes que reaccionaron** convierte la hora en
 segundos, y de paso cubre el crecimiento (agregar campos no puede volver a degradar el tipeo en silencio).

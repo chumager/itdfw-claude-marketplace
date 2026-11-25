@@ -9,7 +9,7 @@ description: Use when creating or modifying ITDFW data models defined IN THE DAT
 
 | Referencia | Qué trae | Léela cuando |
 |---|---|---|
-| [why-and-cases.md](references/why-and-cases.md) | Por qué el error de compilación no viaja en la respuesta, el caso del clon que siguió con la option vieja, por qué el acceso anónimo no se refresca en caliente, por qué no se borran, por qué el 404 con `.json` engaña | quieres el porqué de una regla, o un síntoma de este skill no calza con lo que esperabas |
+| [why-and-cases.md](references/why-and-cases.md) | Por qué el error de compilación no viaja en la respuesta, el clon que sigue con la option vieja, por qué el acceso anónimo no se refresca en caliente, por qué no se borran, por qué el 404 con `.json` engaña | quieres el porqué de una regla, o un síntoma de este skill no calza con lo que esperabas |
 
 Un modelo del FW normalmente vive en un archivo (`mongooseSchema/<Modelo>.js` — skill **`itdfw-models`**).
 Pero también puede vivir **como documento en la base de datos**: se crea desde el admin, el MCP o la API,
@@ -89,7 +89,7 @@ dependiente sigue con el clon de la versión ANTERIOR en cada worker, con `statu
 
 ⟹ Tras editar un modelo del que otros dependen: **re-guardar los dependientes** (un PUT con su mismo código basta), en
 orden de dependencia si la cadena es de 3+ niveles. ⟹ La verificación se hace contra el WORKER (`modelFields <Modelo>`
-por MCP), no contra el `code` del documento, que solo dice qué se guardó. El caso:
+por MCP), no contra el `code` del documento, que solo dice qué se guardó. El porqué:
 [references/why-and-cases.md](references/why-and-cases.md).
 
 ## 3. El flujo es POR EVENTOS, no lineal

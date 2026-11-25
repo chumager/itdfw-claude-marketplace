@@ -13,8 +13,7 @@ Importar nombres de viewport a un problema de container era vocabulario prestado
 | `getRowProps()` / `getColProps(input)` | core: CSS grid (`repeat(N, minmax(0, 1fr))`, `grid-column: span X`) · NUI: `n-grid` (`cols`) / `n-grid-item` (`span`) | solo pintan lo que el core calculó |
 | tope de ancho con `fit` | GIW del core | `max-width: colWidth * span` |
 
-Un front nuevo pisa `getRowProps`/`getColProps`/`getButtonsRowProps` con su grilla y nada más. Hasta el 21-oct-2026
-la lógica vivía en NUI y el core sin NUI apilaba los campos.
+Un front nuevo pisa `getRowProps`/`getColProps`/`getButtonsRowProps` con su grilla y nada más.
 
 🔴 **El layout que envuelve al form tiene que poder achicarse**: si un ancestro es un item de grid con su columna
 implícita (`auto`), crece al ancho mínimo de su contenido, el form mide ese ancho, pide N columnas y ensancha la
@@ -31,9 +30,8 @@ página que mide (ciclo). El `App.vue` del core fija `grid-template-columns: min
 - **Vía specs (back / origen back)**: el form trae su `colWidth`/`fit` en las specs.
 - **Vía prop directa**: `<ItdForm colWidth={200} fit />` — cualquier dev acota el ancho sin tocar el back.
 
-Esto es la capacidad nueva: el layout de columnas quedó **liberado**. Antes el grid era fijo
-(4 columnas en pantallas grandes, estirando); ahora el ancho de columna es declarativo y el N
-de columnas emerge de la división.
+El layout de columnas es **libre**: el ancho de columna es declarativo y el N
+de columnas emerge de la división (no hay un grid fijo).
 
 ## colWidth → cuántas columnas (N)
 
@@ -43,8 +41,7 @@ N = max(1, floor(containerWidth / colWidth))
 
 Un solo número (`colWidth`) y una división. Sin tabla de breakpoints. Container 1876px / 280 ≈ 6
 columnas; un drawer de 560px / 280 ≈ 2; un embedded angosto → 1. Todo sale del mismo principio.
-Escala infinita gratis: un 4K mete más columnas sin tocar nada (el viejo techo de 4 desaparece —
-nunca hubo techo, solo una división).
+Escala infinita gratis: un 4K mete más columnas sin tocar nada (no hay techo, solo una división).
 
 `colWidth` casi nunca se toca: el caso común (form ancho) sale solo. Solo forms angostos/densos
 (un drawer, un panel) lo declaran (`colWidth: 150`).
@@ -127,7 +124,7 @@ Si un input declara un `cols`/ancho que excede el container (ej. `fit` con un co
 ancho disponible), ¿qué pasa? Debería acotarse al container (no desbordar). Se cree resuelto por el
 `min-width:0` del wrapper, pero **falta probarlo en vivo**. Verificar antes de darlo por cerrado.
 
-## Grilla (`ItdGrid` NUI): columnas de infraestructura vs columnas de datos (#219, 28-sep-2026)
+## Grilla (`ItdGrid` NUI): columnas de infraestructura vs columnas de datos
 
 🔴 **Un campo `_XXX` (y `docLink`) es de INFRAESTRUCTURA**: su ancho es fijo y no se reparte el sobrante. Las de
 selección y expandir también (40 y 30 px, las pone `buildColumns`). Las columnas de **datos** absorben el sobrante.
@@ -135,11 +132,11 @@ selección y expandir también (40 y 30 px, las pone `buildColumns`). Las column
 **Cómo se calcula el ancho de una columna de datos** (`buildColumns`): el título TRADUCIDO que se pinta (el `ItdT`
 del encabezado lo reporta por `onChange` y el computed se recalcula) medido con canvas en la fuente real del `th`,
 + 24 de padding + 15 si ordena + 36 si filtra + 15 si tiene popup; `field.width` lo pisa. `scroll-x` es la suma de todos.
-🔴 **El contenido de las celdas NO entra en la cuenta, a propósito** (jcmunoz 1-oct-2026): si el ancho siguiera al dato,
+🔴 **El contenido de las celdas NO entra en la cuenta, a propósito**: si el ancho siguiera al dato,
 cada página movería las columnas de lugar. Lo que no cabe va con `n-ellipsis`, que se toca (celu) o se apunta
 (laptop) para verlo completo. Vale igual para el detalle de una fila.
 
-🔴 **`width`, no `minWidth`** (1-oct-2026, gap #74): con `table-layout: fixed` el navegador **ignora el `min-width`
+🔴 **`width`, no `minWidth`**: con `table-layout: fixed` el navegador **ignora el `min-width`
 de un `<col>`**; una grilla que desbordaba repartía el ancho por partes iguales (todas a 156 px, títulos partidos y
 celdas cortadas). Cada columna de datos lleva `width: <su ancho / scroll-x>%`, y la ÚLTIMA va sin `width`: cuando la
 tabla desborda (mide `scroll-x`) cada una mide exactamente su ancho calculado; cuando sobra espacio crecen en

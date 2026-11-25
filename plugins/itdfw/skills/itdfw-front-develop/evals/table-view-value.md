@@ -1,7 +1,7 @@
 # Eval green/red — TableViewValue (getTableViewValue)
 
 > Test que el skill DEBE poder responder bien una vez que exista el reference de TVV
-> (`references/table-view-value.md`, pendiente 2026-07-09). Origen: gap detectado — `getTableViewValue`
+> (`references/table-view-value.md`, pendiente). Origen: gap detectado — `getTableViewValue`
 > aparece UNA sola vez en el skill (SKILL.md sección Copy) sin estructura definida.
 
 ## PROMPT (lo que pregunta el usuario)
@@ -13,7 +13,7 @@ crear una función de renderizado a mano o si tengo otra forma de cambiar lo que
   en view/grilla/option, SIN escribir un render a mano.
 - Distinguir explícito: cambiar el VALOR mostrado (getTableViewValue, sobrecargable) ≠ cambiar el
   RENDER/dibujo (renderView y familia). El usuario casi siempre quiere lo primero.
-- (pendiente definir con jcmunoz) cómo se sobrecarga, firma, quién lo llama, y cómo las options
+- (por definir) cómo se sobrecarga, firma, quién lo llama, y cómo las options
   muestran su valor a través de él.
 
 ## RED — la respuesta INCORRECTA (que NO debe dar):

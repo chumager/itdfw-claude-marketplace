@@ -18,8 +18,7 @@ Migrar no es traducir. El sistema origen ya tomó decisiones —algunas del nego
 implementación, varias equivocadas— y la plataforma destino ya provee la mitad de lo que hay. El
 trabajo real es **decidir qué merece existir**.
 
-> Estado: en construcción con la primera migración real (minería / Proyecto Propio, agosto 2026). Cada
-> regla nace de un error cometido, no de teoría.
+> Estado: en construcción. Cada regla se apoya en un error típico de migración, no en teoría.
 
 ## Las dos migraciones, que son distintas
 
@@ -44,14 +43,14 @@ Al modelar sobre algo que ya existe **no se escribe el modelo entero**. Se escri
 origen sin filtrarlos. El delta obliga a justificar cada campo.
 
 **Vara de calidad:** si la tabla de transformación no tiene descartes, no filtraste — transcribiste.
-*(Caso real: `personat` tenía 9 campos, quedaron 5.)*
+*(Ejemplo: un modelo `Persona` de origen con 9 campos puede quedar en 5.)*
 
 ## 2. 🔴 Lo LOCAL manda sobre lo del origen
 
 El destino ya tiene una forma de hacer las cosas, y esa gana. El origen no impone su diseño solo por
 existir.
 
-Caso real: el sistema traía `surname1` y `surname2`. **Nosotros usamos UN apellido.** No se migran dos
+Ejemplo: el sistema de origen trae `surname1` y `surname2`. **Nosotros usamos UN apellido.** No se migran dos
 porque el origen los tenga: si un cliente los exige, se agrega el segundo **por plugin sobre el
 derivado**, nunca al modelo base.
 
@@ -64,7 +63,7 @@ como los declara `User` del FW, para que el día que haya que cruzar los modelos
 
 Peor que un campo de más: uno que **rompe una capacidad de la plataforma**.
 
-Caso real — `personat.country`: traerlo implica que puede haber personas de distintos países en el
+Ejemplo — `Persona.country`: traerlo implica que puede haber personas de distintos países en el
 mismo sistema. Pero el país lo define el **plugin del tenant**, que opera **por MODELO** (promueve
 `nationalId` al type local para todo el modelo). Con `country` por documento esa promoción deja de
 servir: habría que resolver la definición del campo **documento a documento**, con controladores
@@ -93,7 +92,7 @@ la importación está resuelta cuando no lo está.
 
 ## 5. Lo que el destino YA PROVEE no se migra: se descarta
 
-Antes de traducir un área, verificar si la plataforma ya la tiene. En el caso minero se cayeron de
+Antes de traducir un área, verificar si la plataforma ya la tiene. Suelen caerse de
 entrada: tickets (6 tablas), plantillas y envíos de correo (3), tokens de recuperación y verificación
 (2), comentarios, archivos, y los catálogos (`parametros` → modelo `Config`).
 
@@ -104,8 +103,8 @@ entrada: tickets (6 tablas), plantillas y envíos de correo (3), tokens de recup
 Un sistema con años acumula capas que no son del negocio: demos, pruebas, verticales de otro cliente,
 código que viajó por copiar carpetas.
 
-Caso real: de 68 tablas, **17 eran de una demo** montada tres días antes de la entrega, y un servicio
-completo era un producto ajeno arrastrado.
+Ejemplo: en un origen de 68 tablas, 17 pueden ser de una demo montada poco antes de la entrega, y un servicio
+completo puede ser un producto ajeno arrastrado.
 
 **Cómo se detecta:** el `.git` del origen, aunque sea corto. El primer commit suele ser el estado
 "antes de", y `git diff <primer-commit> HEAD --stat` dice exactamente qué se agregó después.
@@ -123,8 +122,8 @@ completo era un producto ajeno arrastrado.
 
 ## 8. La fuente de verdad es el CÓDIGO, no el DDL
 
-El esquema declarado y el código pueden haber divergido. Caso real: el `database.sql` del origen
-conservaba una versión vieja de una tabla que ya había sido refactorizada en los modelos.
+El esquema declarado y el código pueden haber divergido. Ejemplo: el `database.sql` del origen
+puede conservar una versión vieja de una tabla que ya había sido refactorizada en los modelos.
 
 ⟹ Cruzar siempre: DDL + modelos del código + datos reales del dump. **Donde discrepen, manda el
 código.**
@@ -134,9 +133,8 @@ código.**
 Siempre hay campos sin semántica conocida. **No se inventa una**: se listan como preguntas al cliente y
 se modela lo demás.
 
-⟹ **El vocabulario del dominio resuelve más incógnitas que leer código.** Búscalo temprano — en el
-caso minero, un campo sin FK ni uso claro (`tronco_id`) se resolvió al aparecer la terminología: eran
-los troncos familiares aymaras.
+⟹ **El vocabulario del dominio resuelve más incógnitas que leer código.** Búscalo temprano — un campo sin FK ni uso claro (`tronco_id`) puede resolverse al aparecer la terminología (p. ej. que sea un término
+cultural del dominio).
 
 ---
 

@@ -44,9 +44,9 @@ export default function restaurantTheme() {
 - **Caché:** si la respuesta varía según algo que no está en la URL (aquí, el referer), la punta tiene que quedar
   con el caché por defecto del FW (`max-age=0` + ETag, revalidación en cada pedido). Con SWR, el SW serviría lo de
   otro contexto.
-- **El referer a través del SW:** el SW de smart-fetch copia el `referrer` de la página al pedido que arma. Antes del
-  arreglo del 27-oct-2026 llegaba `/sw.js` en todo lo que el SW revalidaba.
+- **El referer a través del SW:** el SW de smart-fetch copia el `referrer` de la página al pedido que arma. Si no llega la página sino
+  `/sw.js`, el referer está mal armado en lo que el SW revalida.
 - **Para activarlo en un navegador que ya tiene el SW:** un cambio en `sw.js` no toma efecto con una recarga; hay que
   activar el SW nuevo.
 
-Caso: site público del plugin `restaurant` (27-oct-2026), `<documentRoot>/<site>/mongoosePlugins/restaurantTheme.js`.
+Ejemplo: site público del plugin `restaurant`, `<documentRoot>/<site>/mongoosePlugins/restaurantTheme.js`.

@@ -41,8 +41,7 @@ lo marca el PMO al pedir el estudio.
 | idea nueva, propia | **antes** de todo | su análisis decide si se hace |
 | nace de un acuerdo ya tomado (un socio, un cliente, un PRD ajeno) | **después**: cuando el TDD ya está aprobado, en paralelo a la implementación, para llegar antes de salir a vender | la decisión ya está; el análisis afina cómo se vende y no frena el TDD |
 
-Antes de empezar se dice en una línea cuál de los dos casos es. Si no se sabe, se le pregunta al dueño del producto
-(jcmunoz): es quien elige la alternativa y aprueba el TDD.
+Antes de empezar se dice en una línea cuál de los dos casos es. Si no se sabe, se le pregunta al dueño del producto: es quien elige la alternativa y aprueba el TDD.
 
 ## Proporción: producto entero o pantalla suelta
 

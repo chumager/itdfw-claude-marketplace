@@ -1,11 +1,11 @@
 # Value Pipeline
 
-> 🔴 **FLUJO SELLADO (2026-07-13)**: los gates de abajo están CONGELADOS tras e2e de cruce completo.
+> 🔴 **FLUJO SELLADO**: los gates de abajo están CONGELADOS.
 > NO tocar ninguno sin tema MUY fuerte — cada uno mata un modo de falla específico (eco, over-render,
 > retro-formateo, wipe). Declaración canónica pa reimplementar front/core:
 > La doc de arquitectura «value-flow-sealed».
 
-## 🔴 El árbol de gates — CÓMO OPERA (sellado 2026-07-13)
+## 🔴 El árbol de gates — CÓMO OPERA (sellado)
 
 El flujo es CIRCULAR: `raw baja → initVal → VSV (display) → emitter → VSR (canónico) → emisión → raw
 del padre → baja de nuevo`. Los gates cortan el círculo en cada frontera; solo progresa lo que cambia
@@ -48,7 +48,7 @@ watcher VSV → assignVSR(force)     [GATE PURO — cero lógica de negocio]
 └─ VSR = emitter(VSV) si difiere   [isEqual — idempotente]
 
 watcher VSR → await validateSelf() [CARRIL PARALELO: SIEMPRE se emite, el error
-├─ guard post-await: VSR == val?    viaja aparte — emitOnError MURIÓ]
+├─ guard post-await: VSR == val?    viaja aparte — emitOnError no existe]
 └─ vModelEmit(val)
      └─ isEqual(val, lastEmitted CLONADO)? → no re-emite   [snapshot inmutable;
         por referencia = "se actualiza solo" = GF mudo p/siempre]
@@ -71,7 +71,7 @@ blur: valor sube ANTES del $emit("blur") → el padre flushea con datos frescos 
 estructurales (add/remove, click de selección): despachan INMEDIATO — el gate lazy es solo pal tipeo
 ```
 
-🔴 **PRINCIPIO (jcmunoz 2026-09-06, decisión de diseño; implementación pendiente de análisis, ver #105):
+🔴 **PRINCIPIO (decisión de diseño; implementación pendiente de análisis):
 el roundtrip interno del componente es COMPLETITUD y no depende de externalidades; el blur es SOLO el
 gatillo de emisión, nada más.** Hoy `lazy` gatea la asignación del VSR al blur, o sea convierte al blur
 en un stopper de la completitud interna: el componente vive en estados intermedios (VSV ≠ VSR, "falta
@@ -83,7 +83,7 @@ asignación") que nos acostumbramos a leer como normales, y no lo son. Lo que de
 - El rojo mientras se tipea es pega del **emitter** (normaliza "1....000,10" → `1000.1`), no del validador:
   se valida el canónico; si queda rojo es porque el valor está malo, no "incompleto".
 - "Cuándo gatillar cosas internas" (validadores async tipo `checkStrength`) es una perilla PROPIA
-  (throttle / al blur), no el blur como gate global. Hoy estaba acoplado por accidente.
+  (throttle / al blur), no el blur como gate global. Hoy está acoplado por accidente.
 - El contrato hacia el padre NO cambia (recibe al blur). Cambia solo el timing interno.
 
 ### Invariantes transversales
@@ -124,7 +124,7 @@ user input → extractEventValue() → updateValue() → [validateSelfValue]
 2. **Si EMITE** — REGISTRADA en `assignVSR`: el round-trip de emisión (`updateValue/set → assignVSR → emitter → validateSelfRaw → vModelEmit`) **solo corre si el viewType está en la lista de `assignVSR`** (plugin `validateSelf`: `["input", "filter", "mainInput"]`). Un viewType editable que NO esté ahí **rinde pero NO emite** → el padre nunca recibe el value (el handler jamás se dispara).
 3. **Si el prop lo ACEPTA** — REGISTRADA en el `validator` del prop `viewType` (`lib/GenericInput.jsx`, prop `viewType` → `validator(v)` con la lista `["input","view","detail","filter","plain","mainInput"]`). Si no lo agregas, Vue **alega en consola** (`invalid prop`) aunque el render y la emisión funcionen.
 
-**🔴 Regla**: viewType EDITABLE nuevo → agrégalo en los TRES: `render{ViewType}` (método), lista de `assignVSR` (emisión), y `validator` del prop (sin warning). Síntomas por lugar olvidado (todos del caso ItdAddress, 2026-06-17):
+**🔴 Regla**: viewType EDITABLE nuevo → agrégalo en los TRES: `render{ViewType}` (método), lista de `assignVSR` (emisión), y `validator` del prop (sin warning). Síntomas por lugar olvidado (ejemplo: ItdAddress):
 - falta en `assignVSR` → el log muestra `validateSelfValue set {...}` pero NO `assignVSR`/`vModelEmit`; el control setea pero el padre no se entera.
 - falta en el `validator` → Vue warnea `invalid prop: viewType`.
 La auto-validación del watcher VSR queda atada a `viewType === "input"`, pero eso no importa en composites: el padre valida sus sub-inputs explícito (`validateSelf` itera refs y llama `vm.validateSelf()`). Lo que NO puede faltar es la **emisión**.
@@ -150,15 +150,15 @@ Ventaja: toda la lógica de negocio del GI (initVal/emitter/cast/validación) di
   cambiar el display. Para forzar la emisión en el flujo lazy: `assignVSR(true)` (lo hacen `GenericForm`
   y `GenericInput`).
 
-🔴 **Caso raro (2026-07-01): un cambio de FORMATO que CAPA el valor real.** Normalmente el formato NO toca el
+🔴 **Caso raro: un cambio de FORMATO que CAPA el valor real.** Normalmente el formato NO toca el
 valor (formatear "1000" no cambia el número) → el VSR no necesita re-emitirse. PERO en Currency la **precisión
 es de la MONEDA**: cambiar CLP↔USD **re-redondea** el valor (0↔2 dec). Si solo reformateás el display (VSV) y
 NO re-emitís, con `lazyFormatter` el **VSR queda con la precisión vieja** → los cálculos comen arrastre por
 error acumulado. Fix: tras reformatear el VSV, `this.assignVSR(true)` → el emitter re-capa el raw a la nueva
-precisión. Caso vivo: `ItdCurrency` watcher de `localCurrency`. **Regla general: si un cambio de formato altera
+precisión. Ejemplo: `ItdCurrency` watcher de `localCurrency`. **Regla general: si un cambio de formato altera
 el VALOR DE DOMINIO (no solo su representación) y hay `lazyFormatter`, forzá `assignVSR(true)`.**
 
-## 🔴 Corte de ECO en el watcher de externalValue (2026-07-13)
+## 🔴 Corte de ECO en el watcher de externalValue
 
 El flujo es **CIRCULAR**: raw baja → `initVal` → VSV → `emitter` → VSR → se emite → raw del padre → baja
 de nuevo. La memoria del círculo YA existe y se llama **VSR** (VSR = el VSV emitido = el EV de regreso).
@@ -173,13 +173,13 @@ externalValue(val, old) {
 ```
 
 - **Mata el over-render completo**: el eco no toca VSV → ni initVal ni la cascada corren.
-- **Subsume al comparador viejo `val/old`** (murió): toda bajada idéntica también tiene emisión == VSR;
+- **Subsume al comparador `val/old`**: toda bajada idéntica también tiene emisión == VSR;
   el eco en cambio pasaba el val/old (tipeaste → val ≠ old) y clobbereaba el display. El guard pasó de
   "¿cambió el INPUT del watcher?" (sintáctico) a "¿cambia mi ESTADO?" (semántico).
 - De yapa: `emitter(val)` corre en cada bajada genuina → en DDD transfiere el valor nuevo al VO
   (transferencia muda) justo antes de que el flujo siga — el descenso alimenta el canal gratis.
 
-## 🔴 NESTED-LAZY: `childrenLazy` (contenedor) + `forceLazy` (veto del GI) — 2026-07-13
+## 🔴 NESTED-LAZY: `childrenLazy` (contenedor) + `forceLazy` (veto del GI)
 
 **El lazy vive en el TIPEO de los HIJOS, jamás en el canal del padre.** Separación declarativa:
 
@@ -187,7 +187,7 @@ externalValue(val, old) {
   lazy SIN ser lazy él: `renderFormInput` pasa `lazy: this.childrenLazy || this.localLazy`. El hijo emite
   al blur (se auto-contiene en su delivery); el padre solo recibe `valueUpdate` por el canal natural —
   idempotente, ni sabe que el hijo es lazy. Compone RECURSIVO solo (nested L2 gratis). 🔴 El error
-  histórico fue lazy EN el GF padre: gateaba SU assignVSR → bloqueaba el flujo completo (incluidos los
+  típico es lazy EN el GF padre: gateaba SU assignVSR → bloqueaba el flujo completo (incluidos los
   estructurales). Quién lo declara y por qué vía (🔴 verificar la rama con el MCP inventory — NUI NO
   siempre extiende el core):
   - `ItdEmbedded` (GF core) y `SubdocRow` (rama core/BV del ArrayForm): data, vía `renderFormInput`.
@@ -205,7 +205,7 @@ externalValue(val, old) {
   - Los verificados SIN problema en lazy: select estático, date, checkbox suelto (bluerean de verdad),
     tipeo (obvio). `forceLazy: true` también existe (componente que DEBE ser lazy aunque nadie lo arrastre).
 
-Verificado e2e 2026-07-13 en TestAnon: embedded L1+L2, ArrayForm (celdas lazy, filas libres), ArrayAdd
+Cubierto: embedded L1+L2, ArrayForm (celdas lazy, filas libres), ArrayAdd
 root+nested, radio/checkboxgroup/select/date/boolean dentro del nested.
 
 ## Accessing the Value
@@ -232,6 +232,6 @@ Shortcut in computed: `this.validateSelfValue` (cloneDeep for objects).
 - Reactividad cross-field = computed/watch(fn) de 1 línea. `formBusOn("valueUpdate:X")` es para reacciones IMPERATIVAS (side-effects), NO para *leer* valores ajenos — y encima se pierde los lazy loads (ver paradigma sync-create→lazy-async).
 - Semi-obsoleta `setCurrencyHandlers`/`currencyHandler` (son watchers → colapsan a `watch(() => formBus.getValue("_currency"), setCurrency)`).
 - Reemplazo limpio del legacy `extra` (el valor que se pasaba por prop antes de formBus).
-- Caso real: `ItdCurrency.currencySource` lee `_currency` del form así.
+- Ejemplo: `ItdCurrency.currencySource` lee `_currency` del form así.
 
 **Caveat (pendiente de diseño):** `getValue` resuelve sobre el formBus INMEDIATO. En forms anidados (docArray — ej. cuotas de una simulación colgando de formBus) un hijo puede necesitar un valor del parent/root → cadena `formBus → parentBus → rootBus` (o wrapper encadenado que pregunte en orden). Sin resolver — ver el TODO «formbus-nested-chain».

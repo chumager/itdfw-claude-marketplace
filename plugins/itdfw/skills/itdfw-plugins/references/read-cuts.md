@@ -1,13 +1,13 @@
 # Recortes de lectura: `preSearch`, su par en `pre("aggregate")`, `preAggregate` y por qué no `post("find")`
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 - 🔴 **Prefind de ALCANCE (filtrar TODAS las lecturas: soft-delete, tenant, vencidos, `query` del schema) →
-  `schema.preSearch(fn)`** (`mongooseDB/preSearch.js`, 2026-09-04), NUNCA el par `pre(/find/)` + `pre(/^count/)` a
-  mano. La lista de qué es una lectura vive UNA vez (`[/find/, /^count/, "distinct"]`); escribirla por plugin es como
-  nació #173: cuatro copias y a las cuatro les faltó `distinct` (en `zones` eso cruza tenants). `aggregate` va aparte
+  `schema.preSearch(fn)`** (`mongooseDB/preSearch.js`), NUNCA el par `pre(/find/)` + `pre(/^count/)` a
+  mano. La lista de qué es una lectura vive UNA vez (`[/find/, /^count/, "distinct"]`); escribirla por plugin deja
+  copias a las que les falta `distinct` (en `zones` eso cruza tenants). `aggregate` va aparte
   (su `this` es un Aggregate, `pipeline().unshift`). Los cuatro (`delete`, `expire`, `zones`, `queryFilter`) ya lo usan; regresión en las pruebas `presearch*` de back.
-- 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`** (jcmunoz 9-oct-2026). Un plugin que
+- 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`**: un plugin que
   recorta lecturas y no recorta el aggregate deja ese camino abierto: el `$search` elige ids con `$limit` sin ese
   recorte y el `find` final (que sí lo tiene) devuelve vacío o incompleto, o un aggregate de reporte muestra lo que el
   `find` esconde. El hook va al inicio del pipeline (`unshift({$match: …})`) sin pensar en etapas primeras: el plugin
@@ -30,12 +30,11 @@
   `expire`) y `preAggregate` al final. Corren en el orden en que se aplican los plugins; entre los recortes el orden da
   lo mismo (cada uno antepone un `$match` y el resultado es su AND), lo único que importa es que `preAggregate` corra
   último, y eso lo asegura su `pos: "$"`.
-- 🔴 **Un plugin NO cuelga un `post("find")`** (jcmunoz 22-oct-2026). Lo que corre después de leer asume qué campos
+- 🔴 **Un plugin NO cuelga un `post("find")`**: lo que corre después de leer asume qué campos
   trajo la consulta, y el que consulta decide eso: `formOptions` trae solo el campo del nombre (`select`), un reporte
   trae otros, un `aggregate` no pasa por ahí. Un `post("find")` que completa, renombra o agrega datos a los documentos
   falla en silencio con la primera proyección, y además corre sobre TODA lectura del modelo. Lo que un plugin agrega
-  a una salida se engancha en quien la produce, envolviéndola por la salida (caso: `zones` envuelve `formOptions` y
+  a una salida se engancha en quien la produce, envolviéndola por la salida (ejemplo: `zones` envuelve `formOptions` y
   agrega la zona con una sola consulta sobre los `value`; ver el TDD de zones-refs). Los recortes de lectura
   van antes (`preSearch` + su par en `pre("aggregate")`), nunca después. Al proyectar un `aggregate` y rehidratar,
-  la proyección nombra `_id: 1`: `Model.hydrate(doc, {campo: 1})` deja `_id` en `undefined` (mongoose 9.11, medido
-  22-oct-2026), aunque Mongo sí lo haya devuelto.
+  la proyección nombra `_id: 1`: `Model.hydrate(doc, {campo: 1})` deja `_id` en `undefined` (mongoose 9.11), aunque Mongo sí lo haya devuelto.

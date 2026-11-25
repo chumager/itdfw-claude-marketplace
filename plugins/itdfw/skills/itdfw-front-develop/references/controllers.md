@@ -27,13 +27,11 @@ comportamiento, va en ese. La ubicación comunica quién manda.
 ## Cuándo corren y qué pueden hacer
 
 Corren en **`created`** → pueden hacer **prácticamente cualquier cosa** del componente/form
-(propiedades, valores, estructura — posiblemente hasta renders). Esa es la diferencia clave con el
-sistema anterior.
+(propiedades, valores, estructura — posiblemente hasta renders). Esa es la diferencia clave con las directivas Vue.
 
-**Historia (por qué son funciones y no directivas)**: antes eran controllers vía DIRECTIVAS Vue —
-enormemente complejo: race conditions permanentes (definir cosas en el `bind` pa usarlas en el
-`update`), sin encapsulamiento por el bind → side effects, una locura. El cambio a **funciones
-directas bindeadas al `this` del componente** mató todo eso.
+**Por qué son funciones y no directivas**: una directiva Vue implica race conditions permanentes (definir cosas en el `bind` pa usarlas en el
+`update`) y side effects por falta de encapsulamiento. Las **funciones
+directas bindeadas al `this` del componente** evitan todo eso.
 
 ## Mecánica
 
@@ -50,7 +48,7 @@ directas bindeadas al `this` del componente** mató todo eso.
 
 | Controller | Qué hace |
 |---|---|
-| `disableFields` | Disabled SOLO de UI — el valor round-trippea intacto. Sin options → a sí mismo; `disableFields: [...]` → otros campos. 🔴 Caso canon del PORQUÉ existe: `disabled` de SCHEMA es contrato de DATO (setData lo bota — Profile.functions.path perdió los 93 paths, 2026-07-06). Ver skill `itdfw-models` → conventions.md. |
+| `disableFields` | Disabled SOLO de UI — el valor round-trippea intacto. Sin options → a sí mismo; `disableFields: [...]` → otros campos. 🔴 Por qué existe: `disabled` de SCHEMA es contrato de DATO (setData lo bota, y el campo pierde su valor). Ver skill `itdfw-models` → conventions.md. |
 | `changeOptions` | Overlay por VALOR de este input sobre otros campos (hidden/required/options...) — cache+overlay, revalida post-inputUpdate |
 | `setDisabled` | Azúcar sobre changeOptions: `{CLP: ["porcentaje"]}` → disabled condicionado por valor |
 | `calc` | Valores calculados cross-field |

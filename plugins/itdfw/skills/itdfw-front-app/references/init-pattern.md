@@ -39,7 +39,7 @@ In pack functions, `this` = vars object with:
 **IMPORTANT**: Core runs LAST. If app init uses something from core init, it won't exist yet. Use the pack operations to modify, not to read.
 
 🔴 **Pero el pack se PROCESA en el orden del array (bloques del core primero), y `assign` PISA `options` con su valor
-resuelto** (medido 20-sep-2026, banco de smart-fetch): cuando la `options()` de un bloque del site corre, la
+resuelto** (medido en el banco de smart-fetch): cuando la `options()` de un bloque del site corre, la
 `options` del bloque `$http` del core **ya no es una función sino el objeto** resuelto
 (`val.options = await val.options.call(vars)`). Un bloque que quiera reusar las options de otro
 (`pack.search("$http").find(item => item.name === "$http").options`) tiene que aceptar las dos formas: función (aún

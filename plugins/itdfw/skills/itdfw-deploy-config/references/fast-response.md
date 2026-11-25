@@ -34,7 +34,7 @@ Otros usos del mismo mecanismo: `robots.txt`, `.well-known`, metas de verificaci
 ### 🔴 El `req` llega COMPLETO — incluido `req.db`
 
 Es lo que convierte a `fastResponse` en algo más que respuestas estáticas: la respuesta puede **consultar
-la base** y armarse con datos reales. El caso vivo del Open Graph:
+la base** y armarse con datos reales. Ejemplo, el Open Graph:
 
 ```js
 {

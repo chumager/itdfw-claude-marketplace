@@ -18,10 +18,10 @@ Core `createViteConfig(frontDir, plugin)` handles everything. Front only needs t
 - `itdfw` → `frontDir/src` (front base)
 - `core` → `__dirname/src` (framework core)
 
-### Dónde nace el flujo (verificado 2026-09-05)
+### Dónde nace el flujo
 🔴 Ya NO hay `transformIndexHtml` que inyecte `main.js`. El `index.html` que gana la cascada trae **explícito**
 `<script type="module" src="/src/main.js">`, y Vite lo resuelve contra el `root` (el directorio de ese index).
-Caso normal (site, DEFAULT y front sin `index.html`; NUI los soltó en 784cc87d): `root` = el **core** →
+Caso normal (site, DEFAULT y front sin `index.html`): `root` = el **core** →
 el `index.html` del core front → su `src/main.js` (`run()` de su `index.js`, el bootstrap).
 El build lo dice: `[itdfw] index: <root>`. **DEFAULT y el site NO necesitan index ni main**: aportan por los alias de
 la cascada (`default`, `@`) que resuelve `localImport`.

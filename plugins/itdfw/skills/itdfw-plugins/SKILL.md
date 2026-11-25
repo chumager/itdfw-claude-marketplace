@@ -9,7 +9,7 @@ description: Use when creating, applying, or understanding mongoose plugins in t
 
 | Referencia | Qué trae | Léela cuando |
 |---|---|---|
-| [binding-detail.md](references/binding-detail.md) | Binding de la factory (`.call(schema, db)`) vs la inner `plugin(schema, options)`, caso `db is not defined`, filas de errores comunes | Te da `db is not defined` o dudas qué es `this` en factory, plugin y methods |
+| [binding-detail.md](references/binding-detail.md) | Binding de la factory (`.call(schema, db)`) vs la inner `plugin(schema, options)`, error `db is not defined`, filas de errores comunes | Te da `db is not defined` o dudas qué es `this` en factory, plugin y methods |
 | [boot-crash.md](references/boot-crash.md) | Sub-schema literal desde un plugin: contamina User y clones, error `eachVirtualPath is not a function` | Todas las puntas dan 500 tras agregar un campo desde un plugin NAMED |
 | [code-refs.md](references/code-refs.md) | Referencias del motor de plugins: `#addPluginFromObject`, `setPlugin`, `#filteredPlugins`, `#globalPlugins`, ejemplos por modo | Quieres ver el código del motor o un ejemplo de cada modo |
 | [core-capabilities.md](references/core-capabilities.md) | Capacidades del core que ya existen (`_update`, `hidden`, `toInput`, `toXLS`, `__history`, `_zone`, `weakEntity`...) y su catálogo de uso | Antes de escribir lógica nueva en un plugin, para no reinventar algo del core |
@@ -102,7 +102,7 @@ function mongoosePlugins(/*db*/) {
   return { plugin(schema) { /* … usa db por closure … */ } };
 }
 ```
-El caso `db is not defined`: [references/binding-detail.md](references/binding-detail.md).
+El error `db is not defined`: [references/binding-detail.md](references/binding-detail.md).
 
 **2. La INNER `plugin(schema, options)`** (la prop `plugin` del objeto retornado). La llama **Mongoose** vía
 `schema.plugin(fn, opts)` → `fn(schema, opts)`:
@@ -120,7 +120,7 @@ El caso `db is not defined`: [references/binding-detail.md](references/binding-d
 | en la **factory** de un plugin, o donde tengas el singleton Schema (`this`) | `this.db.model(modelo)` | la factory va bindeada al singleton (`res.call(this, this.db)`) |
 | en la **función de un FWPlugin** | `this.db.model(modelo)` | también bindeada al singleton (`plugin.call(this)`, skill `itdfw-fwplugin`) |
 | **dentro de un schema** que depende de otro | `await this.init(nombre, {models: "Otro"})` | garantiza que el modelo ya exista (`schema-engine.md` en `itdfw-models`) |
-| la config de nivel 2 desde un Model | `Model.getConfig()` (static que pone el plugin `config` en todo schema) | dentro de un ref-función `this === Model`; caso real: el plugin `typesafe`, el 500 `db.getConfig is not a function` |
+| la config de nivel 2 desde un Model | `Model.getConfig()` (static que pone el plugin `config` en todo schema) | dentro de un ref-función `this === Model`; ejemplo: el plugin `typesafe`, el 500 `db.getConfig is not a function` |
 | la config de nivel 2 con la conexión a mano | `await this.db.getConfig("X")` | `mongooseDB/config.js` del plugin `config` la cuelga de la conexión, no de `db.models` |
 
 ## 🪄 Pisar/inyectar — la libertad extrema (black magic)
@@ -172,7 +172,7 @@ sobre el del back instala una **segunda copia**, con otro `Schema.prototype` sin
 y los plugins del core que recorren `childSchemas` explotan. Misma regla para `libs/*`.
 
 Para subir sin romper la convención: **`pnpm add <pkg>@latest`** (no `pnpm update <pkg> --latest`, que reescribe el
-rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La tabla y el caso: [references/pnpm-mechanics.md](references/pnpm-mechanics.md).
+rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La tabla: [references/pnpm-mechanics.md](references/pnpm-mechanics.md).
 
 ## Detalles que importan
 
@@ -191,7 +191,7 @@ rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La
 - **`noGlobalPlugin`**: un schema puede excluirse de TODOS los globales (`schema.get("noGlobalPlugin")`).
 - 🔴 **Prefind de ALCANCE (filtrar TODAS las lecturas: soft-delete, tenant, vencidos, `query` del schema) →
   `schema.preSearch(fn)`**, NUNCA el par `pre(/find/)` + `pre(/^count/)` a mano: la lista de qué es una lectura vive UNA
-  vez (así nació #173: cuatro copias sin `distinct`). `aggregate` va aparte.
+  vez (copiar el par a mano deja lecturas sin cubrir, p. ej. `distinct`). `aggregate` va aparte.
 - 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`**, al inicio del
   pipeline con `unshift({$match: …})`. El plugin global del core **`preAggregate`** (`pos: "$"`, corre último) pone
   primera toda etapa que Mongo exige primera. **Contrato estricto**: un RECORTE entra con `unshift`; lo que un plugin
@@ -199,7 +199,7 @@ rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La
   `localData`: [references/read-cuts.md](references/read-cuts.md).
 - 🔴 **Un plugin NO cuelga un `post("find")`**: lo que corre después de leer asume los campos que
   decide quien consulta, y falla en silencio con la primera proyección. Lo que un plugin agrega a una salida se engancha
-  en quien la produce, envolviéndola (caso: `zones` envuelve `formOptions`); los recortes van antes. Detalle, y el `_id`
+  en quien la produce, envolviéndola (ejemplo: `zones` envuelve `formOptions`); los recortes van antes. Detalle, y el `_id`
   al rehidratar un `aggregate`: [references/read-cuts.md](references/read-cuts.md).
 - 🔴 **Extender las QUERIES → `schema.query.X = function () {…}`, NUNCA `Query.prototype`/`db.Query.prototype`.**
   `Query` es un singleton de Mongoose compartido por todas las conexiones del proceso: mutarlo contamina a todos los
@@ -216,7 +216,7 @@ rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La
   bitácora). El modelo PIDE.
 - **NAMED (push)**: comportamiento específico de UN modelo que NO quieres que el modelo conozca/declare, o que
   vive en otro módulo (un plugin/addOn que inyecta en un modelo del core). Desacople: el modelo agnóstico, el
-  plugin lo enchufa. (Caso `requestVariant`: itdfw-duration inyecta el color de fila en Request sin que Request
+  plugin lo enchufa. (Ejemplo `requestVariant`: itdfw-duration inyecta el color de fila en Request sin que Request
   dependa de Duration.)
 
 ## 🔴🔴 Un `schema.add` con sub-schema LITERAL desde un plugin = BOOT CAÍDO
@@ -243,7 +243,7 @@ Un sub-schema literal nace **sin las extensiones que el FW instala en `db.Schema
 
 🔴 **Peor desde un plugin que desde un modelo**: un NAMED sobre `User` contamina a User **y a todo lo que lo clona** →
 cae la autenticación → **todas las puntas dan 500**, y el error (`eachVirtualPath is not a function` en `02hasFiles`)
-**no menciona tu plugin ni tu campo**. El caso real: [references/boot-crash.md](references/boot-crash.md).
+**no menciona tu plugin ni tu campo**. Detalle: [references/boot-crash.md](references/boot-crash.md).
 
 ⟹ Si ves ese error, sospecha del último `schema.add` con campo anidado, **empezando por los plugins**.
 Detalle completo: `itdfw-models` §3b.

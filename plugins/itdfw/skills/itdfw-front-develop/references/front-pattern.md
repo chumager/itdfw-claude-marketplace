@@ -84,13 +84,11 @@ imperativo + componente auto-gobernado = formato invisible, siempre.
 perspectiva del componente) ≡ "*controlled*" en jerga React (el padre controla via `value`). Misma cosa,
 perspectiva opuesta. En este FW: **bindear por `value` = lo correcto para formatters**.
 
-**Contexto histórico**: NUI es el PRIMER FW de componentes que usamos con modo por prop — BV y anteriores
-no lo tenían (el binding era único), por eso el problema no existía antes y los componentes core no lo
-contemplan. El default del GI NUI es `defaultValue` (auto-gobernado: mejor UX de tipeo — sin saltos de
+**Contexto**: NUI es un FW de componentes con modo de binding por prop (otros FW tienen un binding único), por eso los componentes core no lo contemplan. El default del GI NUI es `defaultValue` (auto-gobernado: mejor UX de tipeo — sin saltos de
 cursor/IME/churn) y el binding por `value` es opt-in por componente. Es seguro gracias a `lazyFormatter`:
 en tipeo el echo es identidad (cursor quieto), el formateo corre al blur.
 
-**Síntoma + caso real (2026-06-09)**: "el formatter corre pero no se ve" → ItdRut sin espejo NUI no
+**Síntoma**: "el formatter corre pero no se ve" → ItdRut sin espejo NUI no
 formateaba. `ItdStringNUI`/`ItdRutNUI` existen exactamente para el opt-in (único contenido:
 `$vModelChildProp: "value"`). Checklist al traer un componente con formatter visible a un FW con modo por
 prop: declarar el binding por `value`. (Pendiente de diseño: factorizar a flag del core — "tiene formatter

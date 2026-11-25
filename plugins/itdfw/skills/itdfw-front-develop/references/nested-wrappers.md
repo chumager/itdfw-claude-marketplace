@@ -44,7 +44,7 @@ El collapse usa `display-directive:"if"` (default de NUI) → monta el contenido
 - **`inputName`** = real (`localInput?.name ?? null`) → para el path nested y usos funcionales. El GF root no tiene name → `null` → no contamina el path.
 - **`logName`** = parchado (`localInput?.name ?? "<ComponentName> UNKNOWN"`) → para logs/devtools (`devName`, header del loader `$log`, `vsLog`). Nunca null.
 
-## Componentes (estado tras el refactor)
+## Componentes
 
 - **ItdGrid** (NUI) inicia el filter: pasa `viewType="filter"` + `drawerWidth` + `reduceDrawerWidth` al ItdFilter.
 - **ItdFilter** = `GenericForm` + `viewType:"filter"`. Delgado pero es el **punto de extensión semántico** del filtro (donde crece la lógica de filter: colapsar true/between/{object}). **Se mantiene** — concepto, no implementación.
@@ -53,6 +53,6 @@ El collapse usa `display-directive:"if"` (default de NUI) → monta el contenido
 
 ## Por qué este diseño (build-to-last)
 
-Cada pieza es **back-decide / front-aplica**: el front no conoce nombres de componentes ni lógica de negocio, solo lee flags (`nested`, `viewType`, `drawerWidth`). Eliminó 3 componentes (GIWFilter NUI + core + el flag `filter`) sin perder capacidad — todo lo que era rama paralela se unificó bajo flags transitivos del back.
+Cada pieza es **back-decide / front-aplica**: el front no conoce nombres de componentes ni lógica de negocio, solo lee flags (`nested`, `viewType`, `drawerWidth`). No hay componentes ni flags paralelos para filter: todo se unifica bajo flags transitivos del back.
 
-**Contraste con el approach imperativo (BV/Vue2)**: antes esto era un horror manual — mantener el estado expandido/colapsado de CADA collapse a mano + distinguir filter-vs-form en código del front. Acá el `n-collapse` maneja su propio estado (y `display-directive:"if"` da el lazy gratis), y el flag `nested` del back distingue el wrapper → **cero estado manual, cero lógica de distinción en el front**. Un wrapper declarativo simple reemplazó toda esa maquinaria imperativa.
+**Contraste con el approach imperativo**: a mano habría que mantener el estado expandido/colapsado de CADA collapse + distinguir filter-vs-form en código del front. Acá el `n-collapse` maneja su propio estado (y `display-directive:"if"` da el lazy gratis), y el flag `nested` del back distingue el wrapper → **cero estado manual, cero lógica de distinción en el front**. Un wrapper declarativo simple reemplazó toda esa maquinaria imperativa.

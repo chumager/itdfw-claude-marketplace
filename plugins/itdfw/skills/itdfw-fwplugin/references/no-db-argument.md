@@ -1,10 +1,10 @@
-# El FWPlugin NO recibe `db` por argumento — el motor, el porqué y el caso
+# El FWPlugin NO recibe `db` por argumento — el motor y el porqué
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 #### 🔴🔴 El FWPlugin NO recibe `db` por argumento (y confundirlo lo deja MUDO)
 
-Verificado en el motor de schemas del core → `#expandPlugins`:
+En el motor de schemas del core → `#expandPlugins`:
 
 ```js
 if (typeof plugin === "function") {
@@ -38,8 +38,8 @@ else res = res.call(this, this.db);
 Si el FWPlugin **no necesita lógica** (solo declara keys estáticas) → forma **objeto** directo, sin
 función y sin scope que resolver. La función es solo para los que SÍ necesitan runtime.
 
-*(Corregido 2026-08-14: el skill documentaba `function (db)` con detección por ausencia del argumento —
-le atribuía al FWPlugin la firma del mongoosePlugin. Cazado cuando el plugin `conversation` cargó mudo.)*
+*(El FWPlugin no tiene la firma del mongoosePlugin: declarar `function (db)` con detección por ausencia del argumento
+es el error típico, y el plugin carga mudo.)*
 
 La fila original de Common Mistakes:
 

@@ -1,9 +1,9 @@
-# Binding: el caso real y el resumen de los dos bindings
+# Binding: el error típico y el resumen de los dos bindings
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
-🔴 **Falla real (2026-06-28)**: se movió `FWdelete` (usa `db.connection.transaction`) a `delete.js`, cuyo
-factory tenía `(/*db*/)` comentado y SIN `const {db}=this` → `db is not defined` en runtime. Fix: agregar
+🔴 **Falla típica**: si se mueve `FWdelete` (usa `db.connection.transaction`) a `delete.js`, cuyo
+factory tiene `(/*db*/)` comentado y SIN `const {db}=this`, da `db is not defined` en runtime. Fix: agregar
 `const {db} = this`. (Asumir `db` global es el error — `db` viene de `this`/arg, no es global.)
 
 - **Dos funciones, dos bindings (no confundir)** — ver "Binding & parámetros": la **factory** (`export

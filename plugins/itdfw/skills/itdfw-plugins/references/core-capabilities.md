@@ -1,6 +1,6 @@
 # Capacidades del core que ya puedes usar — el texto original
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle.
 
 Antes de escribir lógica, mira qué PROVEE ya el core: virtuals `_update`/`_delete`/`_selectable`/`docLink`,
 `hidden` por contexto, `toInput`/`toFilter`/`toXLS`/`toPDF`, `getSchemaType`, `getLink`/`ITDName`,

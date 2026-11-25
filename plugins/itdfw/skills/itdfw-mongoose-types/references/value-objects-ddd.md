@@ -48,10 +48,10 @@ componente). **Sin FWP no hay clase compartida → no hay transversalidad.** El 
 FWP es el *origen*.
 
 ⟹ **Referenciás FWP + front juntos solo cuando se juntan (a) Y (b) Y (c)**: VO **+** componente custom
-**+** transversal (caso Currency/Address). Un VO headless-only que se renderiza con un input String no
+**+** transversal (p. ej. Currency/Address). Un VO headless-only que se renderiza con un input String no
 toca ninguna de las dos patas — vive junto a su type y listo.
 
-## 🔴 VO pure-externality — SIN onChange (2026-07-15)
+## 🔴 VO pure-externality — SIN onChange
 
 Si el VO en modo external **no tiene valor propio** (su valor es 100% DERIVADO de externalidades — canon:
 Credit del plugin financial), en el front **NO emite `onChange` por externalidades**: la propagación la
@@ -62,9 +62,9 @@ guarda pal caso update/validación futura). `onChange` queda solo pa cambios INT
 ve. Detalle: skill `itdfw-ddd-value-objects` + `itdfw-front-develop` → vo-gi-contract.md §VO
 PURE-EXTERNALITY.
 
-## 🔴 VO COMPUESTO + la frontera con el front (2026-07-17)
+## 🔴 VO COMPUESTO + la frontera con el front
 
-Un VO que CONTIENE valores monetarios compone VOs hijos (génesis: `new Currency` por campo; conductores
+Un VO que CONTIENE valores monetarios compone VOs hijos (`new Currency` por campo; conductores
 setValue; `setCurrency` cascadea; aritmética que cierra por moneda PASO A PASO — jamás "raw + la capa
 redondea": eso es definirse por condicionantes externos → dispersión → la validación por reconstrucción
 se cae por diseño). El sello de idempotencia del cast (`instanceof → colá`) es lo que permite que las
@@ -101,7 +101,7 @@ carga lógica que es del DATO. Correcto: `doc.field.method()`. El VO es el dueñ
 > esencia) vive en el skill **`itdfw-ddd-value-objects`**. Acá va el **mínimo operativo** y el **scope**
 > de cada punta: qué exige el motor, qué exige el front, y qué es pura oferta.
 
-Verificado contra el código, no contra la doc: `#loadTypesFromObject` (`mongooseSchema/index.js`) corre
+Según el código: `#loadTypesFromObject` (`mongooseSchema/index.js`) corre
 un **SAFE GUARD de boot** sobre `new Clase(null)`. Si algo de esto falta o miente, **el servicio no
 levanta** y el error nombra la clase y la punta:
 
@@ -216,7 +216,7 @@ forwardea todos los args bindeando `this`.
 
 Hoy el cast **debe** soportar RegExp y NO se puede sacar: el flujo de queries hace
 `castForQuery` → (sin handler) `applySetters` → `cast`. Un cast que no castea RegExp **revienta la
-query** (caso real: `Rut`). Tampoco se pone dogmáticamente — es zona gris hasta arreglar el flujo.
+query** (p. ej. `Rut`). Tampoco se pone dogmáticamente — es zona gris hasta arreglar el flujo.
 
 🛣️ **Roadmap**: la nueva implementación hará **overload de `castForQuery`** en los custom types (control
 completo de la query), o un `toFilter` que convierta los `conditionalHandlers` en cascada. Cuando eso
@@ -295,7 +295,7 @@ null/vacío suele ser válido → el VO lo maneja en TODAS sus ramas (sin throw;
 
 Cuando el VO alimenta el texto de un select (unidades, enums) → lo proyecta locale-aware, en **SINGULAR**.
 
-🔴 **Por qué singular** (matriz 1/2/5/10/20/100/1000 en 12 locales, 2026-06-26): **no existe "plural
+🔴 **Por qué singular** (matriz 1/2/5/10/20/100/1000 en 12 locales): **no existe "plural
 genérico" sin conteo** — eslavos 3 formas, árabe 5, galés muta la raíz; ningún número ≥2 es "el plural",
 CLDR `other` tampoco. La única forma estable count-independent es el singular.
 ```js

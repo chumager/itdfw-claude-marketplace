@@ -1,6 +1,6 @@
-# Por qué un modelo de BD se comporta así — razones y casos
+# Por qué un modelo de BD se comporta así — razones
 
-> El contrato corto vive en `SKILL.md`. Aquí están el porqué de cada regla y los casos que las destaparon.
+> El contrato corto vive en `SKILL.md`. Aquí están el porqué técnico de cada regla.
 
 ## Por qué el error no viaja en la respuesta del save
 
@@ -14,8 +14,8 @@ documento.
 El `post("save")` emite por PubSub **solo por el documento que se guardó**; nadie avisa a quien lo clonó, y el
 dependiente sigue con el clon de la versión ANTERIOR en la memoria de cada worker.
 
-Caso: se quitó una option del modelo base y el clon **siguió teniendo la option**, con `status: "OK"` y sin error en
-ninguna parte. El `code` en la BD ya decía una cosa y el modelo compilado otra. De ahí las dos reglas: re-guardar los
+Efecto: si se quita una option del modelo base, el clon **sigue teniendo la option**, con `status: "OK"` y sin error en
+ninguna parte. El `code` en la BD dice una cosa y el modelo compilado otra. De ahí las dos reglas: re-guardar los
 dependientes, y verificar contra el worker (`modelFields`), no contra el `code`.
 
 ## Por qué el acceso anónimo no se refresca en caliente
@@ -35,5 +35,5 @@ limpia. Un modelo que salió mal se queda como basura visual con su `status: FAI
 ## Por qué el 404 de una función con `.json` engaña
 
 `APP/AAA/<Modelo>.<func>.json` responde **404 `endpoint not found`**, indistinguible de "el modelo no existe", e invita
-a parchar un modelo sano. Se verificó contra un modelo recién creado y contra uno viejo y sano: los dos dan 404 con
+a parchar un modelo sano. Un modelo recién creado y uno viejo y sano dan los dos 404 con
 `.json`, y sin él el mismo llamado responde 401 (o el dato).
