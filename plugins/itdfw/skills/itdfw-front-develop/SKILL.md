@@ -65,7 +65,7 @@ Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) apli
 - **Menú lateral / drawer**: `ItdNav` ya lo trae (mobile-first, `closable`, scrim). Un site que necesita
   otro menú extiende/overridea `ItdNav`, no reescribe el shell del `ContentWrapper`.
 - **Quitar partes del shell** (`nav`, `side`, `drawer`, `footer`): por **ruta** (caso dinámico) con `meta.shell`
-  (`false` = ninguna, arreglo = solo esas; lo resuelven `hasSink`/`inShell` de `injections/App.js`, core reciente);
+  (`false` = ninguna, arreglo = solo esas; lo resuelven `hasSink`/`inShell` de `injections/App.js`, site-vue-core ≥ 7.3.0);
   para **todo un site** (caso fijo) basta pisar el componente en la cascada del site con un `render() { return null; }`.
 - **🔴🔴 REGLA DE ORO — CLONE GUARDS**: todo dato que CRUZA una frontera viaja CLONADO, jamás por referencia compartida, y el clonador ES **`GI.clone(v)`** (Blob/File pasan por ref; el resto `cloneDeep`). JAMÁS `cloneDeep` pelado en una frontera (rompe campos File). Ante un bug raro de reactividad o transferencia, prueba IDENTIDAD COMPARTIDA antes que nada. Excepción deliberada: la mutación in-place del contenedor del GF. Detalle: [references/core-rules-detail.md](references/core-rules-detail.md) §Clone guards.
 - **🔴 NO romper la CADENA al override** — pisar una función heredable (cadena `GI→GF→hoja` o `core→front→site`) sin llamar al original deja huérfanas a las hojas; el síntoma aparece lejos de la causa. Sobrecarga el `defaultX`, no el wrapper `X`. Aplica al tocar cualquier método heredable. [override-chain.md](references/override-chain.md), [value-pipeline.md](references/value-pipeline.md).

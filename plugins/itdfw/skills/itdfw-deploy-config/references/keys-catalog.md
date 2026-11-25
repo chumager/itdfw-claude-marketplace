@@ -12,7 +12,7 @@
 | Correo | `emailTransport` `masterEmail` `recoveryEmail` `errorRecipients` `recaptcha` |
 | Licencia | `instanceId` `machineLockedMessage` |
 | Operación | `logLevel` `logs` `Locale` `withDefault` `plugins` `test` (ver §«El modo test») |
-| Formularios | `genericPlaceholder` — objeto por **type** (`{generic: "Ingrese un valor", Email: "correo@dominio.cl"}`), leído con `configMerge` (el site pisa por llave); `toInput` lo pone en todo input que no declare `placeholder` ni lo traiga su type, y sin la llave usa `"Enter data"`. Fijo por site → `.itdfw.js`; por deploy → el yaml. El front lo traduce como cualquier texto |
+| Formularios | `genericPlaceholder` (back ≥ 7.4.0) — objeto por **type** (`{generic: "Ingrese un valor", Email: "correo@dominio.cl"}`), leído con `configMerge` (el site pisa por llave); `toInput` lo pone en todo input que no declare `placeholder` ni lo traiga su type, y sin la llave usa `"Enter data"`. Fijo por site → `.itdfw.js`; por deploy → el yaml. El front lo traduce como cualquier texto |
 
 🔴 **`Procs` multiplica por SITE, y el peso son los modelos.** Cada carpeta del `documentRoot` es un host (el FW no
 resuelve DNS: escucha en la IP y solo mira el `Host` para enrutar), y cada host levanta `Procs` workers. Un worker

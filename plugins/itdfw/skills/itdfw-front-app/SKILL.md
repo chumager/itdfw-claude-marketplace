@@ -12,7 +12,7 @@ description: Use when working with an ITDFW SITE/APP layer — wiring a new site
 | [cascade-system.md](references/cascade-system.md) | Cascada de import: búsqueda vertical (basePaths) y horizontal (6 variantes), `localImport`/`customImport*`, `skipDefault`, CSS | Entender la búsqueda vertical + horizontal, skipDefault, o por qué algo carga del nivel equivocado |
 | [init-pattern.md](references/init-pattern.md) | Patrón de `init.js`: estructura, contexto `this`, orden de ejecución, ejemplo del loader BVP, override de core | Escribes init.js, manipulas el pack o el loader BVP |
 | [injection-system.md](references/injection-system.md) | Inyección de mixins por cascada (`injections/`), cuándo corre, ruta espejo de la base, casos de uso y gotcha | Auto-carga de mixins o directorio injections |
-| [vite-setup.md](references/vite-setup.md) | Config de Vite: front extiende core, aliases, flujo del index.html, `skipDefault`, detección de plugin, salida | Configuras Vite, aliases, transformIndexHtml o detección de plugin |
+| [vite-setup.md](references/vite-setup.md) | Config de Vite: front extiende core, aliases, flujo del index.html, `skipDefault`, detección de plugin, salida | Configuras Vite, aliases, el index.html o detección de plugin |
 
 ## Overview
 
@@ -69,7 +69,7 @@ import createViteConfig from "core/vite.config.js";
 export default createViteConfig(__dirname, myVitePlugin);
 ```
 
-Core handles: aliases (@, default, one per plugin level, core), transformIndexHtml (auto-injects main.js), skipDefault logic.
+Core handles: aliases (@, default, one per plugin level, core) and skipDefault logic.
 
 ## El CLI: `dev` y `build` son AUTÓNOMOS
 
