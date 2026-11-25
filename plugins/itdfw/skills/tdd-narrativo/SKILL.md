@@ -43,7 +43,7 @@ PMO escribe → CTO → designer → documentador → QA → aprobación de jcmu
 
 | Quién | Qué mira | Cómo participa |
 |---|---|---|
-| **CTO** | alto nivel: el contrato, la rebanada 1, la arquitectura | opina; no escribe el TDD |
+| **CTO** | alto nivel: el contrato, la rebanada 1, la arquitectura; 🔴 y **cada sección contra el skill de su área** (§2c): los tipos de usuario contra `itdfw-models` `references/authenticatable.md` (un clon por tipo, perfil forzado, vínculo al padre inmutable), las puntas y quién puede qué contra `itdfw-api-system` | opina; no escribe el TDD. Un modelo que contradice su skill es rechazo, no comentario |
 | **designer** | la pantalla, si el módulo tiene front | escribe la sección **UI/UX** del TDD (pantallas, maquetas, cómo se entra y se sale de cada estado, en el celular); no define qué se prueba |
 | **documentador** | **correctitud** contra el código: que lo que el TDD afirma exista, que no se contradiga y que sus referencias resuelvan. No entra en completitud | devuelve hallazgos al dueño (con `archivo:línea`); no edita el TDD |
 | **QA** | solo el TDD y el problema, nunca el código | aprueba o rechaza el **set de pruebas**; si rechaza, el caso concreto que falta o sobra; no edita el TDD |
@@ -153,6 +153,11 @@ perfil por nombre de modelo está bien; lo que delata no conocer el flujo es ama
 🔴 **Una punta, un caso: las puntas son gratis.** Si la respuesta de una punta se ramifica según el tipo de usuario o el
 perfil de quien llama, se parte en puntas propias (otro nombre u otra extensión). Ahorrarse una punta sale caro el día
 que hay que leer una que toma diez decisiones para entregar cosas distintas.
+
+🔴 **Una interfaz junta solo lo que se implica.** Al diseñar desde la base, para cada par de capacidades: *si puedo
+hacer X, ¿por el hecho de poder hacerlo puedo hacer Y?* Si sí, son la misma punta con distintas extensiones y van en la
+misma interfaz. Si no, son capacidades distintas: una interfaz que las junta promete algo que el AAA puede no darle a
+quien la usa, y sacarlas después sale caro (jcmunoz 25-nov: el "Undo" de la caja, al lado de vender).
 
 **Relaciones** — un mermaid de pocas líneas con cardinalidad (`Membership }o--|| PaymentCard`). Es lo que se
 lee en diez segundos y lo que jcmunoz revisa primero.
