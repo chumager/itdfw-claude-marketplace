@@ -27,6 +27,12 @@ The owner is the slowest link of the line: loading him from every side stops the
 | the `CTO` | answers or routes to the PMO what a session asks; does not forward it to the owner |
 | the owner | approves the one artifact. Only afterwards each module moves its part into its own TDD |
 
+🔴 **Every session talks to the `CTO`, never to the owner.** Reviews, doubts, results, decisions and blocking questions
+go to the `CTO` by `SendMessage`. He decides in his layer and takes to the owner only what is the owner's: once, in a
+single message, with everything cooked. No chat, popup, push or portfolio question goes to the owner from any other
+session. The exception is a conversation he opened himself in that session: there it is answered in that chat, and only
+what he asked.
+
 Who approves:
 
 | The TDD | Approves |

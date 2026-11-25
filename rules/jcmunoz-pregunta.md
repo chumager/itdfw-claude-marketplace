@@ -1,5 +1,8 @@
 # A question that blocks your work goes through `jcmunoz-pregunta.sh`, never through AskUserQuestion
 
+🔴 **Only the `CTO` (and `itdfw`, `salud` for their own topics) uses this script.** Every other session sends its
+question to the `CTO` by `SendMessage` (rule `organigrama`); he answers it or brings it to the owner.
+
 If you need a decision from the owner to continue:
 
 ```
