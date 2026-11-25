@@ -126,7 +126,14 @@ significa "la red" en ese lado.
 ### 2b · Modelo — lo que existe, con qué campos, y qué punta lo toca
 
 🔴 **Sin esto el TDD define flujos y el cajarito inventa el modelo.** Un flujo se conversa; un modelo se **declara**.
-Tres piezas, obligatorias (la cita de jcmunoz: [references/cases-and-quotes.md](references/cases-and-quotes.md)):
+Cuatro piezas, obligatorias (la cita de jcmunoz: [references/cases-and-quotes.md](references/cases-and-quotes.md)):
+
+🔴 **Usuarios** — va primero, con el skill **`itdfw-aaa`** cargado. Por cada tipo de usuario, la decisión **y su porqué,
+escrito como la rama del árbol de `itdfw-aaa` que la decide**, para que quien revise compare las dos contra el skill:
+
+| Tipo | Clon o `User` | Lo crea | Vínculo | Perfil | Por qué (la rama) |
+|---|---|---|---|---|---|
+| `StandSeller` | clon | `StandOwner` | `stand`, inmutable | asignado por su padre | depende del dueño del stand → otro tipo; es subusuario → perfil asignado |
 
 **Entidades** — por cada modelo (nuevo o extendido), **primero una o dos líneas con su ALCANCE**: qué es en
 el dominio, por qué existe, quién lo crea y cuánto vive (jcmunoz 2026-09-08: un modelo sin motivo escrito obliga
