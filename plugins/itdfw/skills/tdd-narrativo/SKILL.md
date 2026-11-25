@@ -182,7 +182,7 @@ una punta ni cómo se define un type: cada una de esas cosas tiene dueño, y el 
 |---|---|
 | modelos, campos, refs, flujos de estado | `itdfw-models` (o `itdfw-db-models` si el modelo vive en la BD) |
 | **puntas y su acceso** (función asignable / anónima autenticada / anónima sin autenticar) | **`itdfw-api-system`** |
-| **quién puede qué**: roles, tipos de usuario, "solo X puede", quién administra a quién | **`itdfw-api-system`** (`references/aaa-access.md`) **e `itdfw-models`** (`references/authenticatable.md`) |
+| **quién puede qué**: roles, tipos de usuario, "solo X puede", quién administra a quién | 🔴 **`itdfw-aaa`** primero (la definición); el cómo técnico, `itdfw-models` (`references/authenticatable.md`) e `itdfw-api-system` (`references/aaa-access.md`) |
 | types custom o Value Objects | `itdfw-mongoose-types` (+ `itdfw-ddd-value-objects` si el valor tiene lógica) |
 | componentes o vistas | `itdfw-front-develop` |
 | el empaquetado del módulo | `itdfw-fwplugin` |
