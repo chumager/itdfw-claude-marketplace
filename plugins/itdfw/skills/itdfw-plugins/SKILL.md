@@ -37,13 +37,10 @@ invoca **bindeada** (`this` = instancia Schema del FW) con `db` como arg0. Ver "
 
 ## 🔴 Las magias son la PUERTA DE ENTRADA — no para el core
 
-El FW está diseñado para magias, pero el **CORE casi no las usa** (0 plugins NAMED, mínimo re-cast por
-cobertura) — y eso es **CORRECTO, no carencia**. Con el código a la mano, lo que quieres cambiar lo cambias
-**directo** (editas el schema/plugin ahí mismo); un NAMED `schema:"X"` en el core no tiene sentido si el
-schema está al lado. Las magias (NAMED push, re-cast por cobertura, pisar virtuals/types) **liberan a quien
-EXTIENDE DESDE AFUERA** —un FWPlugin distribuible, un sitio, un deploy, un addOn vendible— que NO tiene (ni
-debe tocar) el código del core. Ahí son la única vía; ahí brillan. (Lo más cercano a magia que vivía en el
-core era Currency, y se EXTERNALIZÓ.)
+El **CORE casi no las usa** (0 plugins NAMED, mínimo re-cast), y eso es **CORRECTO, no carencia**: con el código a la
+mano se edita **directo** el schema o el plugin. Las magias (NAMED push, re-cast, pisar virtuals/types) **liberan a quien
+EXTIENDE DESDE AFUERA** —un FWPlugin distribuible, un sitio, un deploy, un addOn— que NO tiene (ni debe tocar) el código
+del core: ahí son la única vía.
 
 **Regla**: ¿tienes el código a la mano? → edita directo. ¿Extiendes desde afuera sin tocar el core? → magia.
 
@@ -93,7 +90,7 @@ o `this` undefined.
 **`res.call(this, this.db)`** (en el motor de schemas):
 - `this` = la **instancia Schema del FW** → expone `db`, `pool`, `init`, `pluginOptions`, `registeredSchemas`/`registeredModels`, `schemasLoaded`…
 - `db` también llega como **arg0**.
-- Soporta `async` (se awaitea).
+- Soporta `async` (se awaitea). Una factory flecha (`db => …`) no recibe `this`: solo `db` como arg0.
 
 ⟹ obtén `db` con **`const {db} = this`** (idiomático — el mongoose plugin `FrontEnd`) **o** nombrando el param
 **`function (db) {…}`** (estilo `mongooseDB/*.js`) — es el MISMO `db`. Para `pool`/`init`/etc. → SOLO vía `this`.
@@ -105,17 +102,17 @@ function mongoosePlugins(/*db*/) {
   return { plugin(schema) { /* … usa db por closure … */ } };
 }
 ```
-Caso real del 2026-06-28 (`FWdelete` movido a `delete.js`, `db is not defined`): [references/binding-detail.md](references/binding-detail.md).
+El caso `db is not defined`: [references/binding-detail.md](references/binding-detail.md).
 
 **2. La INNER `plugin(schema, options)`** (la prop `plugin` del objeto retornado). La llama **Mongoose** vía
 `schema.plugin(fn, opts)` → `fn(schema, opts)`:
 - recibe **`(schema, options)`**.
 - **`this` NO está bindeado** acá — no lo uses. Opera sobre `schema`; cierra sobre `db`/lo-que-sea del scope de la factory.
 - `options` = `this.pluginOptions[name]` (config merge de `mongoosePlugins`), con `name = res.name ?? res.plugin.name`.
-- Aplicación por modo: GLOBAL → el motor envuelve para saltar `noGlobalPlugin` y aplica
-  con `db.plugin(...)` (`:436`); FILTERED → `plugin(schema, options)` (`:593/597`); NAMED → `plugin(schema, options)` (`:659`).
+- Aplicación por modo: GLOBAL → el motor envuelve para saltar `noGlobalPlugin` y aplica con `db.plugin(...)`; FILTERED
+  y NAMED → `plugin(schema, options)` (dónde, en el motor: [references/code-refs.md](references/code-refs.md)).
 
-### 🔴 Cómo llegar a un MODELO (o a `getConfig`) según dónde estás (jcmunoz, 2026-09-20)
+### 🔴 Cómo llegar a un MODELO (o a `getConfig`) según dónde estás
 
 | Dónde estás | El modelo | Por qué |
 |---|---|---|
@@ -125,8 +122,6 @@ Caso real del 2026-06-28 (`FWdelete` movido a `delete.js`, `db is not defined`):
 | **dentro de un schema** que depende de otro | `await this.init(nombre, {models: "Otro"})` | garantiza que el modelo ya exista (`schema-engine.md` en `itdfw-models`) |
 | la config de nivel 2 desde un Model | `Model.getConfig()` (static que pone el plugin `config` en todo schema) | dentro de un ref-función `this === Model`; caso real: el plugin `typesafe`, el 500 `db.getConfig is not a function` |
 | la config de nivel 2 con la conexión a mano | `await this.db.getConfig("X")` | `mongooseDB/config.js` del plugin `config` la cuelga de la conexión, no de `db.models` |
-
-Verificado 2026-09-20 contra el AAA (`req.db = pool.db.models`) y el motor de schemas.
 
 ## 🪄 Pisar/inyectar — la libertad extrema (black magic)
 
@@ -145,10 +140,9 @@ plugin(schema) {
 }
 ```
 
-🔴 **Sí: `schema.add` sobre un path existente lo RE-CASTEA** (Mongoose reemplaza el SchemaType). Re-pasar
-`...schemaType.options` preserva todo lo demás. Esto FUNCIONA — es el mecanismo del multitenant del FW (un
-deploncito por país: `nationalId`→`Rut` en .cl, →`Cuit` en .ar). El type custom se referencia por **string**
-(`type: "Rut"`); vive en `db.Schema.Types[type]` (debe existir, ver skill `itdfw-mongoose-types`).
+🔴 **`schema.add` sobre un path existente lo RE-CASTEA** (Mongoose reemplaza el SchemaType) y `...schemaType.options`
+preserva el resto: es el mecanismo del multitenant (`nationalId`→`Rut` en un deploy, →`Cuit` en otro). El type se
+referencia por **string** (`type: "Rut"`) y debe existir en `db.Schema.Types` (skill `itdfw-mongoose-types`).
 
 **Re-cast MASIVO** (recorrer `eachPath` promoviendo VARIOS paths, no uno puntual por nombre): dos cuidados —
 (a) **idempotencia**: guarda por `schemaType.options?.type !== "Phone"`, NO solo por `instance` (un custom suele
@@ -167,9 +161,8 @@ y código: [references/wrap-foreign-endpoint.md](references/wrap-foreign-endpoin
 
 ## 🔴 Dependencias: un plugin NUNCA declara mongoose (y si lo hace, con el MAJOR del FW)
 
-**Un plugin no tiene por qué importar mongoose. Nunca.** Recibe `db` del framework — ahí está `db.Schema`,
-`db.model`, `db.Schema.Types` y los types custom. No existe caso legítimo que necesite el paquete.
-Verificado 2026-08-15: **ningún plugin del monorepo lo importa** en su código.
+**Un plugin no importa mongoose. Nunca.** Recibe `db` del framework (`db.Schema`, `db.model`, `db.Schema.Types`, los
+types custom).
 
 El único uso defendible es un **test unitario** que monta su propia conexión aislada del FW → entonces va
 en `devDependencies`, jamás en `dependencies` (si no, arrastras una copia entera de mongoose al deploy).
@@ -188,9 +181,8 @@ rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La
 - **`checkAndLoadMethod` / `checkAndLoadVirtual` / `checkAndLoadStatic`**: idempotentes (no pisan si ya existe).
   Prefiérelos a `schema.method/virtual/static` directos — respetan la cadena del FW.
 - **El orden de los FWPlugins en el `.itdfw.js` NO importa para un NAMED**: `process()` registra TODOS los plugins
-  (los del disco y los de cada FWPlugin, `plugins.plugins`) antes de cargar cualquier schema (`#loadSchemas` y
-  `plugins.schemas` vienen después). Un NAMED `schema: "Conversation"` de `ai` se aplica aunque `ai` esté antes que
-  `conversation` en el arreglo (`mongooseSchema/index.js`, `process`; verificado 20-oct-2026).
+  (los del disco y los de cada FWPlugin) antes de cargar cualquier schema, así que un NAMED se aplica aunque su plugin
+  vaya antes que el del modelo en el arreglo.
 - **Options del plugin**: vienen de `this.pluginOptions[name]` (config merge `mongoosePlugins`), NO del objeto
   exportado. `name` = `res.name ?? res.plugin.name`.
 - **`pos`** (solo GLOBAL): `"^"` = primero, `"$"` o `-1` = último, número = orden de inserción. Úsalo cuando tu
@@ -200,20 +192,19 @@ rango), y verifica con `pnpm why <pkg>` → debe decir **`Found 1 version`**. La
 - 🔴 **Prefind de ALCANCE (filtrar TODAS las lecturas: soft-delete, tenant, vencidos, `query` del schema) →
   `schema.preSearch(fn)`**, NUNCA el par `pre(/find/)` + `pre(/^count/)` a mano: la lista de qué es una lectura vive UNA
   vez (así nació #173: cuatro copias sin `distinct`). `aggregate` va aparte.
-- 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`** (jcmunoz 9-oct-2026), al inicio del
+- 🔴 **Todo recorte de `find` (`preSearch`) TIENE su par en `pre("aggregate")`**, al inicio del
   pipeline con `unshift({$match: …})`. El plugin global del core **`preAggregate`** (`pos: "$"`, corre último) pone
   primera toda etapa que Mongo exige primera. **Contrato estricto**: un RECORTE entra con `unshift`; lo que un plugin
   agregue con `push` cae en la cola del dev y debe ser inocuo sobre metadatos. Las etapas primeras, los tres casos y
   `localData`: [references/read-cuts.md](references/read-cuts.md).
-- 🔴 **Un plugin NO cuelga un `post("find")`** (jcmunoz 22-oct-2026): lo que corre después de leer asume los campos que
+- 🔴 **Un plugin NO cuelga un `post("find")`**: lo que corre después de leer asume los campos que
   decide quien consulta, y falla en silencio con la primera proyección. Lo que un plugin agrega a una salida se engancha
   en quien la produce, envolviéndola (caso: `zones` envuelve `formOptions`); los recortes van antes. Detalle, y el `_id`
   al rehidratar un `aggregate`: [references/read-cuts.md](references/read-cuts.md).
 - 🔴 **Extender las QUERIES → `schema.query.X = function () {…}`, NUNCA `Query.prototype`/`db.Query.prototype`.**
   `Query` es un singleton de Mongoose compartido por todas las conexiones del proceso: mutarlo contamina a todos los
-  sites (la cicatriz que forzó 1 site = 1 worker). `schema.query` son los query helpers de Mongoose, por schema y
-  aislados por instancia; es la vía que hace posible el multisitio en un proceso (`TODOs/ideas/01-multisite-monoprocess.md`).
-  Casos vivos: `zones` (`fetchAllZones`), `expire` (`fetchAll`), `autoPopulate`, `Locals` (`setReq`/`setLocal`).
+  sites. `schema.query` son los query helpers de Mongoose, por schema y aislados por instancia (ejemplos: `zones`
+  `fetchAllZones`, `expire` `fetchAll`, `Locals` `setReq`/`setLocal`).
 - **Gateo interno vs FILTERED**: muchos GLOBAL se auto-gatean con `schema.get("<option>")` adentro del plugin
   (corren en todos pero no hacen nada salvo opt-in). Es válido; FILTERED es lo mismo a nivel loader (más limpio
   si la feature es pesada o claramente opcional).
@@ -272,27 +263,19 @@ docArray: **`itdfw-models` §4c**.
 
 | Error | Fix |
 |-------|-----|
-| **Sub-schema literal en un `schema.add`** | `new db.Schema(...)` — el literal tumba el boot (arriba) |
 | Confundir FWPlugin (cáscara) con el sistema de plugins | FWPlugin empaqueta keys; el plugin extiende el schema. Ver `itdfw-fwplugin`. |
 | Cambiar el type de un path con mutación cruda | `schema.add({path: {...schemaType.options, type:"X"}})` — preserva options, re-castea. |
 | Crear dependencia core→plugin (el modelo importa/usa el plugin) | Invierte: plugin NAMED hace push al modelo; el modelo no sabe. |
 | Asumir orden de carga entre GLOBALes | `pos` explícito; el alfabético no es contrato. |
 | `schema.method` directo y pisar la cadena | `checkAndLoadMethod` (idempotente). |
 | Referenciar un type custom inexistente (`type:"Phone"` sin el type) | Registrar el type primero (`itdfw-mongoose-types`). |
-| Usar `db` en la factory sin capturarlo (`db is not defined`) | `const {db} = this` o el param `function (db){}` (§Binding) |
-| Asumir `this` = schema en la inner `plugin()` | Recibe `(schema, options)`, `this` NO bindeado (§Binding) |
 
 ## Capacidades del core que ya puedes USAR (no reinventes)
 
 Antes de escribir lógica, mira qué PROVEE ya el core: virtuals `_update`/`_delete`/`_selectable`/`docLink`, `hidden`
 por contexto, `toInput`/`toFilter`/`toXLS`/`toPDF`, auditoría (`__history`), soft-delete (`active`), multitenant
-(`_zone`), `weakEntity`, `autoincrement`, `pos`… **Catálogo de USO** (quieres Z → opción exacta → ejemplo → quién la
-provee): el «plugin-capabilities-catalog». La lista completa:
+(`_zone`), `weakEntity`, `autoincrement`, `pos`… La lista y su catálogo de uso:
 [references/core-capabilities.md](references/core-capabilities.md).
-
-## Referencias de código
-
-El motor y los ejemplos de cada modo: [references/code-refs.md](references/code-refs.md).
 
 ---
 
