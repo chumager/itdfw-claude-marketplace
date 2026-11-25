@@ -5,6 +5,12 @@ description: Use when creating or modifying ITDFW data models defined IN THE DAT
 
 # ITDFW DB Models — Modelos definidos en la BD
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [why-and-cases.md](references/why-and-cases.md) | Por qué el error de compilación no viaja en la respuesta, el caso del clon que siguió con la option vieja, por qué el acceso anónimo no se refresca en caliente, por qué no se borran, por qué el 404 con `.json` engaña | quieres el porqué de una regla, o un síntoma de este skill no calza con lo que esperabas |
+
 Un modelo del FW normalmente vive en un archivo (`mongooseSchema/<Modelo>.js` — skill **`itdfw-models`**).
 Pero también puede vivir **como documento en la base de datos**: se crea desde el admin, el MCP o la API,
 y queda operativo **en caliente**, sin desplegar ni reiniciar.
@@ -57,8 +63,8 @@ globals disponibles.
 El campo `name` del documento **no se pide ni se edita** — sale de la **key que retorna la función** y se
 persiste al compilar. Tú escribes `return {Mascota}` y el documento queda con `name: "Mascota"`.
 
-⟹ **Un documento = UN modelo.** Si el código retorna 0 o 2+ keys, el documento se rechaza con
-`status: "FAILED"` y no se registra nada. No es paternalismo: sin exactamente una key **no hay nombre que
+⟹ **Un documento = UN modelo.** Si el código retorna 0 o 2+ keys, el documento se guarda igual pero queda con
+`status: "FAILED"` y no se registra ningún modelo. No es paternalismo: sin exactamente una key **no hay nombre que
 derivar**. (Un archivo sí puede retornar varios, porque ahí el nombre no se deriva de nada.)
 
 ### 🔴 Un modelo de BD puede DEPENDER de otro modelo de BD — y clonarlo
@@ -78,19 +84,13 @@ async function MemberCompletionMinor() {
 }
 ```
 
-🔴 **Recompilar un modelo NO recompila a sus dependientes.** El `post("save")` emite por PubSub **solo
-por el documento que se guardó**; nadie avisa a quien lo clonó. El dependiente sigue con el clon de la
-versión ANTERIOR en memoria de cada worker.
+🔴 **Recompilar un modelo NO recompila a sus dependientes**: el PubSub avisa solo por el documento guardado, y el
+dependiente sigue con el clon de la versión ANTERIOR en cada worker, con `status: "OK"` y sin error.
 
-Modo de falla (caso real 2026-08-18): se quitó una option del modelo base y el clon **siguió teniendo la
-option**, con `status: "OK"` y sin error en ninguna parte. El `code` en la BD ya decía una cosa y el
-modelo compilado otra.
-
-⟹ Tras editar un modelo del que otros dependen: **re-guardar los dependientes** (un PUT con su mismo
-código basta) para forzar el re-clonado. En cadena de 3+ niveles, en orden de dependencia.
-
-⟹ Y la verificación se hace contra el WORKER, no contra la BD: `modelFields <Modelo>` por MCP. Mirar el
-`code` del documento solo te dice qué se guardó, no qué quedó compilado.
+⟹ Tras editar un modelo del que otros dependen: **re-guardar los dependientes** (un PUT con su mismo código basta), en
+orden de dependencia si la cadena es de 3+ niveles. ⟹ La verificación se hace contra el WORKER (`modelFields <Modelo>`
+por MCP), no contra el `code` del documento, que solo dice qué se guardó. El caso:
+[references/why-and-cases.md](references/why-and-cases.md).
 
 ## 3. El flujo es POR EVENTOS, no lineal
 
@@ -102,9 +102,8 @@ Esto explica todo el resto del diseño y es lo que hay que entender:
 4. El resultado de esa compilación se reporta en el propio documento: `status` (`OK`/`FAILED`) y
    `compileError`.
 
-🔴 **Por eso el error NO viaja en la respuesta del save.** No hay un pipe lineal "guardo → compilo → te
-contesto": la compilación es derivada y distribuida. Un throw durante la compilación **no** hace rollback
-del save (ocurre en otro contexto, fuera de su transacción) — por eso existen `status` y `compileError`.
+🔴 **Por eso el error NO viaja en la respuesta del save**, y un throw al compilar no hace rollback del save: el veredicto
+está en `status` y `compileError` ([por qué](references/why-and-cases.md)).
 
 **Cómo saber si tu modelo quedó bien**: consulta el documento después de guardar. `status: "OK"` y
 `compileError: null` = compiló en ese worker. `FAILED` = mira `compileError.message`.
@@ -115,27 +114,21 @@ un error de edición.
 
 ### 🔴 El acceso ANÓNIMO no se refresca en caliente
 
-Editar el código regenera el modelo **y** sus puntas. Pero si el cambio afecta el acceso **anónimo**
-(`isAnonymous`), no vas a verlo hasta reiniciar el servicio.
+Editar el código regenera el modelo **y** sus puntas, pero un cambio de acceso **anónimo** (`isAnonymous`) no se ve
+hasta reiniciar el servicio: el documento dice `OK`, `listModels` lo muestra anónimo, y sigue pidiendo permisos (la lista
+anónima está memoizada por worker; [por qué](references/why-and-cases.md)).
 
-Síntoma: cambias a `isAnonymous: true`, el documento dice `status: "OK"`, `listModels` lo muestra
-anónimo… y sigue pidiendo permisos. **No está roto el modelo** — la lista de funciones anónimas está
-memoizada en cada worker y se invalida por un canal de PubSub distinto al que usa la recompilación de
-modelos.
-
-⟹ Cambio de campos o de nombre: en caliente. Cambio de `isAnonymous`: reiniciar.
+⟹ Cambio de campos: en caliente. Cambio de nombre: en caliente, pero es OTRO modelo (§5). Cambio de `isAnonymous`:
+reiniciar.
 
 ## 4. Los modelos NO se borran
 
-`noDelete: true` en ambos: sus verbos son `GET`, `POST`, `PUT`. Sin `DELETE`.
+`noDelete: true` en `DBModel` y `DBModelRaw`: el documento que DEFINE el modelo tiene `GET`, `POST`, `PUT`, sin `DELETE`.
+(Los `defaultMethods` del modelo definido, como el `DELETE` de `Mascota` en §2, son de sus propios documentos.)
 
-No es una restricción arbitraria — es **no prometer algo que no se puede cumplir**. Borrar un modelo
-"bien" exigiría desregistrarlo de todos los workers, sacar sus puntas del `pool.API`, limpiar perfiles y
-verificar que nadie lo referencie… y con `refPath` (referencia polimórfica, donde el modelo destino vive
-en un campo de cada documento) **saber quién apunta a quién es inviable**. Una solución a medias
-declarada como firme sería peor que no tenerla: el día que confíes en que el borrado limpia, no limpia.
-
-⟹ Un modelo que salió mal se queda como basura visual, con su `status: FAILED`. Es el costo aceptado.
+No es arbitrario: borrarlo bien exigiría desregistrarlo de todos los workers, sacar sus puntas, limpiar perfiles y
+saber quién lo referencia, y con `refPath` eso es inviable ([el detalle](references/why-and-cases.md)). ⟹ Un modelo
+que salió mal se queda como basura visual, con su `status: FAILED`. Es el costo aceptado.
 
 ## 5. 🔴 Lo que es responsabilidad TUYA
 
@@ -183,16 +176,14 @@ llamar sus puntas justo después de crearlo es el sistema de perfiles funcionand
 ### 🔴 La ruta de las puntas de un modelo (y por qué el 404 miente)
 
 ```
-APP/AAA/<Modelo>.<func>      ✅   ej: APP/AAA/MitigationProgram.formCreate
+APP/AAA/<Modelo>.json        ✅   el alta y la edición del modelo (POST crea, PUT edita) — ej: APP/AAA/DBModelRaw.json
+APP/AAA/<Modelo>.<func>      ✅   una función del modelo — ej: APP/AAA/<Modelo>.formCreate
 APP/AAA/<Modelo>.<func>.json ❌   → 404 "endpoint not found"
 ```
 
-**La FUNCIÓN ocupa el lugar de la extensión**, no va después de ella. Si escribes `APP/AAA/<Modelo>.<func>.json` recibes
-**404 `endpoint not found`** — y ese 404 **es indistinguible de "el modelo no existe"**, así que invita a
-parchar un modelo que está perfectamente sano.
-
-⟹ Quítale el `.json` y el mismo llamado responde **401** (o el dato). Verificado el 2026-08-12 contra un
-modelo recién creado **y** contra `LoanScenario`, un modelo viejo y sano: los dos dan 404 con `.json`.
+**En una función, el nombre de la función ocupa el lugar de la extensión.** Con `.<func>.json` recibes **404 `endpoint not
+found`**, indistinguible de "el modelo no existe": invita a parchar un modelo sano. Quítale el `.json` y el mismo
+llamado responde **401** (o el dato).
 
 > Regla de lectura: **404 = la punta no está registrada** (ver la tríada de status en `itdfw-api-system`).
 > Si el documento dice `status: "OK"` y el modelo aparece en `listModels`, el modelo NO es el problema —
