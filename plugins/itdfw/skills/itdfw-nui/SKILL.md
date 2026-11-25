@@ -5,6 +5,13 @@ description: Use when writing or modifying any component that renders Naive UI i
 
 # ITDFW + Naive UI
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [loader-and-builder.md](references/loader-and-builder.md) | El código del loader de `$NUI` (kebab, dedup global, import dinámico), la lista `NO_ASYNC_WRAPPER` y cómo se suma un componente, el código del `NUIBuilder`, por qué `useThemeVars` y `--n-*` no resuelven | un tag `n-*` no rinde, un archivo de `src/NUI/` desapareció, o un hijo de Naive se descarta sin error |
+| [nav-store.md](references/nav-store.md) | El ítem de barra completo, celdas y zonas, la base del drawer, la tabla del store `app` (breakpoints, display, menu, zones, drawer), los componentes de la base, el menú y las opciones con descripción | agregas o cambias algo en las barras, el menú o el layout de un sink |
+
 Naive UI **no se importa**. Se declara con `$NUI` y se usa por tag. Los colores **nunca** se
 escriben: vienen del tema, y el tema vive en la base de datos.
 
@@ -31,16 +38,8 @@ export default {
 };
 ```
 
-El loader de NUI (su `init`) convierte cada nombre a kebab y lo registra global
-con **import dinámico**:
-
-```js
-this.addLoader("$NUI", (_comp, value) => {
-  const name = `n-${toKebab(value)}`;
-  if (NUI.has(name)) return;                                            // dedup global
-  this.base.component(name, self.resolveTag(() => import(`./NUI/N${value}.js`)));
-});
-```
+El loader de NUI (su `init`) convierte cada nombre a kebab y lo registra global con **import dinámico** (el código:
+[references/loader-and-builder.md](references/loader-and-builder.md)).
 
 Consecuencias que hay que tener presentes:
 
@@ -56,20 +55,10 @@ lo primero que se revisa es si su nombre está en el `$NUI` de **ese** component
 
 ## 2 · `src/NUI/` es una carpeta GENERADA — jamás se escribe a mano
 
-El `NUIBuilder` de NUI:
-
-```js
-const dir = "./src/NUI/";
-await fs.remove(dir);                                    // 🔴 borra la carpeta ENTERA
-// lee node_modules/naive-ui/dist/index.mjs, toma el export {...} final
-const names = exportMatch[1].split(",")
-  .map(s => s.trim().split(/\s+as\s+/).pop().trim())
-  .filter(n => /^N[A-Z]/.test(n));                       // 🔴 SOLO componentes N + Mayúscula
-```
-
-⟹ Un archivo que pongas ahí **desaparece** en la próxima corrida, y si no matchea `N[A-Z]` tampoco se
-regenera. Los `use*` de Naive (`useThemeVars`, `useDialog`, `useMessage`) **no están** y no los agregues
-tú: son composables, no componentes, y el builder los filtra por diseño.
+El `NUIBuilder` de NUI **borra la carpeta ENTERA** en cada corrida y la regenera desde el `export` de
+`naive-ui`, quedándose **SOLO con los componentes `N` + Mayúscula**. ⟹ Un archivo que pongas ahí **desaparece**, y lo
+que no matchea `N[A-Z]` tampoco se regenera. Los `use*` de Naive (`useThemeVars`, `useDialog`, `useMessage`) **no están**
+y no los agregues tú: son composables, no componentes. El código: [references/loader-and-builder.md](references/loader-and-builder.md).
 
 ## 3 · El tema viene de la BASE DE DATOS — por eso el color no se toca
 
@@ -99,11 +88,8 @@ Por eso los estados se expresan en **semántica**, que es lo que `type`/`status`
 
 Caso típico: un borde de "error" en un `n-card`, que no tiene variante semántica.
 
-**`useThemeVars` NO está disponible** — no lo genera el builder (§2) y `naive-ui` no resuelve desde un
-site (pnpm es estricto: el paquete vive en `node_modules` del front, no del site).
-
-**`n-element` es el wrapper de transferencia de variables.** Vuelca `common` COMPLETO como CSS vars
-sobre su propio elemento:
+**`useThemeVars` NO está disponible** (no lo genera el builder, y `naive-ui` no resuelve desde un site). **`n-element`
+es el wrapper de transferencia de variables**: vuelca `common` COMPLETO como CSS vars sobre su propio elemento.
 
 ```jsx
 $NUI: ["Element"]
@@ -114,114 +100,55 @@ $NUI: ["Element"]
 ```
 
 - Nombre kebab **sin prefijo `n-`**: `errorColor` → `--error-color`, `textColor3` → `--text-color-3`.
-- `tag` configurable (default `div`) → sirve para cualquier elemento nativo.
-- También entrega `styleScheme` por slot, si lo necesitas en JS en vez de CSS.
-
-⟹ Con esto un elemento nativo queda tematizado igual que un componente de Naive.
-
-🔴 Las `--n-*` de un componente son otra cosa: Naive las computa **por instancia** y las expone en el
-root de ESE componente (`src/card/src/Card.tsx`). No son globales — `var(--n-error-color)` en un `<div>`
-suelto no resuelve.
-
-🔴 Lo que NO se hace: agregar el composable al `NUIBuilder`, crear un wrapper a mano en `NUI/`, o
-instalar `naive-ui` como dependencia del site (te arriesgas a **dos copias de Naive**, con dos contextos
-de tema que no se hablan).
+- `tag` configurable (default `div`) → sirve para cualquier elemento nativo; entrega `styleScheme` por slot para JS.
+- 🔴 Las `--n-*` de un componente son **por instancia** (en el root de ESE componente): `var(--n-error-color)` en un
+  `<div>` suelto no resuelve.
+- 🔴 Lo que NO se hace: agregar el composable al `NUIBuilder`, crear un wrapper a mano en `NUI/`, o instalar `naive-ui`
+  como dependencia del site (**dos copias de Naive**, dos contextos de tema que no se hablan).
 
 ## 5 · Las barras y lo que va en ellas: el store `app` (NUI ≥ 7.2.0)
 
 Los ítems de las barras viven en el **store del app**, no en inyecciones de `ItdNav`. Cualquier capa (core, front,
-plugin, site) los agrega, reemplaza o saca con una mutación, desde un bloque de su `init.js`.
+plugin, site) los agrega, reemplaza o saca con una mutación, desde un bloque de su `init.js`. Las barras son **sinks**
+(`nav` arriba, `side` al costado, `drawer` el de la hamburguesa) y **todo** lo que se pinta en ellas es un ítem (logo,
+hamburguesa, login, avatar, modo oscuro, menú): el core trae una base y el site la borra, la condiciona o la pisa.
 
-Las barras son **sinks** (`nav` arriba, `side` al costado, `drawer` el de la hamburguesa) y **todo** lo que se pinta
-en ellas es un ítem, incluidos el logo, la hamburguesa, el login, el avatar, el modo oscuro y el menú. El core trae
-una base que reproduce la barra de siempre; el site la borra, la condiciona o la pisa. Si saca el login, no hay
-login: la herramienta es nuestra, la decisión es suya.
-
-```js
-pack.push([function myNavItem() {
-  this.store.commit("app/setNavItem", {
-    key: "translate-edit",                  // identidad: con la misma key REEMPLAZA en su lugar; removeNavItem(key) la saca
-    component: "ItdEditToggle",             // resuelto por resolveTag (prefijo Itd), vive en la cascada
-    props: {},                              // opcional
-    sink: "nav",                            // sink o arreglo de sinks donde va (default "nav"); cada sink pinta lo suyo
-    position: "last",                       // first | center | last (tramo)
-    pos: "^",                               // opcional: ^ al inicio del tramo, $ al final; sin pos, orden de llegada
-    when: ({store}) => store.state.auth.auth, // opcional; si existe, reactivo
-    class: ({sink}) => `mine-${sink}`,       // opcional: string, objeto o función; va a la CELDA del ítem
-    style: ({sink}) => (sink === "nav" ? undefined : "grid-column: 1 / -1;") // opcional, igual que class
-  });
-}]);
-```
-
-**Bloques de la vista (sobre y bajo la grilla):** mismo patrón para la vista de un modelo, fuera del layout de la
-grilla. `this.store.commit("app/setViewBlock", {key, component, position: "above" | "below", props?})`, con
-`removeViewBlock(key)`. La vista NUI pinta cada bloque con sus `props` y el `filter` vigente de la grilla. No se junta
-con `setNavItem`: cambian por razones distintas. Primer consumidor: la fila de KPI (el plugin `kpi`).
-
-Cada sink es un componente (`ItdNav`, `ItdSide`, `ItdDrawer`) que `App` pinta con su nombre por prop
-(`<ItdNav sink="nav">`) cuando el sink existe, y que hace **`provide("sink")`**: un componente a cualquier
-profundidad dentro del ítem sabe dónde está con `inject: {sink: {default: "nav"}}`. Otro sink o otro aspecto de uno:
-un componente propio por cascada con la misma prop.
+| Quieres | Mutación (desde un bloque del `init.js`: `pack.push([function () { this.store.commit(...) }])`) |
+|---|---|
+| un ítem | `app/setNavItem` con `{key, component, props?, sink, position, pos?, when?, class?, style?}`: `sink` uno o un arreglo (default `"nav"`), `position` `first`\|`center`\|`last`, `pos` `^`/`$` (sin él, orden de llegada), `when` reactivo, `class`/`style` van a la CELDA del ítem |
+| reemplazar / sacar un ítem | la misma `key` **reemplaza en su lugar**; `app/removeNavItem(key)` la saca |
+| el wrapper de una zona (gap, padding, flex del drawer) | `app/setZone({sink, position, class?, style?})`: mezcla solo lo que declaras |
+| un bloque sobre o bajo la grilla de un modelo | `app/setViewBlock({key, component, position: "above" \| "below", props?})` y `removeViewBlock(key)`; la vista lo pinta con sus `props` y el `filter` vigente |
+| la fuente del menú | `app/setMenu({ref})` o `{options: [{value, text, description, icon}]}`, crudo; si sus opciones se traducen, con `optionsTranslation` (y `minMatchingChars` para un `ref`): sin ellos se pinta crudo. `checkLogin` enchufa las funciones del usuario solo si nadie enchufó antes |
+| otros breakpoints / qué sinks existen por tramo | `setBreakpoints` (anchos mínimos en **px CSS**: `xs` 0 · `s` 360 · `m` 600 · `l` 900 · `xl` 1280 · `2xl` 1600 · `3xl` 1920 · `4xl` 2560 · `5xl` 3840) / `setDisplay` (mobile-first; base `{xs: ["nav", "drawer"], xl: ["nav"]}`) |
 
 🔴 **`sink`, `position`, `pos`, `when`, `class` y `style` pueden ser funciones, con UNA sola firma**:
-`({breakpoint, touch, store, route, atLeast, sink})`, donde `sink` es el sink que está pintando el ítem (`"nav"`,
-`"drawer"`, `"side"`). Sin `this` bindeado: el contexto trae lo que hace falta. Lo que depende del ancho o del lugar se
-escribe ahí (`pos` recibe además los ítems de su tramo). Ejemplo de la base:
+`({breakpoint, touch, store, route, atLeast, sink})` — `sink` es el que está pintando el ítem; **sin `this`
+bindeado**; `pos` recibe además los ítems de su tramo. Ejemplo de la base:
 `sink: ({atLeast}) => (atLeast("xl") ? "nav" : "drawer")` (arriba en escritorio, al drawer en lo chico).
 
-**Cada ítem vive en su celda** (`div.itd-nav-cell`, con `data-nav-key` = su `key`), que toma su `class` y su `style`:
-es la libertad del front dev (un botón a todo el ancho, una celda de dos espacios). **Y cada zona trae su wrapper del
-store** (`app.zones[sink][position] = {class, style}`, misma firma que los ítems): el sink lo pinta y no escribe nada en
-duro. Se cambia con `setZone({sink, position, class?, style?})`, que mezcla solo lo que declaras: pasar el drawer a
-flex, cambiar el gap o el padding es una línea en el `init.js` del site. Base del drawer: celdas iguales que bajan solas
-(`repeat(auto-fill, minmax(7rem, 1fr))`; `last` en 5rem para que Home, la bandera y el modo oscuro quepan en una fila),
-con el contenido centrado; `menu` e `inNav` declaran `grid-column: 1 / -1; justify-items: stretch` fuera de la barra de
-arriba, y los atajos se ponen `block` y tamaño normal fuera de ella. Un ítem con `component: "_sep"` pinta `ItdNavSep`
-(vertical en la barra, horizontal en el drawer y el lateral).
+- Cada sink (`ItdNav`, `ItdSide`, `ItdDrawer`) hace **`provide("sink")`**: un componente a cualquier profundidad dentro
+  del ítem sabe dónde está con `inject: {sink: {default: "nav"}}`.
+- El store da `breakpoint`, `touch` y los getters `app/atLeast(nombre)` y `app/sinks` como **utilidad general**, y
+  **no guarda ancho en px**, a propósito: quien lo necesite lo mide él.
+- El menú (`ItdMenu`) es un receptor puro con una sola presentación: otra es un componente propio en el ítem `menu`.
+- 🔴 Los textos propios de estos componentes se declaran con `t()` en **`created`**: un `t()` dentro del render declara
+  una Query por render y smart-fetch lo corta con error.
 
-| Store `app` | Qué es |
-|---|---|
-| `breakpoints` | anchos mínimos en **px CSS** (no físicos): `xs` 0 · `s` 360 · `m` 600 · `l` 900 · `xl` 1280 · `2xl` 1600 · `3xl` 1920 · `4xl` 2560 · `5xl` 3840; se pisan con `setBreakpoints` |
-| `display` | sinks que existen por breakpoint, mobile-first (vale hacia arriba hasta la próxima declaración). Base `{xs: ["nav", "drawer"], xl: ["nav"]}`; `setDisplay` |
-| state `breakpoint` · `touch`; getters `app/atLeast(nombre)`, `app/sinks` | el tramo actual, el puntero táctil, "¿es al menos este tramo?" (por orden, no por px) y los sinks que existen ahora. **Utilidad general** para cualquier componente o app. El core los mantiene (un `ResizeObserver` sobre la página que hace commit **solo al cambiar de tramo**, y `matchMedia("(pointer: coarse)")`). No hay ancho en px en el store, a propósito: quien lo necesite lo mide él |
-| `navItems` | la base: `hamburger` · `logo` · `menu` · `inNav` (`first`), `register` · `auth` · `home` · `user` · `flags` · `dark` (`last`) |
-| `menu` · `setMenu` | `{options, ref, inNav, optionsTranslation, minMatchingChars}`: el select del menú (un `ref` le gana a `options`), las coordenadas con que se traducen sus opciones y desde cuántas letras pregunta un `ref`, y los atajos de las funciones `inNav` que `checkLogin` llena siempre (crudos; `ItdNavShortcuts` los traduce con `interfaceTranslation`). Una fuente nueva viaja con su `optionsTranslation` y su `minMatchingChars`: sin ellos se pinta cruda. Auth limpia `options` e `inNav` |
-| `zones` · `setZone` | el wrapper (`class`, `style`) de cada zona `first`/`center`/`last` de cada sink `nav`/`drawer`/`side`; string, objeto o función del contexto |
-| `drawerOpen` · `setDrawer` | el drawer (`ItdDrawer`): lo abre la hamburguesa; se cierra solo al navegar |
+Reglas que blinda el contrato: el store es reactivo (una mutación o un cambio de ancho repinta sin recargar); un `when`
+que revienta no tumba la barra (el ítem se omite y se loguea en `onDev`); los slots `preMenu/postMenu` (alrededor de
+`first`) y `preRight/postRight` (alrededor de `last`) siguen.
 
-Los componentes de la base (`ItdNavHamburger`, `ItdNavLogo`, `ItdNavRegister`, `ItdNavAuth`, `ItdNavHome`,
-`ItdNavUser`, `ItdLangFlags`, `ItdDarkSwitch`) se pisan por cascada o se cambian en el ítem.
-
-**El menú** (`ItdMenu`) es un receptor puro: un select con filtro que lee `app.menu` (`ref` si hay uno, si no
-`options`), navega a la ruta elegida y se vacía. `checkLogin` enchufa las funciones del usuario en `options` solo si
-nadie enchufó `options` ni `ref` antes; un plugin o un site enchufa lo suyo con `commit("app/setMenu", {ref})` o
-`{options: [{value, text, description, icon}]}` desde su `init.js`, crudo, y si sus opciones se traducen declara con qué
-coordenadas (`optionsTranslation`; las de una interfaz: `{context: "Interface", text: "name-{{value}}", description:
-"description-{{value}}"}`, como hace el plugin `typesafe-palette`). Tiene una sola presentación: otra (un ícono que
-abre un modal, un atajo de teclado) es un componente propio que se pone en el ítem `menu`.
-
-**Una opción con descripción** (todo `ItdSelectNUI`, no solo el menú): la lista desplegable mide lo mismo que el
-selector (el `consistent-menu-width` de `n-select`, por omisión) y la descripción va en UNA línea, tenue, cortada con
-`n-ellipsis`; el texto completo sale en un tooltip a la derecha. Es a propósito: si la lista creciera con el contenido,
-una descripción larga la dejaría ultra ancha y se perdería la elipsis (jcmunoz, 29-sep-2026, commit `723042e9`).
-
-🔴 Los textos propios de estos componentes se declaran con `t()` en `created`: un `t()` dentro del render declara una
-Query por render y smart-fetch lo corta con error.
-
-Reglas que el contrato blinda (el TDD de nav-items de NUI, enmienda 4, y el de menu):
-- El store es reactivo: una mutación o un cambio de ancho repinta, sin recargar.
-- `when` que revienta no tumba la barra: el ítem se omite y se loguea (`onDev`).
-- Los slots `preMenu/postMenu` (alrededor de `first`) y `preRight/postRight` (alrededor de `last`) siguen.
+El ejemplo completo, la tabla del store, las celdas, la base del drawer y las opciones con descripción:
+[references/nav-store.md](references/nav-store.md).
 
 ## Red flags — si te ves haciendo esto, PARA
 
 - `import {X} from "naive-ui"` en un site → no resuelve, y no es la vía.
 - `import NCard from "itdfw/NUI/NCard.js"` → resuelve, pero mata el lazy y se salta el loader.
-  🔴 **Los componentes que Naive reconoce por una marca en el componente real** (`RadioButton`, `Tab`, `TabPane`,
-  `GridItem`, `FormItemGridItem`, `CarouselItem`: el padre mira `type.name` o `__TAB_PANE__`/`__GRID_ITEM__`) ya los
-  registra `$NUI` **sin** el envoltorio `defineAsyncComponent`, desde la lista `NO_ASYNC_WRAPPER` del `init.js` de NUI
-  (21-nov-2026). Se declaran en `$NUI` como cualquier otro; **no** se importan directo. Si aparece otro padre de Naive
-  que descarta hijos sin error o pierde su estilo de grupo, se suma a esa lista con su marca y su línea de naive-ui.
+  🔴 Los que Naive reconoce por una marca (`RadioButton`, `Tab`, `TabPane`, `GridItem`, `FormItemGridItem`,
+  `CarouselItem`) también se declaran en `$NUI` y **no** se importan: el loader los registra sin envoltorio async
+  (lista `NO_ASYNC_WRAPPER`; cómo se suma otro: [references/loader-and-builder.md](references/loader-and-builder.md)).
 - Escribir un archivo en la carpeta generada `NUI/` del front → basura, el builder la borra.
 - Un `#hex`, `rgb(...)` o `red` en un componente → le rompes el tema al cliente.
 - Usar `<n-algo>` sin haberlo puesto en `$NUI` → compila, no rinde, no avisa.
