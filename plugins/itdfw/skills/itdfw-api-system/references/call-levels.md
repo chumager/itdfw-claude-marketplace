@@ -72,7 +72,7 @@ confundir presentación con definición):
 Los statics internos (`FWcreate`/`FWupdate`/`FWdelete`) sobreviven siempre — los usan callers
 internos (saveRefs).
 
-> 🔴 Gotcha (Hallazgo #71): los handlers de endpoint declarados en plugins NUNCA deben
+> 🔴 Gotcha: los handlers de endpoint declarados en plugins NUNCA deben
 > clausurar sobre `schema` — operar SIEMPRE vía `this` (el Model bindeado post-model). Un set de handlers compartido
 > a nivel de módulo (objeto `verbs`) sería común a TODOS los schemas; solo la disciplina del `this` evita que un handler
 > opere sobre el schema equivocado.

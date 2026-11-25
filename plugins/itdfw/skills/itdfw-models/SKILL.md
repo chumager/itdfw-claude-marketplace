@@ -147,7 +147,7 @@ fieldName: {            // camelCase SIEMPRE; identificadores en inglés
 - 🔴🔴 **Eje 2 — el ARREGLO va en el `type`, NUNCA en el campo**: `files: {type: ["File"], name: "Files", cols: 3}` ✅; `files: [{type: "File", name: "Files"}]` ❌ (tus options se vuelven PATHS y pierdes label/filtro **en silencio**; con un type custom revienta el boot). El único atajo inocuo es `campo: [SubSchema]` con un `db.Schema` y sin ninguna option: no lo uses de patrón.
 - Son **independientes**: `{type: [{a, b}]}` tiene el arreglo bien puesto y explota igual por el eje 1.
 
-El ejemplo completo y la causa raíz (#98): [references/object-types-docarray.md](references/object-types-docarray.md).
+El ejemplo completo y la causa raíz: [references/object-types-docarray.md](references/object-types-docarray.md).
 
 
 ## 4. OPTIONS — el segundo argumento de `new db.Schema(campos, options)`
@@ -167,8 +167,8 @@ El ejemplo completo y la causa raíz (#98): [references/object-types-docarray.md
 | `registrable` | (autenticables) habilita registro público externo — ver references |
 | `Bitacora` | historial de hechos embebido — ver references |
 | `API` / `route` | puntas y rutas propias del modelo — skill `itdfw-api-system` |
-| `cache` | política de cache de las puntas del modelo: `{maxAge, swr, public, noStore}` (sin `Vary`: el SW indexa por URL; lo que cambia el contenido va en la URL) o `(req) => política` decidiendo por punta con `req.params.ext`; `undefined` cede al default del deploy (`cache:` en la config, un mapa por ext: la estructura fija, los datos SWR) y sin nada es `private, max-age=0` (se guarda, se revalida siempre: 304 barato; back ≥ 7.4.1, gap #44). Un modelo normal no declara nada. Canónico: `cache: req => ({tableData: {maxAge: 0, swr: 60}, tableFields: {maxAge: 300}})[req.params.ext]` (la estructura es fija, los datos son SWR). Valores y reglas: `itdfw-api-system` §atributo `cache` |
-| `group` + `formSpecs: {grouped: true}` | **el formulario en SECCIONES (cards)**: `group: [{name: "identification", title: "Identificación"}, …]` en las options, y en cada campo `group: "identification"`. El front arma un bloque por grupo con sus campos; los campos sin `group` (o con uno inexistente) van a un bloque implícito **primero**, así un campo nuevo aparece arriba y nunca desaparece. Es un card envolvente, no un acordeón: para eso está el sub-schema embebido (`nested`, collapse), que es otra cosa (un sub-documento). Caso vivo: el modelo de socios de un deploy financiero. Solo por modelo en archivo o `DBModelRaw`: el `DBModel` guiado no tiene `group` (gap #25, 17-sep-2026). 🔴 **Requiere back ≥ 7.3.9** (el que manda `groups`/`grouped` en `formSpecs`); el front lo soporta desde `site-vue-core` 7.0.4. Con un back anterior el formulario sale plano sin error |
+| `cache` | política de cache de las puntas del modelo: `{maxAge, swr, public, noStore}` (sin `Vary`: el SW indexa por URL; lo que cambia el contenido va en la URL) o `(req) => política` decidiendo por punta con `req.params.ext`; `undefined` cede al default del deploy (`cache:` en la config, un mapa por ext: la estructura fija, los datos SWR) y sin nada es `private, max-age=0` (se guarda, se revalida siempre: 304 barato; back ≥ 7.4.1). Un modelo normal no declara nada. Canónico: `cache: req => ({tableData: {maxAge: 0, swr: 60}, tableFields: {maxAge: 300}})[req.params.ext]` (la estructura es fija, los datos son SWR). Valores y reglas: `itdfw-api-system` §atributo `cache` |
+| `group` + `formSpecs: {grouped: true}` | **el formulario en SECCIONES (cards)**: `group: [{name: "identification", title: "Identificación"}, …]` en las options, y en cada campo `group: "identification"`. El front arma un bloque por grupo con sus campos; los campos sin `group` (o con uno inexistente) van a un bloque implícito **primero**, así un campo nuevo aparece arriba y nunca desaparece. Es un card envolvente, no un acordeón: para eso está el sub-schema embebido (`nested`, collapse), que es otra cosa (un sub-documento). Caso vivo: el modelo de socios de un deploy financiero. Solo por modelo en archivo o `DBModelRaw`: el `DBModel` guiado no tiene `group`. 🔴 **Requiere back ≥ 7.3.9** (el que manda `groups`/`grouped` en `formSpecs`); el front lo soporta desde `site-vue-core` 7.0.4. Con un back anterior el formulario sale plano sin error |
 
 🔴 **El namespace de options es ABIERTO**: las de arriba son el núcleo común, pero el canal lo usan
 TODOS los plugins — cada plugin es una OFERTA dormida que se activa cuando el modelo declara SU
@@ -210,21 +210,21 @@ await Model.findOneAndUpdate(query, {$setOnInsert: {...}}, {upsert: true});
 🔴 **Efecto colateral**: con `save()`, los `pre`/`post` del **sub-schema** de un docArray corren sobre **todos los subdocumentos**, también cuando solo cambió un campo del root. **No cuelgues de un `post("save")` de sub-schema una acción con efecto externo** (evento, correo, API): va donde se sabe QUÉ cambió (la punta o el static que hizo el cambio). Las mediciones, el orden de los hooks y la sonda: [references/save-flow.md](references/save-flow.md).
 
 
-## 4d. 🔴 Rechazos de regla desde el modelo: `HTTPError`, no `Error` (gap #16)
+## 4d. 🔴 Rechazos de regla desde el modelo: `HTTPError`, no `Error`
 
 Desde `pre("validate")` / `pre("save")` se tira `HTTPError` (global de `server.js`, no se importa) y **llega al
 cliente con su status y su texto**: `throw new HTTPError("El plan ya está cerrado", 409, {planId})`. Un `throw new
 Error(...)` pelado llega como **500 UNCONTROLLED** y le manda un correo al admin. Firma y extras: skill
 `itdfw-api-system` §Flujo de errores.
 
-## 4e. 🔴 Al guardar, los campos ajenos se omiten en SILENCIO (gap #19)
+## 4e. 🔴 Al guardar, los campos ajenos se omiten en SILENCIO
 
 Un campo `readonly`, `disabled`, `hidden` para ese contexto o inexistente en el schema **se descarta sin error**, a
 propósito (no dar pistas). Solo vuelven los fallos de lógica, permisos u operación. "Guardé y no pasó nada" NO es
 el modelo callándose un error: es esa regla, y el problema real está en otro lado (tamaño del cuerpo, permiso, una
 regla que tira `Error` pelado).
 
-## 4f. Archivos: `File`, y el ARCHIVO-FUNCIÓN (gap #20)
+## 4f. Archivos: `File`, y el ARCHIVO-FUNCIÓN
 
 `File` (core, GridFS) guarda bytes… salvo cuando **`metadata.method`** está presente: entonces no hay bytes, el
 documento guarda `{ownerModel, ownerId, method, params}` y `stream()` **llama al método del documento dueño para

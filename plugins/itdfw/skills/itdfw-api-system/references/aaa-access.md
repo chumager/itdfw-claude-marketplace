@@ -89,7 +89,7 @@ autenticado que no sea `User`; `internal: false` lo abre (el plugin `restaurant`
 - 🔴 **Para un revisor:** no es un hoyo que `getRef` esté abierto a cualquier autenticado, ni que las custom vayan sin
   token. Solo es hallazgo **una referencia directa a un modelo que responda sin token de origen**.
 
-### 🔴 JWT es headless; el front espera SESIÓN (gap #17)
+### 🔴 JWT es headless; el front espera SESIÓN
 
 JWT es el camino **headless / MCP**: ya viene autenticado y no pasa por el flujo del navegador. **El front espera
 sesión**: un 401 **corta, encola las peticiones pendientes y pide identificarse**; al volver la sesión, se reanudan.
@@ -97,7 +97,7 @@ Eso solo existe en el navegador. ⟹ Un arnés de pruebas que habla por JWT **no
 produce falsos defectos: "lecturas que responden 200 o 401 al azar", "`getConfig` responde 401". Ejemplo: defectos atribuidos al FW que eran el arnés. Para probar lo que ve el usuario, se prueba con
 sesión (Playwright con login), no con el headless client.
 
-### 🔴 401 y 403 son FLUJO, no fallas que se muestran (gap #18)
+### 🔴 401 y 403 son FLUJO, no fallas que se muestran
 
 El sistema pregunta "¿puedo?" y la respuesta "no" es un **403**: queda en consola y **no se le muestra a la
 persona**. El **401** dispara el login, no un mensaje de error. Diseñar la pantalla para mostrar todo error que
@@ -138,7 +138,7 @@ arbitrario**. Si lo acepta, es `getFile` con otro nombre.
 ⚠️ Y cruzar SIEMPRE permiso × verbos: `isAnonymous: true` + `defaultMethods: [GET, POST, PUT, DELETE]` es CRUD
 abierto a internet. Si algo es anónimo, sus verbos se justifican uno por uno.
 
-#### 🔴🔴 Lo que "anónima" significa DE VERDAD — dos cosas que no son obvias (hallazgo #189)
+#### 🔴🔴 Lo que "anónima" significa DE VERDAD — dos cosas que no son obvias
 
 **1. Una punta anónima NO se puede gobernar por perfil.** El anónimo no consulta perfiles de la BD: usa un
 **perfil por defecto** que `Profile.canSee` arma con la API ENTERA filtrada por la declaración
@@ -156,9 +156,9 @@ perfilada (permanente) y otra anónima acotada a ese escenario, que se niega sol
 aplica. No una anónima con el chequeo adentro: ahí el candado es una línea de código que nadie vuelve a
 mirar.
 
-✅ La forma **función** (`(req)=>bool`) OPERA (back ≥ 7.3.8, `Profile.getAnonymousFunctions`, #189 resuelto):
+✅ La forma **función** (`(req)=>bool`) OPERA (back ≥ 7.3.8, `Profile.getAnonymousFunctions`):
 la lista de funciones con `isAnonymous` `true`/`"auth"`/función se arma desde `req.API` en **cada llamada**, sin
-memo (cuesta menos de 1 ms; el memo dejaba fuera las puntas registradas después, #235), y la función se **evalúa por
+memo (cuesta menos de 1 ms; un memo dejaría fuera las puntas registradas después), y la función se **evalúa por
 request** (`await isAnonymous(req)`); si el handler revienta, cierra SOLO su punta y el resto sigue. La rama
 `typeof isAnonymous === "function"` de `hasAccess` es código muerto (solo corre sin modelo `Profile`): no la
 leas como "la vía". 🔴 Una ESCRITURA no se abre así aunque se pueda: `Translation/redefine` no puede ser anónima por una llave

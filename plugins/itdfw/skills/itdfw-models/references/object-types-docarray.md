@@ -78,7 +78,7 @@ files: [{type: "File", name: "Files", cols: 3}]
    subdocumento**, así que `name`, `cols`, `filter`, `required`… dejan de ser options: terminas con un
    docArray cuyos elementos tienen un campo llamado `name` y otro llamado `cols`, y tu campo pierde label,
    filtro y ancho **en silencio**.
-2. **Con un type CUSTOM, revienta el boot** (hallazgo #98, causa raíz verificada): mongoose resuelve el
+2. **Con un type CUSTOM, revienta el boot**: mongoose resuelve el
    elemento por **dos fuentes de Types distintas** según la forma. `{type:[X]}` lee de
    `db.Schema.Types` —la copia de instancia donde el FW registra los custom— y funciona; `[{type:X}]` cae
    en `SchemaArray`, que lee del **módulo core estático**, donde los custom NO están →

@@ -190,7 +190,7 @@ Recorrido hasta el cliente, la tabla de quién emite y el formato de `Validation
 | **403** | estás autenticado pero NO tienes permiso | AAA/perfiles |
 | **404** | la punta no está registrada (capada por capacidad o nunca declarada) | el **EXECUTOR** (UNKNOWN FUNCTION) |
 
-Una punta VIVA **nunca** responde 404 sobre sí misma; sí puede responder 404 de **RECURSO** (documento por id no encontrado). Los handlers declarados en plugins operan SIEMPRE vía `this`, nunca por clausura sobre `schema` (hallazgo #71).
+Una punta VIVA **nunca** responde 404 sobre sí misma; sí puede responder 404 de **RECURSO** (documento por id no encontrado). Los handlers declarados en plugins operan SIEMPRE vía `this`, nunca por clausura sobre `schema`.
 
 Detalle, el costo de seguridad del nivel 1 y el caso de FrontEnd: [references/call-levels.md](references/call-levels.md).
 

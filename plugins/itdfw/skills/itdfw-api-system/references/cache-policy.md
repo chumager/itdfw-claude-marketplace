@@ -2,7 +2,7 @@
 
 > Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle y los casos.
 
-## 🔴 La política de cache se DECLARA en la punta: atributo `cache` (back ≥ 7.4.0, gap #40)
+## 🔴 La política de cache se DECLARA en la punta: atributo `cache` (back ≥ 7.4.0)
 
 Nadie escribe `Cache-Control` a mano. El middleware `aaa.cache` (cadena `auth → cache → sse → multer →
 execEndpoint`, `server.js`) lee el atributo `cache` **de la raíz del descriptor** (`API[func].cache`, al lado de
@@ -12,7 +12,7 @@ Como `isAnonymous`, acepta **función `(req) => política`** para decidir por qu
 autenticado: `cache: req => req.isAuth ? {maxAge: 0, swr: 60} : {maxAge: 3600, public: true}`). Los nombres son
 nuestros; el header es de la RFC 9111 / 5861. 🔴 **Un MODELO también lo declara, en sus schema options** (`cache:
 {maxAge: 0, swr: 60}` junto a `defaultMethods`): `AAA.js` lo copia a `API["AAA/<Modelo>"]` como `isAnonymous`/`auth`
-(back ≥ 7.4.1, gap #44). Sin eso `tableData`/`formUpdate` responden `no-store` y ninguna grilla ve el stale.
+(back ≥ 7.4.1). Sin eso `tableData`/`formUpdate` responden `no-store` y ninguna grilla ve el stale.
 
 **Por ext, con la misma raíz (la estructura es fija, los datos son SWR).** La función recibe
 `req` y `req.params.ext` es la punta concreta, así que UN `cache` en la raíz decide por punta; `undefined` cede al
@@ -34,15 +34,15 @@ eso el mapa va por ext y no por verbo. Una punta libre que quiera su política a
 |---|---|
 | ausente (y sin default del deploy) | `Cache-Control: private, max-age=0` — **se guarda pero nunca se usa sin revalidar**: cada repetición es un 304 barato (back ≥ 7.4.1; antes era `no-store`, que mataba la copia y con ella el `If-None-Match`) |
 | `{noStore: true}` | `private, no-store` — opt-in para lo que no puede quedar en disco |
-| `{private: true, …}` en una punta anónima | `private, …` — la única excepción al sello: la respuesta depende de quien llama (#294) |
+| `{private: true, …}` en una punta anónima | `private, …` — la única excepción al sello: la respuesta depende de quien llama |
 | `{maxAge: 0, swr: 604800, public: true}` | `public, max-age=0, stale-while-revalidate=604800` (catálogo de traducciones: el locale va en el QS) |
 | `{maxAge: 0, swr: 60}` | `private, max-age=0, stale-while-revalidate=60` (`tableData`, `tableFields`: de sesión) |
 | `{maxAge: 3600}` | `private, max-age=3600` (CF pura) |
 | `vary: …` | **se ignora**: nunca sale `Vary` desde la política de cache (ver abajo) |
-| cualquiera, y la respuesta es 4xx/5xx | `private, no-store`: un error habla de ESE pedido y nunca se repite (back, #294; lo pone `aaa.cache` en `writeHead`, también sobre lo que puso el handler) |
+| cualquiera, y la respuesta es 4xx/5xx | `private, no-store`: un error habla de ESE pedido y nunca se repite (back; lo pone `aaa.cache` en `writeHead`, también sobre lo que puso el handler) |
 | cualquiera, verbo que no es GET/HEAD | ningún header de la política |
 
-🔴 **`public` solo cuando la respuesta es igual para cualquiera que la pida** (#294). Si depende del que llama (el
+🔴 **`public` solo cuando la respuesta es igual para cualquiera que la pida**. Si depende del que llama (el
 filtro de lectura o el scope con `setReq(req)`, un `hidden` función, el perfil o el level, `req.getUser()`, la sesión,
 una cookie, un header que no está en la URL), es `private`: un caché compartido (CDN, proxy) le serviría a uno la
 respuesta de otro. Lo que es único por llamada (un token, un PKCE, un Set-Cookie de sesión) va `noStore`. Un archivo
@@ -50,7 +50,7 @@ cuyo acceso decide el handler (`File/getFile`) es `private` aunque viva un año.
 
 Reglas: **`private` es el default** (se parte de la restricción y se suelta con `public`). 🔴 **Sello (back ≥ 7.4.0):
 una punta anónima legal (`isAnonymous: true`, o su función devuelve `true`) sale `public`**, pida quien pida,
-salvo que declare `private: true` explícito (#294: quien no quiere que un caché intermedio la guarde declara
+salvo que declare `private: true` explícito (quien no quiere que un caché intermedio la guarde declara
 `private`; que la copia no se borre en una máquina compartida es de quien comparte la sesión). Así lo declaran `checkLogin`, `getConfig`, `getRef`, `getSimpleName`, `Notifications/modal` y `help`; las
 únicas por llamada (`getCSRF`, `setVersion`, oauth, openid) declaran `noStore`. Una copia `private` que el SW borra
 ante un 401 no se compensa. Fuera de esa excepción: `private` es de sesión y un anónimo legal no es sesión de nadie (sin el sello, el

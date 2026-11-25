@@ -9,7 +9,7 @@
 Cualquier OTRO error es **UNCONTROLLED** — se coló sin controlar, problema más profundo a **subsanar**
 (envolverlo en HTTPError en su origen).
 
-**La firma, y tres cosas que no se adivinan** (gap #16):
+**La firma, y tres cosas que no se adivinan**:
 
 ```js
 global.HTTPError = class HTTPError extends Error {
@@ -53,4 +53,4 @@ throw new HTTPError("sucursal no encontrada", 404, {placeId, code: "PLACE_NOT_FO
 
 Nadie más loguea errores: ni `execEndpoint` (hasta 7.3.8 duplicaba con "UNCONTROLLED ERROR"), ni el JWT (un 401
 no es error del sistema). Ejecutor permanente: punta onDev `test/errorTerminal` (`?status=418|500`, `&viaJson=1`)
-en `SITE/APP/test.js`. Detalle: la doc de arquitectura «error-terminal» (#193).
+en `SITE/APP/test.js`. Detalle: la doc de arquitectura «error-terminal».

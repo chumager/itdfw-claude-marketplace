@@ -41,7 +41,7 @@ argumento) ya no es el contrato.
 |---|---|---|
 | **1. AAA** | si el usuario entra al administrador de Configuraciones y con qué verbos | la función `Config` en su perfil (`Profile.functions`), como cualquier modelo |
 | **2. `level`** | cuáles configs ve y edita dentro de ese administrador | el `level` de la **definición** contra el level del usuario (0 = dueño, más bajo = más poder). Se ve y se edita una config si `config.level >= level del usuario`; las opciones de `name` solo ofrecen las de tu nivel o superior; escribir una por debajo de tu nivel da 403 |
-| **3. `canOverride`** | si la capa del site puede redefinir la config (su schema, su `level`, su visibilidad) | la definición del plugin; sin `canOverride: true`, redefinir tira `redefining X is not allowed` (#144). Quien la redefine se hace cargo |
+| **3. `canOverride`** | si la capa del site puede redefinir la config (su schema, su `level`, su visibilidad) | la definición del plugin; sin `canOverride: true`, redefinir tira `redefining X is not allowed`. Quien la redefine se hace cargo |
 
 - El documento **copia `level` y `private = !public` de su definición en cada guardado**, y ninguno de los dos se edita
   desde la interfaz (un PUT que los traiga no cambia nada). Cambiar la definición se aplica al documento en su próximo

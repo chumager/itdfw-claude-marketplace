@@ -2,7 +2,7 @@
 
 > Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle y los casos.
 
-## 🔴 Una RUTA no es una PUNTA: el fallback SPA y el warn "404" del log (gap #26)
+## 🔴 Una RUTA no es una PUNTA: el fallback SPA y el warn "404" del log
 
 El back solo conoce dos cosas: las puntas `/APP/<func>.<ext>` y los archivos estáticos del `html/`. **Cualquier
 otro path** (`/auth`, `/Members`, `/Places/123`) es una ruta del router del front: el último middleware de
@@ -23,7 +23,7 @@ cargar); desde un cliente que ya se autenticó por su propia vía no prueban nad
 
 Litmus: *¿tiene `/APP/` y extensión?* No → es ruta, se prueba en el browser (Playwright), no por HTTP crudo.
 
-## 🔴 Rutas del front se declaran en el BACK (gaps #13, #14, #15)
+## 🔴 Rutas del front se declaran en el BACK
 
 **El `router.js` del site NO es el lugar para declarar una pantalla que va al menú.** El menú se arma desde el
 back: `Profile.getFunctions` → `userData.functions[]`, y cada función trae la `route` que el back armó. El
@@ -72,7 +72,7 @@ real: `AAA/recovery` en `User.js`):
 **Desde una punta, las funciones del que llama** son las mismas que ve su menú: `const user = await
 req.getUser()` (null si anónimo) y `(await user.userData(req)).functions` — `path` ya prefijado
 (`/APP/AAA/User`), con `hidden`, `route.children[].meta.type` (View/Create/Update). Ejemplo: el ref-función
-`User.intent` del plugin `typesafe` (gap #41).
+`User.intent` del plugin `typesafe`.
 
 **Lo que recibe el front al autenticarse** (`checkLogin` → `{user, userData, forceLink}`; las funciones sin
 `route` no son pantallas). Cada función: `path`, `name`,

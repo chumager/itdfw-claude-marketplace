@@ -99,7 +99,7 @@ GET: {
 - `send: true` → **OVERRIDE**: el value viaja **incluso si el campo está `hidden`**.
 - sin `send` → decide el `hidden` del contexto.
 
-🔴 **Al guardar, los campos ajenos se OMITEN EN SILENCIO, a propósito** (gap #19): un campo `readonly`,
+🔴 **Al guardar, los campos ajenos se OMITEN EN SILENCIO, a propósito**: un campo `readonly`,
 `disabled`, `hidden` para ese contexto, o que no existe en el schema, **se descarta sin error**, para no darle pistas
 a quien busca agujeros. Lo que SÍ vuelve son los fallos de **lógica, permisos u operación** (`HTTPError`). Si "guardé
 y no pasó nada", el silencio es deliberado para esa clase de campos y el problema es otro (ejemplo:
@@ -109,7 +109,7 @@ un 413 por tamaño del cuerpo, horas persiguiendo el silencio equivocado).
 - **ENTRADA** (front→back, guardar) → filtra **solo `hidden`**. El password (`send:false`) **SÍ se guarda** (es además la puerta anti-escalada de `level`). Los `pick*` de infra (`pickView`/`pickCreate`/`pickUpdate`/`pickProfile`) sirven a esta dirección.
 - **SALIDA** (back→front, emitir value) → `send` es **override de `hidden`**. El FW centraliza este filtro en **`pickData(ctx, req)`** (FrontEnd.js), que los callers de emisión usan (`tableData`, `formData` PUT, `myProfile`). Recibe el ctx escalar del contexto destino.
 
-> 🔴 Si declaras `send:false` y el value igual llega al front, el caller de emisión no está usando `pickData` (usa un `pick*` de infra, que solo filtra hidden). Mecanismo + tabla de verdad: la doc de arquitectura «output-send-filter» (ex-Hallazgo #87).
+> 🔴 Si declaras `send:false` y el value igual llega al front, el caller de emisión no está usando `pickData` (usa un `pick*` de infra, que solo filtra hidden). Mecanismo + tabla de verdad: la doc de arquitectura «output-send-filter».
 
 ## 3 modos nativos de implementación del contrato
 
