@@ -66,7 +66,7 @@ Si la función del getRef revienta internamente, es **error del FW** (no del con
 basura (consumer → 400). Fixture de cobertura: `TestAnon.errorRef` (un `addGetRef` que `throw`,
 declarado por el field `brokenRef` con `myRef:"errorRef"`).
 
-## 4. Ref con NOMBRE del pool — la fuente no es de ningún modelo (back ≥ 7.4.x, 27-sep-2026)
+## 4. Ref con NOMBRE del pool — la fuente no es de ningún modelo (back ≥ 7.4.x)
 
 Cuando las opciones no tienen nada que ver con un modelo (el buscador de funciones de la palette, un catálogo de un
 plugin), colgarlas de un `addGetRef` de un modelo cualquiera es una incoherencia (`User.intent` no es de `User`).

@@ -44,7 +44,7 @@ tarde. Pero ese hijo **NO pasa por `db.Schema`**, así que nace **crudo**: sin l
 instala en el prototipo (`eachVirtualPath`, entre otras). Cualquier plugin del framework que recorra
 `childSchemas` se lo encuentra y explota.
 
-🔴 **El costo real (caso 2026-08-14, media hora de caza a ciegas)**: un plugin declaró un docArray con
+🔴 **El costo real (difícil de cazar a ciegas)**: un plugin declaró un docArray con
 literal sobre `User`. Resultado:
 
 - **Cayó el boot ENTERO** — no el plugin, no el modelo: el servicio.

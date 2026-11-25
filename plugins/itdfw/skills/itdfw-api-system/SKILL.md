@@ -50,16 +50,16 @@ Este skill es una referencia larga y se lee por el lado por el que uno ya sabe e
 ITDFW exposes HTTP via four implementation levels that all collapse into a single `pool.API` registry consumed by `execEndpoint`. URL shape is `/APP/<func>.<ext>` where `<func>` is the registered key in `pool.API`.
 
 **Crítico — cómo se construye `<func>` para archivos de `APP/`**: el loader `api.loadAPI` (`addToTreeGeneric` en el loader de APIs del core) hace `path.join(filename_sin_ext, exportedKey)`. **El filename del archivo entra como prefijo automático del path**. Un export `setVersion` en `APP/AAA.js` queda registrado como `pool.API["AAA/setVersion"]` y se accede en `/APP/AAA/setVersion.<ext>`. Si estuviera en `APP/payment/webpay.js` quedaría en `/APP/payment/webpay/<key>.<ext>`. **El filename ES literalmente el scope**, no es solo agrupación lógica — viaja al path.
-🔴 **Dos escapes para acortar** (`addToTreeGeneric`, no estaban en este skill hasta 2026-09-09): (a) a nivel de
+🔴 **Dos escapes para acortar** (`addToTreeGeneric`): (a) a nivel de
 ARCHIVO, un archivo llamado **`APP.js`** no pone prefijo: sus exports quedan en `/APP/<punta>` en vez de
 `/APP/APP/<punta>`; (b) a nivel de PUNTA, la propiedad **`__name`** en el objeto exportado **reemplaza la KEY
 del export, no el prefijo del archivo**: el loader hace `path.join(name, funcName)` con `funcName = __name || key`,
 así que `__name: "x/y"` en `APP/bank.js` queda en `/APP/bank/x/y`. El único escape del prefijo es llamar al archivo
-`APP.js` (gap #39, cazado 20-sep-2026 armando el banco de smart-fetch: se creía que `__name` fijaba el path literal).
+`APP.js` (`__name` no fija el path literal).
 ⚠️ Esto es SOLO para archivos cargados por `loadAPI` (la carpeta
 `APP/` de un site/deploy). **La key `API` de un FWPlugin NO lleva prefijo**: `Object.assign(pool.API, value)`
 copia las claves tal cual, así que el plugin escribe el path completo (`"openid/token"`, como
-`"notifications/vapidKey"`); con la clave pelada da 404 (cazado 2026-09-09, plugin `openid`).
+`"notifications/vapidKey"`); con la clave pelada da 404 (plugin `openid`).
 
 🔴 **Idioma del código: inglés.** Nombres de puntas, funciones, parámetros, campos y comentarios en inglés camelCase
 (`getActiveOffers`, no `obtenerOfertasActivas`). Solo los mensajes que ve el usuario van en español, por traducción.
@@ -166,7 +166,7 @@ fallback chain              → API[func][method].any
                             → API[func].any
                             → API[func][method].UNKNOWN
                             → API[func].UNKNOWN
-                            → 404 { err: "UNKNOWN FUNCTION" }  (estructural; era 500 hasta 2026-06-10)
+                            → 404 { err: "UNKNOWN FUNCTION" }  (estructural)
 ```
 
 Debug "UNKNOWN FUNCTION": missing extension handler — add `any` or the specific `ext` to the verb block.
@@ -338,11 +338,11 @@ con 403** `not allowed to upload file to <url>`. No hay subida "por defecto".
 El front manda los archivos como **multipart** con el path del campo como `fieldname` + el JSON en el text field
 `__data` (el form y el registro; ver la doc «multipart-flow»); `setData` los lee de `req.files`.
 🔴 Si el front manda JSON con el `Blob` adentro, el archivo llega como OBJETO: `saveRefs` lo toma por "ref con payload",
-llama `File.FWcreate` y revienta con `req.files undefined`. Caso real 2026-08-27: punta `myFolder` de un deploy.
+llama `File.FWcreate` y revienta con `req.files undefined`. Ejemplo: una punta `myFolder`.
 
 ## Deuda histórica y hallazgos
 
-El prefijo `AAA/` de muchos paths es **vestigial**: en un endpoint nuevo de nivel 1, elige un filename con SCOPE semántico real (`APP/icons.js`, no `APP/AAA.js`). La historia y los hallazgos abiertos: [references/history-and-findings.md](references/history-and-findings.md).
+El prefijo `AAA/` de muchos paths es **vestigial**: en un endpoint nuevo de nivel 1, elige un filename con SCOPE semántico real (`APP/icons.js`, no `APP/AAA.js`). La deuda del prefijo y los hallazgos abiertos: [references/history-and-findings.md](references/history-and-findings.md).
 
 ## References
 

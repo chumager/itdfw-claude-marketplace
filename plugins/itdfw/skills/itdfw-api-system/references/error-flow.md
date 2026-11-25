@@ -1,6 +1,6 @@
 # Flujo de errores — el gate es `HTTPError`
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle y los casos.
 
 ## Flujo de errores — el gate es `HTTPError`
 
@@ -44,7 +44,7 @@ throw new HTTPError("sucursal no encontrada", 404, {placeId, code: "PLACE_NOT_FO
    `ValidationError` responde `{name, message, errors: {path: mensaje}}`: `message` son los mensajes de los campos,
    sin el resumen de mongoose ni el nombre del modelo (back ≥ 7.6.0). El resto, `SE(err)`.
 
-**Logging — 4XX es respuesta, 5XX es error (jcmunoz 17-sep-2026):**
+**Logging — 4XX es respuesta, 5XX es error **
 
 | Status | Qué es | Log |
 |---|---|---|

@@ -16,8 +16,8 @@ Las options son EL canal de configuración del modelo, y hay dos clases:
 🔴 **Lo que VE el usuario vs lo que usa el FW**: el AAA transfiere del schema a la RUTA del modelo
 exactamente `[description, name, title, inNav, hidden, defaultMethods, isAnonymous, auth,
 hasFiles]` → **`name`, `title` y `description` son lo que el MENÚ y el administrador muestran**. Sin
-`title`/`description` el operador ve una entrada muda: no sabe qué modelo es ni para qué sirve
-(jcmunoz 2026-07-27). `modelName` NO viaja: es identidad INTERNA (colección, selectores de modelo) y
+`title`/`description` el operador ve una entrada muda: no sabe qué modelo es ni para qué sirve.
+`modelName` NO viaja: es identidad INTERNA (colección, selectores de modelo) y
 **no reemplaza** a los otros — es incluso menos importante de cara al usuario.
 
 | Option | Qué es | ¿viaja al front? |
@@ -34,7 +34,7 @@ hasFiles]` → **`name`, `title` y `description` son lo que el MENÚ y el admini
 | Option | Qué es |
 |---|---|
 | `defaultMethods` | `["GET","POST","PUT","DELETE"]` — qué verbos existen |
-| `noCRUD` / `noCreate` / `noUpdate` / `noDelete` | Negaciones ESTRUCTURALES (2026-06-10): la operación negada NO EXISTE — ni ruta en el front ni punta de delivery en el back (404, no 401/403). Los checkers siempre responden (avisan al front). El CRUD es lo normal; los `noXXX` se declaran solo cuando NO se requiere |
+| `noCRUD` / `noCreate` / `noUpdate` / `noDelete` | Negaciones ESTRUCTURALES: la operación negada NO EXISTE — ni ruta en el front ni punta de delivery en el back (404, no 401/403). Los checkers siempre responden (avisan al front). El CRUD es lo normal; los `noXXX` se declaran solo cuando NO se requiere |
 | `noAPI` / `noModel` / `noLink` / `noPagination` / `noPos` / `noResave` / `noUniqueValidator` | Más switches negativos de capacidades estándar |
 | `edit` / `delete` / `selection` | Config/override de los VIRTUALES de fila `_update`/`_delete`/`_selectable` (ver §6) |
 

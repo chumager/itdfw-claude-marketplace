@@ -103,7 +103,7 @@ fieldName: {            // camelCase SIEMPRE; identificadores en inglés
                          //   🔴 "Address" (plugin address) persiste un GeoJSON Point pero NO declara
                          //   índice geo: el modelo que pregunte por cercanía declara
                          //   `Schema.index({address: "2dsphere"})` y usa `$geoNear` con `key: "address"`
-                         //   (caso `Place`, 2026-09-04). Sin el índice, `$near` revienta.
+                         //   (ej. un modelo `Place`). Sin el índice, `$near` revienta.
   name: "Label visible"  // ← en la práctica siempre: es el label del form/grilla (se traduce)
 }
 ```
@@ -147,7 +147,7 @@ fieldName: {            // camelCase SIEMPRE; identificadores en inglés
 - 🔴🔴 **Eje 2 — el ARREGLO va en el `type`, NUNCA en el campo**: `files: {type: ["File"], name: "Files", cols: 3}` ✅; `files: [{type: "File", name: "Files"}]` ❌ (tus options se vuelven PATHS y pierdes label/filtro **en silencio**; con un type custom revienta el boot). El único atajo inocuo es `campo: [SubSchema]` con un `db.Schema` y sin ninguna option: no lo uses de patrón.
 - Son **independientes**: `{type: [{a, b}]}` tiene el arreglo bien puesto y explota igual por el eje 1.
 
-El caso real de 2026-08-14, el ejemplo completo y la causa raíz (#98): [references/object-types-docarray.md](references/object-types-docarray.md).
+El ejemplo completo y la causa raíz (#98): [references/object-types-docarray.md](references/object-types-docarray.md).
 
 
 ## 4. OPTIONS — el segundo argumento de `new db.Schema(campos, options)`
@@ -183,7 +183,7 @@ Cualquier schema se puede clonar para **heredar su estructura Y su lógica de ne
 ```js
 const MySupport = Request.safeClone({name: "...", modelName: "...", ...});  // opciones FLAT
 ```
-Caso real: el modelo `Request` (requerimientos de la plataforma) se clona para requerimientos de un
+Ejemplo: el modelo `Request` (requerimientos de la plataforma) se clona para requerimientos de un
 dominio propio — mismos campos/flujo, otro contexto. El clon resetea name/description/methods/API y
 sobreescribe las options que le pases; después se le agregan/ajustan campos como a cualquier schema.
 **Corolario**: clonar `User` replica la lógica de autenticación completa → así se hacen los modelos

@@ -11,7 +11,7 @@ Las operaciones de query (`updateOne`, `updateMany`, `findOneAndUpdate`, `bulkWr
 multitenant, cast de types custom, validación, y cualquier plugin que un tercero enganche mañana.
 **Y no avisa**: la operación responde OK y el dato queda escrito a medias respecto del contrato.
 
-🔴 **Verificado empíricamente (2026-08-15, sonda contra el FW real)**: `Model.updateOne(..., {$push})`
+🔴 **Verificado empíricamente contra el FW real**: `Model.updateOne(..., {$push})`
 sobre un docArray → **CERO hooks disparados**, ni del root ni del subdocumento.
 
 ### 🔴 La regla NO es "no se puede" — es "si no usas `save()`, eres responsable de lo que haces"

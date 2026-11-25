@@ -1,6 +1,6 @@
 # Niveles de llamada, seguridad por verbo, extensión y coherencia estructural
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle y los casos.
 
 ## Los 3 niveles de llamada de una punta — composición vs estructura
 
@@ -18,7 +18,7 @@ Las tres ramas de resolución del executor (arriba) NO son "granularidad crecien
 
 🔑 **El superpoder del nivel 1 que el 2-3 NO pueden: dinamismo.** Un factory que lee la BD define **funciones dinámicas en runtime** — endpoints cuyo comportamiento depende de datos. Con `GET:{funcA,funcB,funcC}` los handlers están hardcodeados en el objeto al boot; no puedes inventar `funcD` porque apareció un registro en Mongo. Con el factory, sí. Es **database-native llevado a la capa de routing** (coherente con schemas-como-datos del FW).
 
-**Caso real**: el `json` con `switch(req.query.type)` de `FrontEnd.js` (form/specs/value por QS) ES composición pura. Funciona, pero ahí se eligió migrar a extensiones separadas (`tableForm`, `formSpecs`, `formCreate`… = estructura) porque salía más barato/legible. Prueba viva de que **ambos caminos son válidos** — es diseño, no jerarquía donde uno gana.
+**Ejemplo**: el `json` con `switch(req.query.type)` de `FrontEnd.js` (form/specs/value por QS) ES composición pura. Funciona, pero ahí se eligió migrar a extensiones separadas (`tableForm`, `formSpecs`, `formCreate`… = estructura) porque salía más barato/legible. Prueba viva de que **ambos caminos son válidos** — es diseño, no jerarquía donde uno gana.
 
 ### 🔴🔒 El costo de seguridad del nivel 1: el AAA discrimina por VERBO
 
@@ -39,9 +39,9 @@ Toda punta se llama **con extensión en la URL**, en los 3 niveles, sin excepci�
 1. **Sintáctica**: la regex del router (`/APP/:func.:ext`) la exige. Es decisión de diseño (se podría relajar a ruta sin ext), pero no aporta.
 2. **Semántica**: coherencia REST — todo request declara la representación que espera (es el `Accept`/content-type, pero en la URL). Aunque en nivel 1-2 no discrimine, **declara intención de formato** → el request tiene sentido completo por sí solo. Esa coherencia es la que habilita el nivel 3 sin casos especiales: la ext ya está siempre, solo cambia si el back la lee o la ignora.
 
-> **🔴 Anti-patrón** (error real 2026-06-09): proponer una punta como `/APP/register/form` (path con slash, sin ext) o querer `skipCSRF` "porque es anónima". (a) La estructura correcta es `/APP/register.form` — `form` es el handler-ext (nivel 3) o `GET(req,res)` con ext decorativa (nivel 2). (b) CSRF aplica a TODO POST de browser, anónimo incluido (protege contra forgery cross-site; el front anónimo pide `getCSRF` y manda el token igual que `checkLogin`). `skipCSRF` es solo para machine-to-machine/webhooks que no pueden obtener token — nunca para un form de browser.
+> **🔴 Anti-patrón** (error típico): proponer una punta como `/APP/register/form` (path con slash, sin ext) o querer `skipCSRF` "porque es anónima". (a) La estructura correcta es `/APP/register.form` — `form` es el handler-ext (nivel 3) o `GET(req,res)` con ext decorativa (nivel 2). (b) CSRF aplica a TODO POST de browser, anónimo incluido (protege contra forgery cross-site; el front anónimo pide `getCSRF` y manda el token igual que `checkLogin`). `skipCSRF` es solo para machine-to-machine/webhooks que no pueden obtener token — nunca para un form de browser.
 
-## Coherencia ESTRUCTURAL: declaración = existencia (2026-06-10)
+## Coherencia ESTRUCTURAL: declaración = existencia
 
 Las operaciones CRUD que el modelo NIEGA (`noCreate`/`noUpdate`/`noCRUD`, o Upload sin `transform`)
 **NO EXISTEN** a nivel HTTP — no son un 401/403 de permisos. 🔴 Pero OJO a qué capa lo produce (no
@@ -68,11 +68,11 @@ confundir presentación con definición):
 > puede responder 404 de **RECURSO** (`documento por id no encontrado`) — eso SÍ es coherente (el recurso
 > pedido no existe, no la punta).
 
-`execEndpoint` responde **404** ante ext inexistente (UNKNOWN FUNCTION — era 500 hasta 2026-06-10).
+`execEndpoint` responde **404** ante ext inexistente (UNKNOWN FUNCTION).
 Los statics internos (`FWcreate`/`FWupdate`/`FWdelete`) sobreviven siempre — los usan callers
 internos (saveRefs).
 
-> 🔴 Gotcha histórico (Hallazgo #71): los handlers de endpoint declarados en plugins NUNCA deben
-> clausurar sobre `schema` — operar SIEMPRE vía `this` (el Model bindeado post-model). Durante años
-> `checkAndLoadEndpoint` compartió UN set de handlers entre TODOS los schemas (objeto `verbs` a nivel
-> de módulo, fixed 2026-06-10) y solo la disciplina del `this` mantuvo el FW correcto encima del bug.
+> 🔴 Gotcha (Hallazgo #71): los handlers de endpoint declarados en plugins NUNCA deben
+> clausurar sobre `schema` — operar SIEMPRE vía `this` (el Model bindeado post-model). Un set de handlers compartido
+> a nivel de módulo (objeto `verbs`) sería común a TODOS los schemas; solo la disciplina del `this` evita que un handler
+> opere sobre el schema equivocado.

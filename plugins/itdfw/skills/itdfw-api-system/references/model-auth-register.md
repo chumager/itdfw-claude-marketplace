@@ -1,6 +1,6 @@
 # Autenticación y registro de un modelo nuevo — detalle
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle y los casos.
 
 ## Autenticación de un modelo nuevo (autenticable = clon de User)
 
@@ -20,7 +20,7 @@ TODO el aparato de auth del back, gratis y sin una línea nueva:
   (`Model.assertCaptcha(req)`, llamable desde una punta libre).
 - Los paths con `auth: "password"` (username/email/identidad) ya son las opciones de login.
 - Perfil forzado (en `pre("validate")` el modelo asigna su perfil único — buscar por **`profileName`**
-  camelCase, verificado vía MCP `modelFields Profile`, NUNCA copiar `profile_name` snake de un corpus viejo).
+  camelCase (se verifica vía MCP `modelFields Profile`), NUNCA copiar `profile_name` snake de un corpus viejo).
 
 ### La frontera back↔front (zona gris)
 El **back provee el flujo completo**; el **front solo lo activa con valores de store** (módulo `auth`):
@@ -62,7 +62,7 @@ Para hacer registrable un modelo (que DEBE ser clon de User):
 
 **CSRF normal** (el front manda token como checkLogin) — `skipCSRF` NUNCA para forms de browser.
 **Anti-vestigio**: register como CRUD del modelo (child Register en setRoute, espejos formRegister,
-`case "register"`) fue eliminado 2026-06-09 — si aparece en un corpus viejo (código legacy), NO imitarlo.
+`case "register"`) ya no existe — si aparece en un corpus viejo (código legacy), NO imitarlo.
 Capas pendientes del flujo: verificación de correo (doble opt-in, patrón recovery) + captcha (Config).
 
-> Enseñanza completa: doc «principios-modelos» §6. Ruta real: la bitácora del register (2026-06-09).
+> Enseñanza completa: doc «principios-modelos» §6.

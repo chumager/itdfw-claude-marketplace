@@ -1,8 +1,8 @@
 # Una RUTA no es una PUNTA y las rutas del front se declaran en el BACK
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle y los casos.
 
-## 🔴 Una RUTA no es una PUNTA: el fallback SPA y el warn "404" del log (gap #26 — 2026-09-17)
+## 🔴 Una RUTA no es una PUNTA: el fallback SPA y el warn "404" del log (gap #26)
 
 El back solo conoce dos cosas: las puntas `/APP/<func>.<ext>` y los archivos estáticos del `html/`. **Cualquier
 otro path** (`/auth`, `/Members`, `/Places/123`) es una ruta del router del front: el último middleware de
@@ -11,7 +11,7 @@ warn es el fallback normal de una SPA, no un error: la decisión de si la págin
 front, ya en el browser (`ItdComponentNotFound` si no la tiene).
 
 ⟹ Pedir una ruta por curl, MCP o cliente headless devuelve el HTML del index, nunca JSON. Quien lo hace y lee el
-warn del log concluye "el back tira 404 en /auth" — caso real 2026-09-17 (demo). Lo mismo con `AAA/getConfig` y
+warn del log concluye "el back tira 404 en /auth" (p. ej. en un site de demo). Lo mismo con `AAA/getConfig` y
 `AAA/checkLogin` llamados desde el MCP: son puntas de **bootstrap de la sesión del browser** (el front las pide al
 cargar); desde un cliente que ya se autenticó por su propia vía no prueban nada.
 
@@ -23,13 +23,13 @@ cargar); desde un cliente que ya se autenticó por su propia vía no prueban nad
 
 Litmus: *¿tiene `/APP/` y extensión?* No → es ruta, se prueba en el browser (Playwright), no por HTTP crudo.
 
-## 🔴 Rutas del front se declaran en el BACK (gaps #13, #14, #15 — 2026-09-15)
+## 🔴 Rutas del front se declaran en el BACK (gaps #13, #14, #15)
 
 **El `router.js` del site NO es el lugar para declarar una pantalla que va al menú.** El menú se arma desde el
 back: `Profile.getFunctions` → `userData.functions[]`, y cada función trae la `route` que el back armó. El
 `router.js` del site sirve **solo** para rutas que no deben salir en el menú (un detalle al que se llega desde
-otra pantalla). Una pantalla puesta ahí funciona escribiendo la URL a mano y **nunca aparece en el menú** — caso
-real: un site entero implementado así y reportado como defecto del FW.
+otra pantalla). Una pantalla puesta ahí funciona escribiendo la URL a mano y **nunca aparece en el menú** — un
+site entero implementado así se reporta como defecto del FW.
 
 **Camino 1 — la ruta es de un modelo: `schema.options.route`.** `setRoute` (`FrontEnd.js`, static del plugin
 `FrontEnd`) arma el árbol base —`View` raíz, `Create/:mode?`, `Update/:id/:mode?`, `Upload` si hay `transform`— y
@@ -71,11 +71,11 @@ real: `AAA/recovery` en `User.js`):
 
 **Desde una punta, las funciones del que llama** son las mismas que ve su menú: `const user = await
 req.getUser()` (null si anónimo) y `(await user.userData(req)).functions` — `path` ya prefijado
-(`/APP/AAA/User`), con `hidden`, `route.children[].meta.type` (View/Create/Update). Caso real: el ref-función
-`User.intent` del plugin `typesafe` (gap #41, 2026-09-20).
+(`/APP/AAA/User`), con `hidden`, `route.children[].meta.type` (View/Create/Update). Ejemplo: el ref-función
+`User.intent` del plugin `typesafe` (gap #41).
 
-**Lo que recibe el front al autenticarse** (`checkLogin` → `{user, userData, forceLink}`; verificado en vivo:
-34 de 38 funciones con `route`, las 4 sin `route` no son pantallas). Cada función: `path`, `name`,
+**Lo que recibe el front al autenticarse** (`checkLogin` → `{user, userData, forceLink}`; las funciones sin
+`route` no son pantallas). Cada función: `path`, `name`,
 `defaultMethods`, `inNav`, `hidden` y su `route`. La de un modelo llega así:
 
 ```js

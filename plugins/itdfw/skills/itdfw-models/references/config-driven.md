@@ -64,13 +64,12 @@ El único que necesita esperarlo es quien vive en la **misma capa db** (ej. `unr
 `Promise.waitForKey(db, "setConfigDefinition")`. **Ese `waitForKey` NO se copia a un Schema** — es la
 marca de un vecino de capa, no del contrato.
 
-Historia (por si aparece en corpus viejo): antes `config` vivía dentro del back y la sobrecarga de `db`
-colgaba del Schema `Config` → había que esperar `Config` antes de definir nada. Sacarlo a plugin lo
-arregló; la espera es del mundo viejo. Y si el plugin `config` no está instalado, `db.setConfigDefinition`
-no existe → revienta en el boot con error claro, que es mejor que un `waitForKey` colgado en silencio.
+Un `waitForKey` a `Config` en un Schema es un resabio de código viejo: no se necesita. Y si el plugin `config` no
+está instalado, `db.setConfigDefinition` no existe → revienta en el boot con error claro, que es mejor que un
+`waitForKey` colgado en silencio.
 
 Desde un `init` de punta (corre al inicio de `process()`, con `db` pelado): primero `await Schema.schemasLoaded`,
-después `db.setConfigDefinition(...)` y `await db.getConfig(name)`. Caso real: el plugin `telegram`.
+después `db.setConfigDefinition(...)` y `await db.getConfig(name)`. Ejemplo: un plugin como `telegram`.
 
 ## 2. CREAR el valor — un documento del modelo `Config`
 
@@ -113,7 +112,7 @@ config de forma async para sembrar, la siembra va en un `pre("validate")` async,
 ## 4. USAR — patrones
 
 **Siembra de un docArray desde la config** (template-as-config): el `default()` del campo lee la
-config y genera las filas. Caso real (flujo de incorporación del socio):
+config y genera las filas. Ejemplo (flujo de incorporación):
 ```js
 onBoarding: {
   type: [OnBoardingStage],
@@ -142,7 +141,7 @@ su política sin recompilar. (Diseño; el enganche del code es trabajo del model
 - Crear un registro que dependa de la config y verificar la siembra (ej. `query Member` → su docArray
   sembrado). NO declarar "listo" sin verificar vía MCP.
 
-## 🔴 `schema.set("query", ...)` DINÁMICO (función) — disciplina `preQuery` (2026-07-09)
+## 🔴 `schema.set("query", ...)` DINÁMICO (función) — disciplina `preQuery`
 
 Cualquier schema puede declarar un filtro automático vía `schema.set("query", ...)` — lo aplica el
 plugin GLOBAL `mongoosePlugins/queryFilter.js` (`pre(/^find/)`, corre en EXEC TIME — después de
@@ -175,7 +174,7 @@ usuario, tenant), el mecanismo necesita `req`, y ahí aplica la disciplina:
   **CRASHEA** — no "filtra mal", explota con `Cannot read of undefined`. Esos flujos son **inocuos al
   filtro por definición** (lógica de negocio interna, sin externalidad de usuario) → **DEBEN** llevar
   `.preQuery(false)` (o `.preQuery()`, mismo default) en la query, que hace el early-return del `preFind`
-  **antes** de ejecutar `query(undefined)`. Caso canónico (2026-07-10): el `__history` de `Accounting.js`
+  **antes** de ejecutar `query(undefined)`. Caso canónico: el `__history` de `Accounting.js`
   —`findById(this._id).preQuery()…` en el `pre("save")` que diffea versión actual vs almacenada—. El save
   dispara ese hook sin req, así que **sin `preQuery(false)` el guardar de CUALQUIER modelo con query
   dinámica (ej. `Config`, que hace `req.isAuth`) explota**. Regla mecánica: **todo find dentro de un hook

@@ -1,6 +1,6 @@
 # AAA: autenticación y permisos — detalle completo
 
-> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle, los casos y la historia.
+> Movido sin cambios desde `SKILL.md` (reordenamiento por tamaño). El contrato corto vive en `SKILL.md`; aquí está el detalle y los casos.
 
 ## AAA: authentication & permissions
 
@@ -36,7 +36,7 @@ front en un browser). 🔴 Un ref o punta que paga un servicio externo (IA, SMS,
 su propio respaldo cuando es false (rechazar, cuota, cache): el FW no decide por él.
 Ejecutor: la prueba de back `reqFlags`.
 
-🔴 **El `Authorization` NO es siempre del FW** (2026-09-09): web-push firma `vapid t=…, k=…` (RFC 8292) y un
+🔴 **El `Authorization` NO es siempre del FW**: web-push firma `vapid t=…, k=…` (RFC 8292) y un
 cliente OIDC o MCP manda su propio `Bearer`. `expressjwt` está montado global y con 3+ partes lanzaba 500
 **ignorando `credentialsRequired: false`**, antes de llegar a la punta. Hoy `readFWToken(req)`, en
 `AAA.js` y usado por el autenticador `FWJWT`, filtra por partes, esquema `Bearer` y **`model` en el payload** —esa
@@ -44,7 +44,7 @@ es la firma de que el token es nuestro, y el headless client lo manda siempre—
 ajeno, que sigue su camino. ⟹ una punta anónima **sí puede** recibir un webhook firmado de un tercero.
 Detalle: la doc de arquitectura «jwt-gate».
 
-### 🔴 El acceso paso a paso — quién decide de verdad (verificado contra el código, 2026-11-09)
+### 🔴 El acceso paso a paso — quién decide de verdad (verificado contra el código)
 
 El middleware `auth` (`AAA.js`, primero de la ruta `/APP/`) corre en este orden: **(1)** 404 si la punta no existe en
 `pool.API`; **(2)** `runAuthenticators`: recorre `pool.authenticators` (primero la sesión, luego el JWT del FW, luego los
@@ -74,14 +74,14 @@ producción (`true` únicamente en `onDev` o con `firstTime`): los recibe cualqu
 autenticable, sin asignación. Un modelo marcado `internal` (la opción vale `true` por omisión) responde 403 a un
 autenticado que no sea `User`; `internal: false` lo abre (el plugin `restaurant` lo usa en lo que ve su dueño).
 
-#### 🔴 Contrato de `getRef`: cerrado por construcción (jcmunoz, 22-nov-2026)
+#### 🔴 Contrato de `getRef`: cerrado por construcción
 `getRef` no lleva un control de acceso propio (ni `canSee` del modelo dueño, ni un nivel). No le hace falta:
 
 | Referencia | Cómo viaja | Quién la abre |
 |---|---|---|
 | **directa a un modelo** (`ref: "Sucursal"`) | siempre con el **token de origen** (`origin`, sellado con `cipherStable`: modelo dueño, path y quién pidió el form). Sin él, **403** | solo el form la entrega, y el form se le sirve a quien tiene acceso al modelo dueño: sin acceso no hay token, y sin token no hay pedido |
 | **custom**: del pool (`req.refs`) y con nombre `Model.x` (`getRef` del modelo) | libre; el origen es opcional y solo trae la `query` del campo | lo que exponga es **responsabilidad de quien la escribe**, no del FW (rule `el-plugin-entrega-la-herramienta`) |
-| `getSimpleName` | en claro, sin token | un nombre por id (decisión del 6-may-2026); cubre los títulos y el modal de borrado |
+| `getSimpleName` | en claro, sin token | un nombre por id (por diseño); cubre los títulos y el modal de borrado |
 
 - Un selector suelto que necesita un modelo (un "elige sucursal" en un dashboard) **no arma una referencia a mano en el
   front**: el modelo declara una autorreferencia oculta y el selector usa ese campo, con su token.
@@ -94,8 +94,7 @@ autenticado que no sea `User`; `internal: false` lo abre (el plugin `restaurant`
 JWT es el camino **headless / MCP**: ya viene autenticado y no pasa por el flujo del navegador. **El front espera
 sesión**: un 401 **corta, encola las peticiones pendientes y pide identificarse**; al volver la sesión, se reanudan.
 Eso solo existe en el navegador. ⟹ Un arnés de pruebas que habla por JWT **no reproduce el flujo del front** y
-produce falsos defectos: "lecturas que responden 200 o 401 al azar", "`getConfig` responde 401". Caso real
-2026-09-15: dos defectos reportados contra el FW que eran el arnés. Para probar lo que ve el usuario, se prueba con
+produce falsos defectos: "lecturas que responden 200 o 401 al azar", "`getConfig` responde 401". Ejemplo: defectos atribuidos al FW que eran el arnés. Para probar lo que ve el usuario, se prueba con
 sesión (Playwright con login), no con el headless client.
 
 ### 🔴 401 y 403 son FLUJO, no fallas que se muestran (gap #18)
@@ -121,7 +120,7 @@ no hay que pensar). La norma es la inversa: **todo lo anónimo es anónimo AUTEN
 que el origen no espera un usuario autenticado — pantalla de login, registro público, un webhook de un tercero,
 un `.well-known`. "Es más cómodo" o "así funciona igual" no es demostración.
 
-**El caso canónico (jcmunoz 2026-09-10, HECHO 22-sep):** `getFile` es anónimo **autenticado** (`"auth"`): un
+**El caso canónico:** `getFile` es anónimo **autenticado** (`"auth"`): un
 archivo por id es un recurso de alguien. El único origen que necesita un archivo antes del login es el **logo del
 nav**, y tiene su propia punta **`File/getLogo?_id=`**: anónima, **con clausura**: recibe el id (así la URL sigue
 siendo cacheable un año, `public`; cambiar el logo cambia el id y la URL) pero solo sirve si ese id ES el
@@ -139,12 +138,12 @@ arbitrario**. Si lo acepta, es `getFile` con otro nombre.
 ⚠️ Y cruzar SIEMPRE permiso × verbos: `isAnonymous: true` + `defaultMethods: [GET, POST, PUT, DELETE]` es CRUD
 abierto a internet. Si algo es anónimo, sus verbos se justifican uno por uno.
 
-#### 🔴🔴 Lo que "anónima" significa DE VERDAD — dos cosas que no son obvias (medido 2026-09-10, hallazgo #189)
+#### 🔴🔴 Lo que "anónima" significa DE VERDAD — dos cosas que no son obvias (hallazgo #189)
 
 **1. Una punta anónima NO se puede gobernar por perfil.** El anónimo no consulta perfiles de la BD: usa un
 **perfil por defecto** que `Profile.canSee` arma con la API ENTERA filtrada por la declaración
 (`getDefaultProfile` + `sift`). ⟹ declarar `isAnonymous: true` **es** la autorización; no hay asignación que
-la limite, ni asignación que haga falta. Verificado: una punta anónima asignable, sin estar en ningún perfil,
+la limite, ni asignación que haga falta. Una punta anónima asignable, sin estar en ningún perfil,
 responde 200 a un anónimo puro.
 
 **2. 🔴 `anonymousStates = [true, "auth"]`, y para un AUTENTICADO el filtro acepta los dos** ⟹ **cualquier
@@ -162,6 +161,6 @@ la lista de funciones con `isAnonymous` `true`/`"auth"`/función se arma desde `
 memo (cuesta menos de 1 ms; el memo dejaba fuera las puntas registradas después, #235), y la función se **evalúa por
 request** (`await isAnonymous(req)`); si el handler revienta, cierra SOLO su punta y el resto sigue. La rama
 `typeof isAnonymous === "function"` de `hasAccess` es código muerto (solo corre sin modelo `Profile`): no la
-leas como "la vía". 🔴 Una ESCRITURA no se abre así aunque se pueda: `Translation/redefine` fue anónima por una llave
-de la Config hasta el 20-oct-2026 y se cerró, porque un `t-href` redefinido mandaba a todos los visitantes a otro
+leas como "la vía". 🔴 Una ESCRITURA no se abre así aunque se pueda: `Translation/redefine` no puede ser anónima por una llave
+de la Config, porque un `t-href` redefinido mandaba a todos los visitantes a otro
 sitio y sobrevivía a cerrar la llave. La forma función es para capacidades sin efecto persistente o acotado (catalogar).

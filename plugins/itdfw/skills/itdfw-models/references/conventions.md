@@ -42,7 +42,7 @@ en el request. Es la guarda anti-inyección (nadie cuela un campo protegido por 
 - **docArray**: las filas se **REEMPLAZAN** (el dato que llega es el SSoT — un array no se puede
   mergear por diseño) → un campo disabled se **PIERDE EN TODAS LAS FILAS** al guardar.
 
-🔴 **Caso real (2026-07-06, cazado antes de subir)**: `Profile.functions.path` era `disabled: true`
+🔴 **Ejemplo real**: `Profile.functions.path` era `disabled: true`
 de schema → un PUT del admin de perfiles guardó las 93 functions SIN path → perfil Admin muerto.
 **Regla**: si el campo NO debe editarse en UI pero SÍ debe round-trippear (identidades dentro de
 docArrays), el instrumento NO es `disabled` de schema — es el controller **`disableFields`**

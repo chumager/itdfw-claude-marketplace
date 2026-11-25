@@ -17,7 +17,7 @@ filtro derivándolo del de edición; estos atributos lo especializan sin tocar c
 🔴 **Un `ref` en el filtro se expande al FORM del modelo referenciado (Embedded en un drawer) salvo `onlyRef: true`**,
 que lo deja como select typeahead sobre `getRef` (`FrontEnd.js`: `hasRef(input) && !input.onlyRef` → Embedded). Es lo
 que usa `creationUser` del plugin `Accounting`, y lo que un modelo declara cuando quiere filtrar por "quién" y no por
-los campos del otro modelo. (Gap #46, 21-sep-2026, `Sample.owner` del banco de smart-fetch.)
+los campos del otro modelo. (Gap #46.)
 
 🔴 **La multiselección del filtro se DERIVA, no se declara.** El FW pone `multiple: true` sobre el input
 del filtro cuando el campo lo justifica: referencias (`ref`/`myRef` → `ItdSelect` unificado) y arreglos

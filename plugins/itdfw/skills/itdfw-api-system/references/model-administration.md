@@ -43,7 +43,7 @@ filtrable entrega `path`, `label`, `type`, `filter` (`true` · `"multiple"` · `
 
 🔴 **El filtro de `tableData` viaja como `filter[campo]=valor`** (`?filter[to]=<id>`, `?filter[status]=Pagada`; el MCP
 `query` lo serializa solo). **Un `?campo=valor` pelado se IGNORA en silencio y la grilla responde 200 con TODO** — no
-hay error que lo delate. Caso real (2026-09-04): un helper de test filtraba `?to=<id>`, recibía la fila de otro
+hay error que lo delate. Ejemplo: un helper de test filtraba `?to=<id>`, recibía la fila de otro
 y daba por existente lo que faltaba crear; el rojo apareció tres casos más allá. Otros params de primer nivel:
 `perPage`, `currentPage`, `sortBy`, `sortDesc`, `_id` (uno o arreglo), `count`, `pageCount`.
 
@@ -102,7 +102,7 @@ GET: {
 🔴 **Al guardar, los campos ajenos se OMITEN EN SILENCIO, a propósito** (gap #19): un campo `readonly`,
 `disabled`, `hidden` para ese contexto, o que no existe en el schema, **se descarta sin error**, para no darle pistas
 a quien busca agujeros. Lo que SÍ vuelve son los fallos de **lógica, permisos u operación** (`HTTPError`). Si "guardé
-y no pasó nada", el silencio es deliberado para esa clase de campos y el problema es otro (caso real 2026-09-15:
+y no pasó nada", el silencio es deliberado para esa clase de campos y el problema es otro (ejemplo:
 un 413 por tamaño del cuerpo, horas persiguiendo el silencio equivocado).
 
 **Las dos direcciones (no confundir)**:
