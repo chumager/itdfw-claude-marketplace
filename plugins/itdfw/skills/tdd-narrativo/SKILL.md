@@ -70,6 +70,12 @@ PMO escribe → CTO → designer → documentador → QA → aprobación del due
 - **Un fix también se escribe**: en `TDD-pendientes.md` o fusionado al TDD. Nada queda sin documentar.
 - **Sin burocracia**: cada revisor hace una pasada, responde en la hora y cada rechazo trae el caso concreto, no un
   "revísalo". Un hallazgo es un error o "no verificable con lo que está escrito".
+- 🔴 **Una decisión, un artefacto** (rule `organigrama`): si el pedido toca varios módulos, el PMO de origen junta en
+  UN artefacto la parte de cada uno (core, NUI, otro plugin), escrita por su dueño, y es lo único que el dueño aprueba.
+  Recién después cada módulo pasa lo suyo a su TDD. Diez TDDs por un pedido no se presentan.
+- 🔴 **Un cambio inocuo u opt-in no arrastra un set de pruebas**: lo que nadie usa hasta encenderlo es incremental
+  inocuo (`cierre-es-la-suite-completa-contra-lo-real`), y lleva solo sus casos nuevos más la suite de la pieza que
+  toca. Un cambio de una línea no trae TDD propio: va como fila del artefacto que lo pidió.
 
 ### 0 · El pipe — cómo se hace verdad cada fila (proporcional al módulo)
 

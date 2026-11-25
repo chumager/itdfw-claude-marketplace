@@ -16,6 +16,17 @@
 
 PMO writes → `CTO` (high level: contract, slice 1, architecture) → `designer` (UI/UX section, if it has a front) → `documentador` (coherence; about the code, only "not found") → `QA` (approves the test set) → **approval** → it is implemented.
 
+### 🔴 One decision, one artifact, one channel: the PMO owns the pipe
+
+The owner is the slowest link of the line: loading him from every side stops the whole critical path.
+
+| Who | What they do |
+|---|---|
+| the PMO that originates the request | owns the whole pipe: gathers every module's part (core, NUI, other plugins) into **one artifact** with everything the decision needs, presents it to the owner, and afterwards tells each module the state of what was asked of it |
+| each module asked (core, designer, another plugin) | writes its part **for the PMO**, inside that artifact. It never takes to the owner a TDD or a question born from someone else's request |
+| the `CTO` | answers or routes to the PMO what a session asks; does not forward it to the owner |
+| the owner | approves the one artifact. Only afterwards each module moves its part into its own TDD |
+
 Who approves:
 
 | The TDD | Approves |

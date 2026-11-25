@@ -8,7 +8,7 @@ Before saying "green", "closed" or "you can test": the entire suite of the branc
 
 | Class (declared in the commit) | How it is recognized | Branch that is run |
 |---|---|---|
-| **harmless incremental** | new capability behind an option | the suites of the touched piece, with their new cases |
+| **harmless incremental** | new capability behind an option (opt-in: nobody goes through it until they switch it on) | the suites of the touched piece, with their new cases. Nothing else: no full set, no other modules' suites |
 | **behavior change** | code that someone already goes through (layout, inherited method, default, hook) | the module's suite and that of everything that inherits or calls it (core → NUI → plugins with a front) |
 | **breaking change** | a signature, name or contract that someone uses | all of them, and a notice to the sessions that own the consumers |
 
