@@ -149,7 +149,8 @@ escrito como la rama del árbol de `itdfw-aaa` que la decide**, para que quien r
 |---|---|---|---|---|---|
 | `StandSeller` | clon | `StandOwner` | `stand`, inmutable | asignado por su padre | depende del dueño del stand → otro tipo; es subusuario → perfil asignado |
 
-**Entidades** — por cada modelo (nuevo o extendido), **primero una o dos líneas con su ALCANCE**: qué es en
+**Entidades** — por cada modelo (nuevo o extendido), con las cuatro preguntas de `itdfw-models` §0 respondidas
+(fuerte o débil, una vez o por edición, 1:N o N:M, a qué nivel pertenece), **primero una o dos líneas con su ALCANCE**: qué es en
 el dominio, por qué existe, quién lo crea y cuánto vive (jcmunoz 2026-09-08: un modelo sin motivo escrito obliga
 a preguntar "¿y esto qué es?" en cada lectura). Ese alcance tiene que cerrar con la narrativa y los flujos: si un
 modelo no aparece en ningún ejecutor ni en ninguna prueba, sobra o falta algo. Después, la tabla:

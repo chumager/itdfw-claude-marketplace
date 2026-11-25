@@ -29,6 +29,20 @@ especializaciones viven en `references/`. Hermanos: `itdfw-api-system` (puntas/A
 `itdfw-mongoose-types` (types custom), `itdfw-fwplugin` (plugins), `itdfw-db-models` (el modelo
 definido en la BD en vez de un archivo — mismo modelado, otra vía de carga).
 
+## 0. 🔴 ANTES de los campos — cuatro preguntas por entidad
+
+Un modelo nace de estas respuestas, no de la tabla de campos. Si se saltan, el dueño de los datos queda mal puesto y
+el usuario termina recargando lo mismo en cada ocasión.
+
+| # | Pregunta | Qué decide |
+|---|---|---|
+| 1 | **¿Existe sola, o no existe sin otra?** (fuerte o débil) | quién es su dueño y qué pasa con ella si el dueño se va: la feria no existe sin su organizador; la viña existe sin ninguna feria |
+| 2 | **¿Se crea una vez y se reusa, o se repite en el tiempo?** | qué se carga una sola vez (la viña, su carta) y qué es cada edición (la feria de este año) |
+| 3 | **Entre dos entidades, ¿1:N o N:M?** | si es N:M, la asociación es **una entidad propia** con los atributos de la relación, y no es dueña de ninguna de las dos: el stand es feria ↔ viña, con lo que la viña vende en esa feria |
+| 4 | **¿A qué nivel pertenece?** | al nivel que contiene todo lo que hace (la regla de `itdfw-aaa` §1, aplicada a los datos): un cliente que va a varias ferias es del sistema |
+
+Las respuestas van escritas en el TDD, en la línea de ALCANCE de cada entidad (`tdd-narrativo` §2b).
+
 ## 1. DÓNDE — ubicación del archivo
 
 La raíz NO es una convención: es **`documentRoot`**, definido en la configuración del deploy
