@@ -5,6 +5,13 @@ description: Use when migrating an EXISTING system into ITDFW (another platform,
 
 # ITDFW Migration — traer un sistema existente a la plataforma
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [front.md](references/front.md) | Migrar el front: la UI no se porta, se lee como inventario de requerimientos; qué se deriva del modelo y qué no; medir el tamaño; qué rescatar; separación por rol | vas a migrar las pantallas de un sistema existente |
+| [previous-field.md](references/previous-field.md) | `previousField`: renombrar campos de un modelo ya en producción sin escribir migración; qué cubre, recaudos, cuándo no sirve y cuándo se retira | un modelo que ya corre cambia el nombre de un campo y los datos tienen el nombre viejo |
+
 **Construir desde cero está cubierto por los otros skills. Esto es otra disciplina.**
 
 Migrar no es traducir. El sistema origen ya tomó decisiones —algunas del negocio, otras de su

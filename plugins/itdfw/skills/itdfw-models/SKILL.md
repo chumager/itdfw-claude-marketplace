@@ -5,6 +5,24 @@ description: Use when creating or modifying ITDFW backend business models (mongo
 
 # ITDFW Models — Implementar modelos de negocio
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [after-creating.md](references/after-creating.md) | Un modelo recién creado no es accesible hasta asignarlo a un perfil (`Profile.functions`, MCP `assignFunction`); 403/401 esperado; la ruta de las puntas | el modelo nuevo da 403/404 al llamar sus puntas, o dudas del código antes de asignarlo a un perfil |
+| [authenticatable.md](references/authenticatable.md) | Autenticable = clon de User vía `safeClone`; `registrable`; checklist del clon; perfil base con el nombre del modelo; las capacidades son funciones asignables, el dueño arma los perfiles de sus usuarios por la cadena de tenants, otro tipo de usuario es otro clon con su perfil base del mismo nombre; activación en el front | el modelo se LOGUEA, o un TDD/plugin dice quién puede qué (cobrar, revertir): la asignación es configuración, no código |
+| [config-driven.md](references/config-driven.md) | Modelo `Config`: `setConfigDefinition` (shape), crear el valor, `getConfig` sync/async, sembrar un docArray desde config en `default()` | un valor o política varía por despliegue/tenant y no debe ir hardcodeado |
+| [conventions.md](references/conventions.md) | Idioma (enums en inglés camelCase), campos multitenant (`nationalId` + plugin del tenant), canónico limpio en BD, `hidden`/`readonly`/`disabled`, índices, `deleteMode`+`unique`, nombres reservados, `query` como scope por quién mira | defines campos finos: identificación nacional, formato local, hidden/readonly, índices, nombres de path, o scope automático del modelo |
+| [example-authenticatable.js](references/example-authenticatable.js) | Ejemplo mínimo de autenticable: `User.safeClone` con `registrable`, `profiles = []` y la base obligatoria | escribes un modelo autenticable y quieres el esqueleto de referencia |
+| [example-model.js](references/example-model.js) | Ejemplo base de un modelo plano completo: dónde vive el archivo, `this.init`, `db.Schema`, campos con `required`/`unique`/`immutable`/`filter`/`pos`/`tablePos` | empiezas un modelo nuevo y quieres la forma mínima completa |
+| [field-filters.md](references/field-filters.md) | Familia `filterXXX` (`filterType`, `filterComponent`, `filterDefault`, `filterName`, `betweenType`), `onlyRef` y multiselección derivada | tocas el filtro de un campo: `filterXXX`, `onlyRef`, multiselección, o un ref que se expande al form entero en el filtro |
+| [object-types-docarray.md](references/object-types-docarray.md) | Dos ejes ortogonales del docArray: construir con `new db.Schema` (no literal) y poner el arreglo en el `type` (`{type:[X]}`) | declaras un embedded/docArray, o el boot cae con `eachVirtualPath is not a function` |
+| [options-catalog.md](references/options-catalog.md) | Catálogo de OPTIONS de `new db.Schema(campos, OPTIONS)`: identidad, CRUD, AAA, ofertas de plugins (namespace abierto), flujo/data, transitivos | necesitas saber qué option existe o cuál usar: `name`/`title`/`description`, `defaultMethods`, plugins declarativos como `Bitacora` |
+| [save-flow.md](references/save-flow.md) | Las operaciones de query (`updateOne`, `bulkWrite`, `insertMany`) no disparan hooks de documento: se saltan bitácora, `__history`, multitenant y cast; cuándo es legítimo (p. ej. `previousField`) y mediciones de orden de hooks | escribes sin `save()` o cuelgas algo de un hook de sub-schema |
+| [schema-engine.md](references/schema-engine.md) | El motor: `this` = instancia única de Schema, atributos (`db`, `pool`, proxies), orden de carga, esperar dependencias (`init`/`waitFor`), eventos `schema-X`/`model-X`, hook `ITDExecPost`, interconexión por pool (inyección directa vs `shareData`→req) | un modelo debe esperar o reaccionar a otro, o necesitas entender el orden de carga y la interconexión runtime |
+| [special-refs.md](references/special-refs.md) | Refs especiales: `ref` directo, `refPath` (polimórfico), `myRef`+`addGetRef` (ref por función, 2º parámetro obligatorio por ofuscación), ref con nombre del pool; descubrimiento vía tableFields; errores → 500 | el field referencia algo no trivial: modelo polimórfico, catálogo custom o fuente de valores por función |
+| [state-flows.md](references/state-flows.md) | El estado de negocio nunca es un campo escribible: bitácora de hechos (option `Bitacora`) + transición derivada en pre-validate | el modelo tiene flujo de estados (prospect→member, application→approved) y estás tentado a un `status` editable |
+
 **Audiencia: un dev SIN acceso al código del FW.** Este skill basta para crear un modelo nuevo con
 cero código visible (salvo los ejemplos internos). SKILL.md = la BASE (todo modelo); las
 especializaciones viven en `references/`. Hermanos: `itdfw-api-system` (puntas/AAA),
@@ -260,24 +278,6 @@ Las dos vías de asignación con su detalle y la trampa del 404: [references/aft
 - Type local (Rut/Cuit) declarado EN el modelo → plugin de tenant (references/conventions.md).
 - Declarar `component`/validaciones que el type ya deriva → redundancia.
 - Copiar nombres de otros proyectos sin verificar vía MCP (`profileName`, no `profile_name`).
-
-## References (cuándo leer)
-
-| Reference | Leer cuando... |
-|---|---|
-| [field-filters.md](references/field-filters.md) | tocas el filtro de un campo: `filterXXX`, `onlyRef`, multiselección |
-| [object-types-docarray.md](references/object-types-docarray.md) | declaras un embedded/docArray, o el boot cae con `eachVirtualPath is not a function` |
-| [save-flow.md](references/save-flow.md) | escribes sin `save()` o cuelgas algo de un hook de sub-schema: mediciones y orden de hooks |
-| [after-creating.md](references/after-creating.md) | el modelo nuevo da 403/404: asignarlo a un perfil y la ruta de las puntas |
-| [authenticatable.md](references/authenticatable.md) | el modelo se LOGUEA (clon de User, registrable, perfil forzado) |
-| [special-refs.md](references/special-refs.md) | el field referencia algo no-trivial: `refPath` (modelo polimórfico), `myRef`+`addGetRef` (ref por función — catálogo custom, 2º param obligatorio por ofuscación), descubrimiento vía tableFields, errores → 500 |
-| [options-catalog.md](references/options-catalog.md) | el inventario de OPTIONS por familias (estrictas vs ofertas de plugins, transitivos, virtuales de fila) |
-| [conventions.md](references/conventions.md) | convenciones finas de campos: hidden global-vs-contexto, multitenant, canónico limpio, índices, decisiones del cliente |
-| [state-flows.md](references/state-flows.md) | el modelo tiene flujo de estados de negocio (prospect→member, application→approved) |
-| [config-driven.md](references/config-driven.md) | valores/políticas por despliegue: definir shape (`setConfigDefinition`), crear el valor (modelo Config), leer (`getConfig` sync/async), sembrar un docArray desde config en `default()` |
-| [schema-engine.md](references/schema-engine.md) | el motor: qué es `this` (instancia Schema), orden de carga, esperar dependencias sin línea de tiempo (proxy + `init`/`waitFor`), eventos de control (`on schema-X`/`model-X`), hook `ITDExecPost`, interconexión runtime vía pool (inyección directa vs `shareData`→req) |
-| [example-model.js](references/example-model.js) | ejemplo BASE: modelo plano completo |
-| [example-authenticatable.js](references/example-authenticatable.js) | ejemplo del autenticable mínimo |
 
 ---
 

@@ -5,6 +5,45 @@ description: Use when developing inside an ITDFW frontend — creating/modifying
 
 # ITDFW Front Develop
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [anti-patterns.md](references/anti-patterns.md) | Tabla WRONG/RIGHT de errores típicos: getInputProps sin spread, renderInput desde cero, `.call(this)` de heredados, watchers manuales, validate en el compuesto externo | Antes de escribir o revisar un componente, o cuando algo "casi funciona" y sospechas un error de patrón |
+| [back-end.md](references/back-end.md) | Defaults por type del back (z99base: `forceAttrs`, `_validate`) y el flujo de `toInput.js` hasta el front | Cuando un atributo del input no llega al front o necesitas saber qué defaults trae un type |
+| [cascade-inheritance.md](references/cascade-inheritance.md) | Extender otro componente core con `localImport` (top-level await en JSX, wrapper en .vue), cuándo usar import directo y cómo detectar el error | Cuando un componente extiende a otro que el front o el site pueden overridear (ej. Percentage sobre Number) |
+| [checklist.md](references/checklist.md) | Lista de pasos para crear un input nuevo: type, back, core, front, validator, registro | Al construir un componente desde cero, como lista de verificación |
+| [content-wrapper.md](references/content-wrapper.md) | `ContentWrapper`: shell de App con title/description/ayuda, contrato `$route.meta`, pipeline schema→ruta, tags configurables, `renderHelp` | Al tocar el shell de la app, el título/ayuda por ruta o un override de ContentWrapper por front |
+| [controllers.md](references/controllers.md) | Sistema `controller` (propiedades de inputs) vs `generalController` (modifica el form): ubicación, cuándo corren, catálogo | Cuando necesitas cross-field, deshabilitar según valor o cambiar el componente sin crear uno custom |
+| [core-rules-detail.md](references/core-rules-detail.md) | Prosa completa de las reglas core: traducción `t`/`rt`, clone guards, `watch` con `extends`, valor con type, HTML con `ItdHtml`, buses, `applyLoaders`, derivar del contenedor crudo | Cuando una regla core del SKILL.md necesita su detalle, caso u origen |
+| [data-props.md](references/data-props.md) | Props de `data()` del GenericInput (`type`, `tag`, `lazy`, `valueProp`, `targetValue`...), resolución de tag/evento (`localTag`, `localLazy`) y cascada `localImport` | Al configurar un GI por `data()` o depurar qué tag o evento usa |
+| [deadlock-initval.md](references/deadlock-initval.md) | Regla del deadlock: `initVal` que depende de data/computed del hijo muere en silencio | Cuando un componente renderiza pero nunca emite valores, o su `initVal` lee datos del hijo |
+| [embedded-and-filter.md](references/embedded-and-filter.md) | `ItdEmbedded` (sub-form lazy), contexto Filter, `ItdFilter`, layout label-input | Al trabajar sub-formularios anidados, filtros o un embedded propio de un front (ojo: el drawer recursivo quedó obsoleto) |
+| [examples.md](references/examples.md) | Código completo por nivel: ItdString, ItdEmail, ItdBoolean (core y front), ItdTimeFrame | Cuando necesitas un modelo concreto de componente de nivel 1 a 5 para copiar el patrón |
+| [front-pattern.md](references/front-pattern.md) | Overrides del front: por qué extienden el core, sobrecarga de `defaultX`, `$vModelChildProp/Event`, formatter con modo controlled/uncontrolled, attrs a inputProps, estado de validación | Al escribir el componente front de un type o si "el formatter corre pero no se ve" |
+| [front-pure-receiver.md](references/front-pure-receiver.md) | El front no transforma el shape del back (`component`, `type`, `filter`, `inputs`, `fields`); excepción de la Vista | Si te ves escribiendo `if (input.filter === ...) input.component = ...` en el front |
+| [gf-direct-extension.md](references/gf-direct-extension.md) | Nivel 5: extender GF (`GenericFormMin`, `innerForm`, `initVal/emitter`), layout horizontal/vertical por `options` | Al crear un componente cuyo valor es un objeto (sub-form, grupo, rango) |
+| [http-error-traps.md](references/http-error-traps.md) | Mapa de traps de status del `$http` (401/400/403/423/404/429/500), opt-out `noError`, body del 400 como string, override de `requestFallback` | Al depurar errores HTTP, un 400 esperado o el manejo de fallos de request |
+| [itd-prefix-resolve-tag.md](references/itd-prefix-resolve-tag.md) | Prefijo `Itd` (name vs declaración del back) y `resolveTags`/`resolveComp`/`resolveTag`, incluido JSX con `resolveTag` directo | Al nombrar un componente, declarar `component` en un schema o resolver tags en un render |
+| [layout-columns.md](references/layout-columns.md) | Columnas del form dirigidas por container: `colWidth`, `cols`, `fit`, contenedores `cols:1`, `filterWidth` | Al ajustar el ancho o el span de inputs, o el drawer del filter |
+| [loaders.md](references/loaders.md) | Arquitectura de loaders: `addLoader(option, loader, pos, hoist)`, cuándo crear uno, dónde va el archivo, anti-patterns | Al crear o depurar un loader (mixins `$vModel`, `$emitter`, `$validateSelf`) |
+| [local-pascal-pattern.md](references/local-pascal-pattern.md) | Patrón `localX`: un solo computed por prop compuesto de métodos puros, sin cascadas | Al transformar una prop o data, o al ver una cadena de computeds |
+| [migration-workflow.md](references/migration-workflow.md) | Pasos para migrar un componente `.vue` a JSX nativo (archivos .bak, dev server, ciclo) | Al migrar un componente de .vue a JSX |
+| [mixins-model-context.md](references/mixins-model-context.md) | Mixins globales `modelTransitivity`/`contextTypeTransitivity` (prop, inject, route.meta) y `contextType` con `hasFormBus` | Cuando `model`/`contextType` llegan inyectados o debes decidir un condicional de bus |
+| [nested-wrappers.md](references/nested-wrappers.md) | Collapse/drawer por flag `nested` del back, GIW único, transitividad `parentName`, lazy real, `inputName` vs `logName` | Al trabajar campos embedded/docArray/ref-en-filter y sus wrappers |
+| [over-render.md](references/over-render.md) | Estrategia de sobre-render: flujo lineal, el value del render sale de `initVal(resolvedValue)`, no del estado interno | Al overridear `renderInput` o al ver renders en cascada |
+| [override-chain.md](references/override-chain.md) | No romper la cadena de herencia al override: sobrecargar `defaultX`, caveat de `Parent.methods.X.call` | Antes de pisar un método heredable (GI, GF, core, front o site) |
+| [render-methods.md](references/render-methods.md) | Métodos de render (`renderInput/View/Detail/Filter/Plain`), patrón default/noop, `rootTag`, `innerGroupTag`, formato en celda de grilla | Al personalizar cómo se pinta un componente por viewType |
+| [setup-lazy-async.md](references/setup-lazy-async.md) | `setup` vs Options API, paradigma lazy/async (sin dato-on-create), `formBus.getValue` reactivo vs muerto | Al escribir setup/created o leer valores de otros campos |
+| [slot-or-render.md](references/slot-or-render.md) | Mixin `slotOrRender`: firma, resolución de slots, slots del GI, uso desde template y JSX | Al exponer o consumir slots (`prepend`, `append`, `children`...) con fallback a render |
+| [tag-subcomponent.md](references/tag-subcomponent.md) | Nivel 6: subcomponente Vue como `this.tag` con `$vModel` y `vModelEmit` para widgets ultra-complejos | Al construir un widget custom (archivos, editor, mapa) sin reescribir el render del GI |
+| [timeframe-postmortem.md](references/timeframe-postmortem.md) | Postmortem de TimeFrame: errores de construir desde cero en vez de extender el GI | Antes de armar un composite nuevo, para no repetir esos errores |
+| [translation-front.md](references/translation-front.md) | Traducción en el front: puertas `rt`/`t`/`useTranslation`, dónde declarar y leer, coordenadas, opciones, placeholder, cómo probar | Al traducir textos, títulos u opciones de un componente o escribir un spec de traducción |
+| [validate-self.md](references/validate-self.md) | Integración con validateSelf: validators por type, auto-validación en cascada, `addCast`, carriles emisión/validación, inner form, `validate:false` | Al agregar validación a un componente o depurar cuándo valida y emite |
+| [value-pipeline.md](references/value-pipeline.md) | Flujo de valores sellado: carriles descenso/entrada/subida/lazy, `initVal`/`emitter`/cast, viewType, `renderGI`, cross-field | Al tocar valor, formato, emisión o display (y antes de cambiar cualquier gate) |
+| [viewtype-contract.md](references/viewtype-contract.md) | Tabla `data.viewTypes` y `support(cap, silent)`: la punta discierne, el consumer llama pelado | Cuando un componente condiciona por viewType o añades una capacidad por modo |
+| [vo-gi-contract.md](references/vo-gi-contract.md) | Contrato VO-GI: `data.VO`, pseudoDoc, hooks espejo, wrapper del VO, mutabilidad, `onChange`, pure-externality | Al enchufar un Value Object a un GI (ej. Currency) o decidir hooks de clase vs wrapper |
+
 Manual de trabajo para componentes ITDFW. Este SKILL.md es el **ÍNDICE navegable**: cada regla queda corta (qué es + cuándo aplica + link). El detalle vive en `references/` por tópico — lee SOLO el reference que necesitas para tu tarea.
 
 Render pipeline + slot/tag helpers (slotOrRender, resolveTags, resolveComp) aplican universal; value/validation aplica a inputs y composites.
@@ -235,43 +274,6 @@ No-input components que viven en `views/` y participan del shell de App. Mismo p
 |------------|-----|-----------|
 | `ContentWrapper` | Shell envolviendo router-view: title + description + help button contextual al modelo. Lee `$route.meta` (pure receiver). Meta se popula dinámico desde schemas via `setRoute()`. | [content-wrapper.md](references/content-wrapper.md) |
 | `ItdEmbedded` / `ItdFilter` | Sub-form anidado (lazy por punta) + el contexto Filter (drawer recursivo, wrapper GIWF). Un front nuevo puede necesitar su propio embedded y/o wrapper de filter. | [embedded-and-filter.md](references/embedded-and-filter.md) |
-
-## References (cuándo leer)
-
-- [core-rules-detail.md](references/core-rules-detail.md) — detalle de las reglas core: traducción (`t`/`rt`, `text` compuesto), clone guards, `watch` con `extends`, valor con type, HTML inyectado, buses, `applyLoaders`, derivar del contenedor crudo
-- [vo-gi-contract.md](references/vo-gi-contract.md) — 🔴 contrato VO↔GI: data.VO + pseudoDoc, dispatch espejo 1:1, voOptions, reactividad del doc (push vs getter-tubo), por qué mata la herencia por similitud
-- [viewtype-contract.md](references/viewtype-contract.md) — 🔴 contrato de capacidades por viewType: tabla data.viewTypes, support/supportOrThrow (weeo en el auxiliar, silent por punta), puntas disciernen/consumers pelados, fallback por componente, deps de loader en su mixin
-- [controllers.md](references/controllers.md) — 🔴 sistema de controllers: controller (propiedades de inputs) vs generalController (modifica el FORM: componentes/estructura); corren en created bindeados a this; ubicación = traza del origen; disabled de SCHEMA ≠ disabled de UI (disableFields); catálogo
-- [override-chain.md](references/override-chain.md) — 🔴 NO romper la cadena al override; sobrecargar defaultX, no el wrapper; caso emitter/between
-- [mixins-model-context.md](references/mixins-model-context.md) — mixins globales model/contextType, cascada 3 puntas, transparencia props↔provides↔meta, `contextType`+`hasFormBus` (doble trap)
-- [setup-lazy-async.md](references/setup-lazy-async.md) — setup vs options API (lifecycle), paradigma lazy/async (dato-on-create roto), 🪄 `formBus.getValue` reactivo/muerto, cross-field reactivo
-- [itd-prefix-resolve-tag.md](references/itd-prefix-resolve-tag.md) — prefijo Itd (name vs declaración back), resolveTags/resolveComp/resolveTag, render JSX `resolveTag` directo vs `components: ci`
-- [front-pure-receiver.md](references/front-pure-receiver.md) — front shape contract, excepción Vista
-- [validate-self.md](references/validate-self.md) — validators, inner form, Mustache, endpoints
-- [front-pattern.md](references/front-pattern.md) — front overrides, BV resets, **🔴 PRINCIPIO: formatter de entrada en FW con modo controlled/uncontrolled por prop ⟹ bindear por `value` (componente sin auto-gobierno)** — nuestra alimentación es imperativa (sin v-model), un componente auto-gobernado nunca muestra el formato; síntoma: "el formatter corre pero no se ve"
-- [render-methods.md](references/render-methods.md) — getInputProps, resolveTags, render pipeline
-- [layout-columns.md](references/layout-columns.md) — sistema de columnas container-driven: `colWidth`/`cols`/`fit`, `filterWidth`, contenedores cols:1+fit:false, n-ellipsis en celda
-- [examples.md](references/examples.md) — código completo Level 1-5
-- [checklist.md](references/checklist.md) — componente desde cero
-- [value-pipeline.md](references/value-pipeline.md) — value flow, initVal/emitter/cast, viewType (render/emisión/validator), renderGI composite, cross-field `formBus.getValue`
-- [data-props.md](references/data-props.md) — tag/event resolution, localImport cascade
-- [anti-patterns.md](references/anti-patterns.md) — WRONG/RIGHT mistakes
-- [deadlock-initval.md](references/deadlock-initval.md) — initVal lee child data → silent death
-- [over-render.md](references/over-render.md) — linear flow, value en render
-- [migration-workflow.md](references/migration-workflow.md) — .vue a JSX
-- [cascade-inheritance.md](references/cascade-inheritance.md) — core extending core, top-level await, localImport vs directo, **setup transitividad** (named export + re-export, no lib-cascade)
-- [slot-or-render.md](references/slot-or-render.md) — slotOrRender mixin, scoped slots
-- [gf-direct-extension.md](references/gf-direct-extension.md) — Level 5: extend GF, innerForm, puntas
-- [tag-subcomponent.md](references/tag-subcomponent.md) — Level 6: subcomponente Vue como `this.tag` para widgets ultra-complejos (file/editor/mapa); `$vModel:true`+`vModelEmit`, UI encapsulada sin tocar el render del GI, override-able por framework (caso ItdFile core/NUI)
-- [embedded-and-filter.md](references/embedded-and-filter.md) — ItdEmbedded (sub-form lazy dual), contexto Filter, ItdFilter + GIWF drawer recursivo, layout label↔input — ⚠️ el "GIWF drawer recursivo" quedó OBSOLETO (ver nested-wrappers.md)
-- [nested-wrappers.md](references/nested-wrappers.md) — 🔴 collapse/drawer por flag `nested` del back (front pure receiver); GIW único (absorbió GIWFilter, eliminado); transitividad `parentName` + `drawerWidth`/`reduceDrawerWidth`; `field()` en setup; lazy real (collapse no monta→no pide→no viaja); `inputName` real vs `logName` parchado; viewType transitivo (mató el flag `filter`)
-- [back-end.md](references/back-end.md) — z99base.js type defaults, forceAttrs
-- [local-pascal-pattern.md](references/local-pascal-pattern.md) — `localX` computed sin cascadas
-- [loaders.md](references/loaders.md) — crear loaders (`addLoader`, factory pattern)
-- [timeframe-postmortem.md](references/timeframe-postmortem.md) — build from scratch vs extending GI
-- [content-wrapper.md](references/content-wrapper.md) — shell estructural, contrato `$route.meta`, pipeline dinámico schema→ruta, help system, NUI quirks
-- [http-error-traps.md](references/http-error-traps.md) — mapa de traps de status del `$http` (401/400/403/423/404/429/500/fallBack), opt-out `config.noError` (400 esperado, ej. getSimpleName), por qué el body del GSN es string (findKey + Set dedup), override `appComponent.requestFallback`, feature pendiente de override total de options
-- [translation-front.md](references/translation-front.md) — puertas `rt`/`t`/`useTranslation` (globales del pack, sin import: sus llamadores solo por grep), declarar en `created` y leer en render, norma de coordenadas y `childrenModel`, placeholder nace en el back y lo consume solo `GenericInput`, form suelto con `ItdForm`, cómo apuntar al lápiz y a los inputs desde un spec
 
 ---
 

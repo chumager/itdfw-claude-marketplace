@@ -5,6 +5,15 @@ description: Use when working with an ITDFW SITE/APP layer — wiring a new site
 
 # ITDFW Front & App Development
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [cascade-system.md](references/cascade-system.md) | Cascada de import: búsqueda vertical (basePaths) y horizontal (6 variantes), `localImport`/`customImport*`, `skipDefault`, CSS | Entender la búsqueda vertical + horizontal, skipDefault, o por qué algo carga del nivel equivocado |
+| [init-pattern.md](references/init-pattern.md) | Patrón de `init.js`: estructura, contexto `this`, orden de ejecución, ejemplo del loader BVP, override de core | Escribes init.js, manipulas el pack o el loader BVP |
+| [injection-system.md](references/injection-system.md) | Inyección de mixins por cascada (`injections/`), cuándo corre, ruta espejo de la base, casos de uso y gotcha | Auto-carga de mixins o directorio injections |
+| [vite-setup.md](references/vite-setup.md) | Config de Vite: front extiende core, aliases, flujo del index.html, `skipDefault`, detección de plugin, salida | Configuras Vite, aliases, transformIndexHtml o detección de plugin |
+
 ## Overview
 
 ITDFW uses a vertical cascade where each layer can override the one below. Files at higher levels shadow lower levels. The framework resolves everything via `localImport` which searches through the cascade automatically.
@@ -133,15 +142,6 @@ transpilado en producción, que **sirve** el transpilado sin regenerarlo. Por es
 | `import X from "bootstrap-vue"` for one export | Wrapper in `lib/` with named imports | Loads entire library |
 | Modify pack after applyPack | Modify in init.js | the pack is only handed to init.js |
 | Assume core init ran before app init | Core runs LAST in init cascade | `@ → default → ... → core` |
-
-## References
-
-| Reference | Read when |
-|-----------|-----------|
-| [cascade-system.md](references/cascade-system.md) | Understanding vertical + horizontal search, skipDefault |
-| [init-pattern.md](references/init-pattern.md) | Writing init.js, pack manipulation, BVP loader |
-| [injection-system.md](references/injection-system.md) | Auto-mixin loading, injections directory |
-| [vite-setup.md](references/vite-setup.md) | Vite config, aliases, transformIndexHtml, plugin detection |
 
 ---
 

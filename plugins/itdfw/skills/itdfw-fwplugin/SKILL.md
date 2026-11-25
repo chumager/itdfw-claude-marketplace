@@ -5,6 +5,24 @@ description: Use when creating or understanding an ITDFW FWPlugin — the back-t
 
 # ITDFW FWPlugins
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [composite-base-twice.md](references/composite-base-twice.md) | Plugin compuesto cuya base entra dos veces: tabla de qué deduplica back/front, `setConfigDefinition` con `canOverride`, guard `enabled` | Dos plugins hijos comparten una base y el arranque cae o duplica registros |
+| [existing-plugins.md](references/existing-plugins.md) | Tabla de FWPlugins del core (Currency, Config, PDF, Finance...) con formato, keys y propósito | Buscas un FWPlugin de ejemplo o qué keys usa uno existente |
+| [folder-structure.md](references/folder-structure.md) | Template `assets/fwplugin-template/`, su `package.json` con whitelist `files`, FWP inline del core (Currency, PDF) | Arrancas un plugin nuevo o armas su `package.json` y carpetas |
+| [front-init.md](references/front-init.md) | Pisar componentes del front por nombre (cascada first-return, warn de rutas) e `init.js` que reescribe el arranque, verificación e2e | Tu plugin sobreescribe un componente o toca el arranque del front |
+| [front-mechanism.md](references/front-mechanism.md) | Frameworks soportados (`vue2`, `vue3`, `react`, `svelte`, `solid`, `lit`) y el mecanismo del plugin de Vite con `import.meta.url` y `.itdfw.js` | Declaras el front de un plugin o agregas soporte de un framework |
+| [front-mirror.md](references/front-mirror.md) | Asimetría back/front del espejo de carpetas: back declara keys, front se descubre por ubicación | Dudas dónde poner un archivo del front y por qué no se encuentra |
+| [front-nav-http.md](references/front-nav-http.md) | Ítems de barras y menú (`app/setNavItem`, `app/setMenu`, `sink`, `position`) y llamar puntas con `this.$http` | Tu plugin agrega ítems de navegación o llama una punta propia desde el front |
+| [infra-vs-product.md](references/infra-vs-product.md) | Plugin de infraestructura vs de producto, y la regla de que la funcionalidad nace en el core | Decides dónde vive la lógica y cómo se declara el front de un plugin nuevo |
+| [keys-detail.md](references/keys-detail.md) | Filas completas de las keys `auth`, `wellKnown` y `captcha`: forma, orden, `pos`, validación, errores | Implementas autenticadores, aportes a `/.well-known` o proveedores de captcha |
+| [libs-timing.md](references/libs-timing.md) | Key `libs` (`Object.assign(pool.libs)`) y orden de carga db → types → plugins → schemas | Dudas cuándo está disponible una lib o en qué fase se aplica cada key |
+| [no-db-argument.md](references/no-db-argument.md) | El FWPlugin no recibe `db` por argumento: `#expandPlugins`, `plugin.call(this)`, por qué queda mudo y el caso | Tu plugin función no hace nada o `db` llega `undefined` |
+| [scope-let-exp.md](references/scope-let-exp.md) | `let exp = {}` y no `let exp;` en plugins solo-back; imports dinámicos dentro de la rama | Escribes un plugin solo-back o solo-front, o cae el front por `Object.entries(undefined)` |
+| [where-it-plugs.md](references/where-it-plugs.md) | Front de Currency inline y por qué el front se declara en el `.itdfw.js` y no en la config del back | Tu plugin vive dentro del back y su front no se descubre |
+
 ## Qué ES un FWPlugin (y por qué existe)
 
 Un FWPlugin es una **capa que cruza TODO el stack back→front**. No es "un plugin de backend": es un

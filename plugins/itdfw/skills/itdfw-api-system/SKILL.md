@@ -5,6 +5,20 @@ description: Use when adding a backend endpoint to ITDFW, choosing between APP/,
 
 # ITDFW API System
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [aaa-access.md](references/aaa-access.md) | `hasAccess` paso a paso (`x-itd-access`, JWT, sesión, anónimo), contrato de `getRef`, 401/403 como flujo, los 3 estados de acceso, qué es "anónima" de verdad | Dudas de quién puede llamar una punta, level, `getRef`/`getFile`/`getLogo`, `isAnonymous`, o 401/403 inesperados |
+| [cache-policy.md](references/cache-policy.md) | Atributo `cache` de la punta o del modelo (`maxAge`, `swr`, `public`, función por `req`), middleware `aaa.cache`, tabla y sello de anónimas | Declaras o depuras `Cache-Control` de una punta o modelo |
+| [call-levels.md](references/call-levels.md) | Los 3 niveles de llamada (función, por verbo, por verbo+ext), costo de seguridad del nivel 1, extensión obligatoria, coherencia declaración=existencia | Eliges el nivel de una punta nueva o ves permisos que no discriminan por verbo |
+| [error-flow.md](references/error-flow.md) | `HTTPError` como único error del flujo, firma y extras, recorrido hasta el cliente, tabla de quién emite, formato de `ValidationError` | Lanzas o interpretas errores de una punta (404/401/403/400, errores no controlados) |
+| [front-routes.md](references/front-routes.md) | Diferencia ruta del front vs punta, fallback SPA con `index.html` 200 y warn "404", rutas del front declaradas en el back | Un curl/cliente headless recibe HTML en vez de JSON, o declaras rutas del front desde el back |
+| [history-and-findings.md](references/history-and-findings.md) | Deuda del prefijo `AAA/` vestigial y hallazgos abiertos de code review | Nombras el filename de un endpoint nivel 1 nuevo o revisas deuda conocida |
+| [levels-detail.md](references/levels-detail.md) | Nivel 4: `options.API` en `mongooseTypes/<Type>.js`, ejemplo canónico `Password.checkStrength` | Declaras una punta atada a un type (validar, decodificar, formatear) |
+| [model-administration.md](references/model-administration.md) | Contrato back↔front de administración: View (`tableFields`, `formFilter`, `tableData`), Form `{type, model, method}`, `ItdRowDetail`, `setRoute`, `req.changeMethod`, filtro `send`/`hidden`, 3 modos, `myProfile`, `toRef`, checklist | Haces administrable un modelo: filtros `filter[campo]=valor`, POST vs PUT, "guardé y no pasó nada", espejos GET, modelo sin Mongoose, o el checklist de un modelo nuevo |
+| [model-auth-register.md](references/model-auth-register.md) | Modelo autenticable y registrable como clon de User (`authForm`, `checkLogin`, `recovery`), sesión tras alta, frontera back↔front | Creas un modelo que se loguea o se registra públicamente |
+
 🔴 **Quién puede usar qué lo decide el AAA**: funciones asignadas a perfiles; un modelo autenticable clonado de User
 nace con su perfil base, que se llama como el modelo (`itdfw-models` → `references/authenticatable.md`); para
 administrar usuarios, el level (solo a los de level más alto que el propio, `references/aaa-access.md`). Una punta
@@ -340,6 +354,8 @@ El prefijo `AAA/` de muchos paths es **vestigial**: en un endpoint nuevo de nive
 - The `mongooseDB` layer — `checkAndLoadEndpoint` helper.
 - REQUIRED skill `itdfw-fwplugin` for plugin-injected endpoints (FWPlugin `API` key).
 - Related: skill `itdfw-mongoose-types` for types referenced by endpoint payloads.
+
+---
 
 ## Administración de Modelos → [`references/model-administration.md`](references/model-administration.md)
 

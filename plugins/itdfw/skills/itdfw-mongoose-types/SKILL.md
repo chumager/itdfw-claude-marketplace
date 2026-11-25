@@ -5,6 +5,14 @@ description: Use when working with ITDFW Mongoose custom types (z99base.js, Time
 
 # ITDFW Mongoose Types System
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [toinput-pipeline.md](references/toinput-pipeline.md) | Pipeline `toInput` (Base→Native→field), atributos contextuales polimórficos, `hidden`/`send`, `forceAttrs`, restrictivo vs laxo | Entiendes el flujo toInputBase/Native/toInput, forceAttrs, orden de merge o por qué un type se sobrecarga |
+| [type-definition.md](references/type-definition.md) | Definición de custom type: `.set()` vs `options`, estructura de archivos, firma del cast, formas de declarar, exports de z99base, validators | Creas types, exports de z99base, API set(), validators |
+| [value-objects-ddd.md](references/value-objects-ddd.md) | Rama experta Value Objects (DDD) del type: headless-first, mínimo del motor, cadena del cast, niveles N1–N3 + templates, pub/sub root, atomicidad API | El valor del type tiene lógica/formato/estructura → Value Object: constructor→parse, niveles N1–N3, cast genérico |
+
 ## Overview
 
 ITDFW extends Mongoose types with custom types and a configuration layer via `Schema.Types.X.set()`. Each type defines casting, component, filtering, export, and validation defaults.
@@ -179,14 +187,6 @@ Esto NO es un skill aparte: un VO **no existe sin un type** (es la forma del val
 Detalle completo (constructor→parse, niveles N1–N3 con templates probados, pub/sub para valores que
 dependen del root, intrínseco-vs-runtime, atomicidad del API, anti-patrones, checklist):
 **[value-objects-ddd.md](references/value-objects-ddd.md)**.
-
-## References
-
-| Reference | Read when |
-|-----------|-----------|
-| [type-definition.md](references/type-definition.md) | Creating types, z99base exports, set() API, validators |
-| [toinput-pipeline.md](references/toinput-pipeline.md) | toInputBase/Native/toInput flow, forceAttrs, merge order |
-| [value-objects-ddd.md](references/value-objects-ddd.md) | 🔴 El valor del type tiene lógica/formato/estructura → Value Object (DDD): constructor→parse, niveles N1–N3 + templates, cast genérico, pub/sub root, atomicidad API, headless-first |
 
 ## 🔴 Antes de dar por terminado → `itdfw-completeness`
 

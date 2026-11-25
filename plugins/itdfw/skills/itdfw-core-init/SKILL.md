@@ -5,6 +5,14 @@ description: Use when working with the ITDFW bootstrap system, pack proxy, init.
 
 # ITDFW Core Init & Pack System
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [assign-flags.md](references/assign-flags.md) | Tipos de ítem de bloque, flags de registro (`global`, etc.), flujo de ejecución y `addLoader` | Necesitas todas las flags de registro o el flujo de ejecución |
+| [pack-proxy.md](references/pack-proxy.md) | Estructura del pack en bloques y sus cuatro operaciones por nombre; un nombre se declara una sola vez | Navegar o manipular el pack, o dudas de estructura |
+| [writing-loaders.md](references/writing-loaders.md) | Cómo escribir loaders (`addLoader`): firma, inyección, `pos`/`hoist`, 5 ejemplos built-in (`$lodash`, `$emitter`, `$BVP`, `$validateSelf`, `$vModel`) y reglas | Escribes un loader: patrones, inyección, hoist, pos |
+
 ## Overview
 
 The bootstrap loads the Vue app through a **Pack** — a Proxy array of blocks. Sequential between blocks, parallel within. Each layer (core → plugins → front → site) pushes blocks via `init.js`.
@@ -76,14 +84,6 @@ Full patterns + examples: [writing-loaders.md](references/writing-loaders.md)
 | Modify pack after applyPack | Modify in init.js | the pack is only handed to init.js |
 | `import` with loaders needed | `localImport` | Direct import bypasses $BVP etc |
 | Assume vars.X in same block | Use `post` or later block | Parallel — no order within block |
-
-## References
-
-| Reference | Read when |
-|-----------|-----------|
-| [pack-proxy.md](references/pack-proxy.md) | Navigation, manipulation, structure details |
-| [assign-flags.md](references/assign-flags.md) | All registration flags, execution flow |
-| [writing-loaders.md](references/writing-loaders.md) | Writing loaders: patterns, injection, hoist, pos, all 5 built-in examples |
 
 ---
 

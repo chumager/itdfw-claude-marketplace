@@ -5,6 +5,19 @@ description: Use when creating, applying, or understanding mongoose plugins in t
 
 # ITDFW Plugin System
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [binding-detail.md](references/binding-detail.md) | Binding de la factory (`.call(schema, db)`) vs la inner `plugin(schema, options)`, caso `db is not defined`, filas de errores comunes | Te da `db is not defined` o dudas qué es `this` en factory, plugin y methods |
+| [boot-crash.md](references/boot-crash.md) | Sub-schema literal desde un plugin: contamina User y clones, error `eachVirtualPath is not a function` | Todas las puntas dan 500 tras agregar un campo desde un plugin NAMED |
+| [code-refs.md](references/code-refs.md) | Referencias del motor de plugins: `#addPluginFromObject`, `setPlugin`, `#filteredPlugins`, `#globalPlugins`, ejemplos por modo | Quieres ver el código del motor o un ejemplo de cada modo |
+| [core-capabilities.md](references/core-capabilities.md) | Capacidades del core que ya existen (`_update`, `hidden`, `toInput`, `toXLS`, `__history`, `_zone`, `weakEntity`...) y su catálogo de uso | Antes de escribir lógica nueva en un plugin, para no reinventar algo del core |
+| [pnpm-mechanics.md](references/pnpm-mechanics.md) | Versión de mongoose = MAJOR del FW, segunda copia por rango pineado, `pnpm why` y mecánica para subir una dependencia | Subes mongoose u otra dependencia o ves parches del FW que no aplican |
+| [read-cuts.md](references/read-cuts.md) | Recortes de lectura: `schema.preSearch`, su par en `pre("aggregate")`, `preAggregate` y `FIRST_STAGES`, y por qué no `post("find")` | Un plugin filtra lecturas (soft-delete, tenant, vencidos) o toca `aggregate` |
+| [recast.md](references/recast.md) | Re-cast de un path existente con plugin global: ejemplo `nationalId` → `Rut` con `eachPath` | Promueves el type de un campo sin tocar el modelo |
+| [wrap-foreign-endpoint.md](references/wrap-foreign-endpoint.md) | Envolver la punta de un modelo ajeno con un plugin NAMED sobre `options.API` (`GET.json`) | Una pieza ajena pide una punta fija y en tu capa debe salir distinta |
+
 ## Qué ES (y qué NO)
 
 El **sistema de plugins** es el MOTOR DE EXTENSIÓN del FW: un mongoose-plugin extiende un schema

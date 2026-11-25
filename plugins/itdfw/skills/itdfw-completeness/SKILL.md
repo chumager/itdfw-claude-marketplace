@@ -5,6 +5,14 @@ description: Use BEFORE declaring any ITDFW task done — the "definition of don
 
 # ITDFW Completeness — la puerta de salida
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [logging.md](references/logging.md) | Logging con niveles: front `$log`/`$logDebug` (this.log Proxy condicional) y back `Log.XXX` + `logLevel` en YAML | Instrumentar logs al desarrollar o cerrar: apagar por config en vez de borrar |
+| [memleak-testing.md](references/memleak-testing.md) | Test de memleak con `WeakRef` + gc + canario, esqueleto canónico y el error clásico | Tocaste algo con retención (EE/hooks/globals/cache/closures) → patrón WeakRef+gc+canario |
+| [test-discipline.md](references/test-discipline.md) | Disciplina de tests: green+red, gateo `onDev` (no se borran), prueba de back real de un type, e2e, validación externa | Cómo declarar tests green/red, gateados onDev (no borrar), e2e |
+
 El "definition of done" transversal del FW. **No es un gate de entrada** (que se saltea), es el **cierre**:
 llegás acá cuando *creés* que terminaste, y el checklist te muestra lo que NO probaste. Todos los skills
 `itdfw-*` apuntan acá al final.
@@ -90,11 +98,3 @@ La disciplina de cierre vivía dispersa (logs condicionales, probar-antes-de-doc
 testing, TDD onDev) — folklore repetido en memorias sueltas. Acá se vuelve **canónica y citable**: un solo
 lugar al que todo skill apunta. Crece orgánico: a medida que hagamos cosas nuevas dependientes de los
 skills, lo que falte se agrega acá.
-
-## References
-
-| Reference | Read when |
-|-----------|-----------|
-| [memleak-testing.md](references/memleak-testing.md) | Tocaste algo con retención (EE/hooks/globals/cache) → patrón WeakRef+gc+canario |
-| [test-discipline.md](references/test-discipline.md) | Cómo declarar tests green/red, gateados onDev (no borrar), e2e |
-| [logging.md](references/logging.md) | Instrumentar logs con niveles: front `$log`/`$logDebug`, back `Log.XXX` + `logLevel` |

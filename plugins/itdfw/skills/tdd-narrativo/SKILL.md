@@ -5,6 +5,20 @@ description: Use when WRITING, READING or IMPLEMENTING a TDD.md — any agent th
 
 # TDD narrativo — el TDD.md es el contrato, no el reporte
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [cases-and-quotes.md](references/cases-and-quotes.md) | Casos y citas que originaron las reglas: modos §0b, translate §0d, e2e que no pasa §0c, modelo invisible §2b, concurrencia §4, disciplina del código §5, rebanada 1 | necesitas el porqué histórico de una regla del contrato antes de defenderla o aplicarla |
+| [conditional-sections.md](references/conditional-sections.md) | Secciones condicionales §2d (dominio = norma externa: leer la norma vigente), §2e (qué NO construir: adoptar→adaptar→implementar), §2f (módulo que ya opera: auditar corriendo), §2g (superficie de ataque) | el módulo implementa un protocolo/norma externa, ya opera en producción, o hay que decidir qué no construir y contra quién se defiende |
+| [design-ast.md](references/design-ast.md) | AST de diseño de componentes `Itd*` y puntas (tabla y árbol antes de codear), no solo de modelos | el TDD declara un componente o una punta y falta su forma |
+| [pipe.md](references/pipe.md) | El pipe §0: interrogatorio de propiedades al dueño, dummy primero, banco vivo, un eslabón a la vez, reescribir la narrativa al cambiar una propiedad | vas a convertir cada fila del TDD en verdad verificada y no en apariencia |
+| [red-flags.md](references/red-flags.md) | Tabla de red flags: señales de TDD tautológico, vocabulario contaminado, verde a la primera, wrappers sobre piezas propias | te ves escribiendo tests después del código o parchando una pieza propia |
+| [scenarios-that-dont-exist.md](references/scenarios-that-dont-exist.md) | Escenarios que no existen: las dos preguntas (quién lo pediría, qué gana el usuario) para descartar casos de algo que no debe pasar | vas a escribir un caso y dudas de si el escenario debe existir |
+| [template.md](references/template.md) | Plantilla del `TDD.md`: encabezado (modo, destino), rebanada 1, scope, requisitos, modelo (entidades, puntas, componentes), diferencial, UI/UX, ejecutores | vas a crear un `TDD.md` nuevo |
+| [tests-detail.md](references/tests-detail.md) | Pruebas: la vertical completa de componentes/tipos hasta descarga XLS y PDF, el ritual manual no es prueba, las pruebas son un grafo | el TDD es de un componente o tipo propio, o decides cómo se ejecutan y encadenan las pruebas |
+| [why.md](references/why.md) | Por qué el TDD narrativo: un TDD escrito después del código prueba lo que el dev entendió, es tautológico; el `TDD.md` es el SSoT que el dueño lee | necesitas justificar o recordar el problema que el método resuelve |
+
 ## El problema que esto resuelve
 
 **Un TDD escrito DESPUÉS de codificar no prueba el requerimiento: prueba lo que el dev entendió.** Si entendió mal, el

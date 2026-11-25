@@ -5,6 +5,13 @@ description: Use when configuring an ITDFW deploy or a site within it — adding
 
 # ITDFW Deploy Config — configurar un deploy y sus sites
 
+## Referencias
+
+| Referencia | Qué trae | Léela cuando |
+|---|---|---|
+| [fast-response.md](references/fast-response.md) | `fastResponse` (respuestas HTTP antes de la app, sobre el `req` crudo): Open Graph en una SPA, `req.db` disponible, getters del `req` para URLs absolutas | necesitas previews al compartir links (og:meta), respuestas de bajo nivel sin rutas, o armar URLs absolutas |
+| [keys-catalog.md](references/keys-catalog.md) | Inventario de llaves que el FW lee del `.itdfw.js`, por área (servidor, BD, sesión, correo, licencia, operación), `Procs`, `bodyParser` y llaves obligatorias | buscas si existe una llave de config, qué hace, o cuáles son obligatorias |
+
 Un **deploy** de ITDFW es un proceso que sirve uno o más **sites**. Todo lo que ese proceso necesita
 para arrancar sale de un archivo de configuración; lo que cada site necesita para diferenciarse sale de
 su propia carpeta. Este skill cubre eso.
