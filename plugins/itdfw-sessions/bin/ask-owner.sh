@@ -38,12 +38,19 @@ CLIENT=$("$HERE/owner-present.sh") || { echo "no está"; exit 2; }
 OUT=$(mktemp)
 printf '%s\n' "$@" "$FREE" > "$OUT.opts"
 printf '%s' "$TITLE" > "$OUT.title"
+# a title taller than the popup does not fit in fzf's header, which never scrolls: it goes whole into a preview pane
+# that scrolls (Shift-↑/↓ or the mouse), and the header keeps only its first line
+cp "$OUT.title" "$OUT.header"; PREVIEW=""
+if [ "$(printf '%s\n' "$TITLE" | wc -l)" -gt 12 ]; then
+  printf '%s  ·  the full text scrolls above with Shift-↑/↓' "$(head -1 "$OUT.title")" > "$OUT.header"
+  PREVIEW="--preview='cat \"$OUT.title\"' --preview-window=up,75%,wrap"
+fi
 cat > "$OUT.sh" <<EOF
 #!/usr/bin/env bash
 trap '' INT QUIT TERM TSTP
 while :; do
   CHOICE=\$("$FZF" --multi 1 --prompt="mark with Tab or space and confirm with Enter > " --height=100% \\
-    --no-info --pointer="▶" --marker="✔ " --header="\$(cat "$OUT.title")" \\
+    --no-info --pointer="▶" --marker="✔ " --header="\$(cat "$OUT.header")" $PREVIEW \\
     --bind 'tab:clear-selection+select,space:clear-selection+select' \\
     --bind 'esc:ignore,ctrl-c:ignore,ctrl-q:ignore,ctrl-d:ignore,ctrl-g:ignore' \\
     --bind 'enter:transform:[ "\$FZF_SELECT_COUNT" -gt 0 ] && echo accept || echo ignore' \\
@@ -68,6 +75,6 @@ tmux display-popup -c "$CLIENT" -E -w 80% -h 60% -T " ❓ $(date +%H:%M) " "$OUT
 pkill -P "$TIMER" 2>/dev/null; kill "$TIMER" 2>/dev/null
 
 CHOICE=$(grep -v "^$" "$OUT" 2>/dev/null | tail -1)
-rm -f "$OUT" "$OUT.opts" "$OUT.title" "$OUT.sh"
+rm -f "$OUT" "$OUT.opts" "$OUT.title" "$OUT.header" "$OUT.sh"
 [ -n "$CHOICE" ] || { echo "sin respuesta"; exit 3; }
 echo "$CHOICE"
