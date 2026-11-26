@@ -5,7 +5,7 @@ When something is tested (the slice, the fix, the green test), it is committed a
 - If it touched a publishable, first: `~/bin/itdfw-deps.sh files <package-dir>` has to come out clean (the veto lives in the script).
 - If the fix closes a finding, it is closed in the same commit (`fix-cierra-su-hallazgo`).
 - Message in English, `type(scope): what`: detailed if behavior changed; short if mechanical.
-- 🔴 **The `Claude-Session:` trailer carries the session's NAME** (`Claude-Session: CTO`, `Claude-Session: Degustacion`),
+- 🔴 **The `Claude-Session:` trailer carries the session's NAME** (the `commit-msg` hook `commit-msg-session-name.sh` rewrites the URL on its own in the monorepo and the marketplace) (`Claude-Session: CTO`, `Claude-Session: Degustacion`),
   never the claude.ai URL the harness suggests: the name says who committed without opening anything. The
   `Co-Authored-By` line stays as the harness gives it.
 

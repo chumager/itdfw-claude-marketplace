@@ -116,7 +116,7 @@ State: the gates keep marker files in `$HOME/.claude/state/` (`skills-loaded-<se
 `search-plr-<session>`), keyed by the session id and, for a subagent, its agent id. Nothing in this plugin deletes them
 except `skill-reset.sh` (empties one) and `graph-gate.sh:71` (removes the "already warned" mark).
 
-## The two git helpers
+## The three git helpers
 
 - **`ast-same.sh pre|check <files>`** (`ast-same.sh:3-4`). `pre` checks that every file is committed, so that `HEAD` is the
   real "before". `check` compares `HEAD` with the working copy by re-printing both with **esbuild**
@@ -131,6 +131,10 @@ except `skill-reset.sh` (empties one) and `graph-gate.sh:71` (removes the "alrea
   directory and refuses to overwrite an existing one (`prune-post-commit.sh:8-15`).
   **The installed copy cannot find `comment-police.mjs`**: it looks next to itself (`prune-post-commit.sh:16`). It works
   if `ITDFW_HOOKS_BIN` points to the plugin's `bin/`, or if the hook is a symlink to the script instead of a copy.
+- **`commit-msg-session-name.sh`** is a `commit-msg` git hook. It turns a `Claude-Session: <claude.ai URL>` trailer into
+  `Claude-Session: <session name>`, the `name` of the record in `<claude-home>/sessions/` whose `sessionId` is the
+  committing process's `$CLAUDE_CODE_SESSION_ID`. Outside a Claude session, or with no named record, the message is left
+  as it is. Install it with `ln -s <plugin>/bin/commit-msg-session-name.sh <repo>/.git/hooks/commit-msg`.
 
 ## How to verify
 
