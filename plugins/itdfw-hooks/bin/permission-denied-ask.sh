@@ -5,7 +5,7 @@
 #   "I approve it: type it in"  the approval is typed into the session's own chat, as the person's words, through
 #                               cajarito-teclear.sh (only while the session is at rest, waiting up to 30 min): a fixed
 #                               text that carries the denied command verbatim, the same
-#                               text the popup showed (one that cannot be shown whole is not offered). A message over the socket would not do:
+#                               text the popup showed. A message over the socket would not do:
 #                               a session must never take a peer's message as the person's approval. If it cannot be
 #                               typed (no tmux, no such session), the session gets the /permissions route instead
 #   "I approve it in /permissions", "Do not do it", or free text: a message over the socket (claude-session-msg.sh)
@@ -16,14 +16,13 @@
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_sessions.sh"
 session="$1"; who="$2"; reason="$3"; what="$4"; full="${5:-$4}"
 # What the popup shows is exactly what gets typed: one value, wrapped at 70 columns for the eye only (fold adds line
-# breaks to the view, never to the typed text), so every character fits in the popup (80 % of the terminal). It is
-# offered for typing only when every character can be seen: at most 500 characters (8 lines), and no invisible or
-# direction-changing Unicode (format, private-use, unassigned or control characters). Otherwise only the /permissions
-# route, so the person never approves text they did not see.
+# breaks to the view, never to the typed text); a long one scrolls in the popup. There is no length cap: everything is
+# committed, so a rollback is always at hand. Typing is withheld only for invisible or direction-changing Unicode
+# (format, private-use, unassigned or control characters), which would make the person approve text they cannot see.
 opts=(); shown="$what"
 # fail closed: only an explicit "clean" from the check offers typing; no perl or any error is "not offered"
 veredicto=$(printf '%s' "$full" | perl -CS -e 'local $/; my $s = <STDIN> // ""; print(($s =~ /[\p{Cf}\p{Co}\p{Cn}\p{Cc}]/) ? "dirty" : "clean")' 2>/dev/null)
-if [ ${#full} -le 500 ] && [ "$veredicto" = clean ]; then
+if [ "$veredicto" = clean ]; then
   shown=$(printf '%s' "$full" | fold -w 70); opts=("I approve it: type it in")
 fi
 ANS=$("$(sessions_script ask-owner.sh)" "⛔ $who: denied $reason

@@ -18,7 +18,7 @@ sid=$(printf '%s' "$input" | jq -r '.session_id // empty')
 session=$(jq -r --arg s "$sid" 'select(.sessionId == $s) | .name // empty' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/sessions/*.json 2>/dev/null | head -1)
 who=$(printf '%s' "$input" | jq -r '(.agent_type // "session") + " of " + $s' --arg s "${session:-unnamed}")
 what=$(printf '%s' "$input" | jq -r '.tool_input.command // (.tool_input | tostring)' | head -c 160)
-full=$(printf '%s' "$input" | jq -r '.tool_input.command // (.tool_input | tostring)' | LC_ALL=C tr '\000-\037\177' ' ' | sed 's/ *$//' | head -c 2000)
+full=$(printf '%s' "$input" | jq -r '.tool_input.command // (.tool_input | tostring)' | LC_ALL=C tr '\000-\037\177' ' ' | sed 's/ *$//')
 reason=$(printf '%s' "$input" | jq -r '.reason // "no reason given"')
 setsid nohup "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/permission-denied-ask.sh" "$session" "$who" "$reason" "$what" "$full" >/dev/null 2>&1 < /dev/null &
 exit 0

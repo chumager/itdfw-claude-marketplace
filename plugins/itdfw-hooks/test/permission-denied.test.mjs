@@ -49,17 +49,14 @@ describe("permission-denied.sh", () => {
     assert.equal(titleLine(), "⛔ session of unnamed: denied destructive command")
   })
 
-  it("the popup shows the whole command up to 500 characters (what would be typed); a longer one is cut at 160; without a command the whole tool_input is shown", async () => {
+  it("the popup shows the whole command, however long (what would be typed); without a command the whole tool_input is shown", async () => {
     await env.run(HOOK, [], {stdin: payload({tool_input: {file_path: "/x/" + "a".repeat(300)}})})
     assert.ok(await env.waitFor(() => existsSync(`${env.log}.title`) && env.calls().includes("ask-end")))
     const lines = readFileSync(`${env.log}.title`, "utf8").split("\n").slice(1, -1)
     assert.ok(lines.every(l => l.length <= 70), "wrapped at 70 columns so every character is on screen")
     assert.equal(lines.join(""), JSON.stringify({file_path: "/x/" + "a".repeat(300)}))
-    let shown
-    await env.run(HOOK, [], {stdin: payload({tool_input: {file_path: "/x/" + "a".repeat(600)}})})
-    assert.ok(await env.waitFor(() => readFileSync(`${env.log}.title`, "utf8").split("\n")[1].length === 160))
-    shown = readFileSync(`${env.log}.title`, "utf8").split("\n")[1]
-    assert.match(shown, /^\{"file_path":"\/x\/a+/)
+    await env.run(HOOK, [], {stdin: payload({tool_input: {file_path: "/x/" + "a".repeat(3000)}})})
+    assert.ok(await env.waitFor(() => readFileSync(`${env.log}.title`, "utf8").split("\n").slice(1, -1).join("") === JSON.stringify({file_path: "/x/" + "a".repeat(3000)})))
   })
 
   it("a payload with no reason says so", async () => {
@@ -99,13 +96,12 @@ describe("permission-denied-ask.sh", () => {
     assert.equal(env.calls().some(c => c.startsWith("msg ")), false)
   })
 
-  it("the popup shows the full command it would type; one over 500 characters is not offered for typing", async () => {
+  it("the popup shows the full command it would type; a long one is offered for typing too", async () => {
     await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "rm -rf bu…", "rm -rf build dist"], {extraEnv: {FAKE_ANSWER: "Do not do it"}})
     assert.match(readFileSync(`${env.log}.title`, "utf8"), /\nrm -rf build dist\n/)
     assert.match(readFileSync(`${env.log}.opts`, "utf8"), /^I approve it: type it in\|/)
     await env.run(ASK, ["alpha", "Bash of alpha", "destructive command", "x…", "x".repeat(501)], {extraEnv: {FAKE_ANSWER: "Do not do it"}})
-    assert.match(readFileSync(`${env.log}.title`, "utf8"), /\nx…\n/)
-    assert.equal(readFileSync(`${env.log}.opts`, "utf8"), "I approve it in /permissions|Do not do it")
+    assert.match(readFileSync(`${env.log}.opts`, "utf8"), /^I approve it: type it in\|/)
   })
 
   it("a command with invisible or direction-changing Unicode is shown but not offered for typing", async () => {
