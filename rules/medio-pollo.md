@@ -5,7 +5,7 @@ session in Code Mode, Sonnet high, where tools are chained in code and only the 
 Mode turns off Remote Control and Chrome and only runs in the foreground, which is why it never goes on the PMO itself.
 
 ```
-~/bin/medio-pollo.sh up <PMO>      # ensures it is running; idempotent, never two
+~/bin/medio-pollo.sh up <PMO>      # ensures it is running; idempotent, never two; a fallen one is RESUMED (--fresh: new)
 ~/bin/medio-pollo.sh clear <PMO>   # /clear when it is at rest, after each closed task
 ~/bin/medio-pollo.sh down <PMO>    # closes it
 ~/bin/medio-pollo.sh list
