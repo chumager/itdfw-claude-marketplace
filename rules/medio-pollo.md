@@ -8,7 +8,7 @@ goes on the PMO itself.
 | Who | What they do |
 |---|---|
 | a PMO without its medio pollo | asks the `CTO` for one by `SendMessage`. It never opens tmux panes or windows itself |
-| the `CTO` | the only one who creates, renames, clears and closes them: one window per medio pollo in the tmux session `pollos`, named after its PMO. Launches it with the variable, answers the "turn on Code Mode" question with `send-keys` (Down, Enter), and hands it over |
+| the `CTO` | the only one who creates, renames, clears and closes them: one window per medio pollo in the tmux session `½ pollo`, named after its PMO. Launches it with the variable, answers the "turn on Code Mode" question with `send-keys` (Down, Enter), and hands it over |
 | the PMO | sends it the work by `SendMessage` and learns it finished with `notify_when_idle`. The first message gives its role: "you are the worker of <PMO>; you do what it sends, you do not commit, you report to it". It reviews and commits the result |
 | the medio pollo | does the task, may launch subagents or workflows of its own, commits nothing and answers its PMO |
 | when a task closes | its PMO asks the `CTO` for a `/clear`, typed into its pane with `send-keys` while it is at rest |
