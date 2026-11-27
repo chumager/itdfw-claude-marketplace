@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # medio-pollo.sh: each PMO's worker in Code Mode, one per PMO, in its own window of the tmux session "½ pollo".
-# The PMO calls it itself; nothing else manages these windows. A medio pollo runs in the foreground, so "alive" is simply
-# "claude is the process of its pane".
+# The PMO calls it itself; nothing else manages these windows. A medio pollo runs in the foreground; it is alive when
+# its window exists and the session record named after it points to a live process.
 #
-#   medio-pollo.sh up <PMO> [--fresh]  ensure it is running (idempotent): creates the tmux session or the window if
+# Usage:   medio-pollo.sh up <PMO> [--fresh]  ensure it is running (idempotent): creates the tmux session or the window if
 #                                missing and launches claude; if it fell, it RESUMES its last session (its context
 #                                survives), unless --fresh
 #   medio-pollo.sh clear <PMO>   types /clear when it is at rest
@@ -16,11 +16,13 @@
 # Writes:  <state-dir>/medio-pollo/<PMO>.sid, the last sessionId, refreshed on every up and clear
 # Exit:    0 done · 1 failed (no tmux server, claude did not come up, not at rest) · 2 bad usage
 set -uo pipefail
+_cs_env="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/_env.sh"; [ -r "$_cs_env" ] && . "$_cs_env"; unset _cs_env
+case "${1:-}" in -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 TS="½ pollo"
 ROOT="${MEDIO_POLLO_CWD:-$HOME/Dropbox/Develop/node.js/itdfw-monorepo}"
 verb="${1:-}"; pmo="${2:-}"; fresh="${3:-}"
 STATE="${CLAUDE_STATE_DIR:-$HOME/.claude/state}/medio-pollo"; mkdir -p "$STATE"
-usage() { sed -n '4,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { echo "usage: medio-pollo.sh up|clear|down <PMO> | list (--help)" >&2; exit 2; }
 tmux info >/dev/null 2>&1 || { echo "no tmux server"; exit 1; }
 win() { printf '=%s:%s' "$TS" "$1"; }
 has_win() { tmux list-windows -t "=$TS" -F '#{window_name}' 2>/dev/null | grep -Fxq "$1"; }
